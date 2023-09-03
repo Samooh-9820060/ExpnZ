@@ -62,6 +62,7 @@ class FloatingActionMenu extends StatelessWidget {
             children: [
               buildMenuItem(Icons.add_chart, "Add Transaction", () {}),
               buildMenuItem(Icons.payment, "Add Account", () {}),
+              buildMenuItem(Icons.payment, "Add Category", () {}),
             ],
           ),
         ),
