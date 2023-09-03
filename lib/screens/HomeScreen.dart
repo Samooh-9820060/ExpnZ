@@ -122,7 +122,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               cardController: _cardController,
               totalBalance: "\$5,000",
               income: "+\$3,000",
-              expense: "-\$2,000",
+              expense: "-\$3,000",
               optionalIcon: Icons.credit_card,
             ),
             SizedBox(height: 10), // Add some space below the card

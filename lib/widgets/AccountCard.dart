@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 
-class ModernAccountCard extends StatelessWidget {
+class ModernAccountCard extends StatefulWidget {
   final String accountName;
   final String totalBalance;
   final String income;
@@ -19,90 +20,126 @@ class ModernAccountCard extends StatelessWidget {
   });
 
   @override
+  _ModernAccountCardState createState() => _ModernAccountCardState();
+}
+
+class _ModernAccountCardState extends State<ModernAccountCard> with SingleTickerProviderStateMixin {
+  late AnimationController _numberController;
+  late Animation<double> _numberAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _numberController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    );
+    _numberAnimation = Tween<double>(begin: 0, end: 1).animate(_numberController);
+    _numberController.forward();
+  }
+
+  @override
+  void dispose() {
+    _numberController.dispose();
+    super.dispose();
+  }
+
+  String _animatedNumberString(double animationValue, String targetValue) {
+    int value = (double.parse(targetValue.replaceAll(RegExp(r'[\$,]'), '')) * animationValue).toInt();
+    final formatter = NumberFormat("#,###");
+    return '\$' + formatter.format(value);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      margin: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-      padding: EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Colors.black, Colors.grey[850]!],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.5),
-            offset: Offset(0, 4),
-            blurRadius: 10.0,
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          // Currency Symbol at the top-left corner
-          Positioned(
-            top: 10,
-            child: Text(
-              currency,
-              style: GoogleFonts.roboto(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+    return AnimatedBuilder(
+      animation: _numberController,
+      builder: (context, child) {
+        return Container(
+          width: double.infinity,
+          margin: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+          padding: EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Colors.black, Colors.grey[850]!],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.5),
+                offset: Offset(0, 4),
+                blurRadius: 10.0,
               ),
-            ),
+            ],
           ),
-          // Custom design element in the top-right corner
-          Positioned(
-            top: 10,
-            right: 10,
-            child: CustomPaint(
-              size: Size(40, 40),
-              painter: MyPainter(),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(0, 50, 0, 0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Optional Card Number or Placeholder
-                if (cardNumber != null)
-                  Text(
-                    cardNumber!,
-                    style: GoogleFonts.robotoMono(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  )
-                else
-                  SizedBox(height: 24), // Placeholder
-                SizedBox(height: 24),
-                // Account name
-                Text(
-                  accountName,
+          child: Stack(
+            children: [
+              // Currency Symbol at the top-left corner
+              Positioned(
+                top: 10,
+                child: Text(
+                  widget.currency,
                   style: GoogleFonts.roboto(
-                    fontSize: 16,
-                    color: Colors.white70,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
                   ),
                 ),
-                SizedBox(height: 16),
-                // Balance, Income, and Expense
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              ),
+              // Custom design element in the top-right corner
+              Positioned(
+                top: 10,
+                right: 10,
+                child: CustomPaint(
+                  size: Size(40, 40),
+                  painter: MyPainter(),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(0, 50, 0, 0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    infoColumn("Balance", totalBalance, Colors.white),
-                    infoColumn("Income", income, Colors.green),
-                    infoColumn("Expense", expense, Colors.red),
+                    // Optional Card Number or Placeholder
+                    if (widget.cardNumber != null)
+                      Text(
+                        widget.cardNumber!,
+                        style: GoogleFonts.robotoMono(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      )
+                    else
+                      SizedBox(height: 24), // Placeholder
+                    SizedBox(height: 24),
+                    // Account name
+                    Text(
+                      widget.accountName,
+                      style: GoogleFonts.roboto(
+                        fontSize: 16,
+                        color: Colors.white70,
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    // Balance, Income, and Expense
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        infoColumn("Balance", _animatedNumberString(_numberAnimation.value, widget.totalBalance), Colors.white),
+                        infoColumn("Income", _animatedNumberString(_numberAnimation.value, widget.income), Colors.green),
+                        infoColumn("Expense", _animatedNumberString(_numberAnimation.value, widget.expense), Colors.red),
+                      ],
+                    ),
                   ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
