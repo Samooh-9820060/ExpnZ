@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../screens/SearchScreen.dart';
+
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
 
@@ -35,9 +37,33 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
           style: TextStyle(color: Colors.white),
         ),
         actions: [
+          // In CustomAppBar
+          IconButton(
+            icon: Icon(Icons.search, color: Colors.white),
+            onPressed: () {
+              Navigator.push(
+                context,
+                PageRouteBuilder(
+                  transitionDuration: Duration(milliseconds: 500), // Duration of the transition
+                  pageBuilder: (BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation) {
+                    return SearchScreen(); // The screen you want to navigate to
+                  },
+                  transitionsBuilder: (BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation, Widget child) {
+                    return SlideTransition(
+                      position: Tween<Offset>(
+                        begin: Offset(1.0, 0.0),
+                        end: Offset.zero,
+                      ).animate(animation),
+                      child: child,
+                    );
+                  },
+                ),
+              );
+            },
+          ),
           SizedBox(width: 8),
           IconButton(
-            icon: Icon(Icons.account_circle, color: Colors.white, size: 30), // More detailed profile icon
+            icon: Icon(Icons.account_circle, color: Colors.white), // More detailed profile icon
             onPressed: () {},
             highlightColor: Colors.transparent,
             splashColor: Colors.transparent,
