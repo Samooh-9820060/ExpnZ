@@ -1,5 +1,6 @@
 import 'package:expnz/screens/AccountsScreen.dart';
 import 'package:expnz/screens/CategoriesScreen.dart';
+import 'package:expnz/screens/OverviewScreen.dart';
 import 'package:flutter/material.dart';
 
 import '../widgets/CustomAppBar.dart';
@@ -24,7 +25,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     HomeScreen(),
     AccountsScreen(),
     CategoriesScreen(),
-    Text("Overview Screen"),
+    OverviewScreen(),
   ];
 
   final List<String> _tabNames = [
