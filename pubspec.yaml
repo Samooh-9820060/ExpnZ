@@ -21,6 +21,7 @@ version: 1.0.0+1
 environment:
   sdk: '>=3.0.6 <4.0.0'
 
+
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
 # consider running `flutter pub upgrade --major-versions`. Alternatively,
@@ -30,6 +31,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  animated_drawer:
+    git:
+      url: https://github.com/muzammilkhn/animated_drawer.git
+      ref: ff9cf7c93595b2f83ad42c82f0a30cbf632bbf01
 
 
   # The following adds the Cupertino Icons font to your application.

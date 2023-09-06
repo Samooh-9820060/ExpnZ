@@ -5,8 +5,9 @@ import '../screens/SearchScreen.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
+  final VoidCallback toggleDrawer;
 
-  CustomAppBar({required this.title});
+  CustomAppBar({required this.title, required this.toggleDrawer});
 
   @override
   Widget build(BuildContext context) {
@@ -26,12 +27,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       child: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.menu, color: Colors.white),
-          onPressed: () {},
-          highlightColor: Colors.transparent,
-          splashColor: Colors.transparent,
-        ),
+        titleSpacing: 50,
         title: Text(
           title,
           style: TextStyle(color: Colors.white),
