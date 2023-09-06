@@ -28,41 +28,40 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         titleSpacing: 50,
-        title: Text(
-          title,
-          style: TextStyle(color: Colors.white),
+        title: Transform.translate(
+          offset: Offset(0, -5),  // Move title upwards by 5 units
+          child: Text(
+            title,
+            style: TextStyle(color: Colors.white),
+          ),
         ),
         actions: [
           // In CustomAppBar
-          IconButton(
-            icon: Icon(Icons.search, color: Colors.white),
-            onPressed: () {
-              Navigator.push(
-                context,
-                PageRouteBuilder(
-                  transitionDuration: Duration(milliseconds: 500), // Duration of the transition
-                  pageBuilder: (BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation) {
-                    return SearchScreen(); // The screen you want to navigate to
-                  },
-                  transitionsBuilder: (BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation, Widget child) {
-                    return SlideTransition(
-                      position: Tween<Offset>(
-                        begin: Offset(1.0, 0.0),
-                        end: Offset.zero,
-                      ).animate(animation),
-                      child: child,
-                    );
-                  },
-                ),
-              );
-            },
-          ),
-          SizedBox(width: 8),
-          IconButton(
-            icon: Icon(Icons.account_circle, color: Colors.white), // More detailed profile icon
-            onPressed: () {},
-            highlightColor: Colors.transparent,
-            splashColor: Colors.transparent,
+          Transform.translate(
+            offset: Offset(0, -5),  // Move icon upwards by 5 units
+            child: IconButton(
+              icon: Icon(Icons.search, color: Colors.white),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  PageRouteBuilder(
+                    transitionDuration: Duration(milliseconds: 500),
+                    pageBuilder: (BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation) {
+                      return SearchScreen();
+                    },
+                    transitionsBuilder: (BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation, Widget child) {
+                      return SlideTransition(
+                        position: Tween<Offset>(
+                          begin: Offset(1.0, 0.0),
+                          end: Offset.zero,
+                        ).animate(animation),
+                        child: child,
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
           ),
         ],
       ),
