@@ -4,11 +4,11 @@ import 'package:expnz/screens/OverviewScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:animated_drawer/views/animated_drawer.dart';
 
-import '../widgets/CustomAppBar.dart';
-import '../widgets/CustomBottomNavBar.dart';
-import '../widgets/FloatingActionMenu.dart';
+import '../menus/CustomAppBar.dart';
+import '../menus/CustomBottomNavBar.dart';
+import '../menus/FloatingActionMenu.dart';
 import 'HomeScreen.dart';
-import 'MenuDrawer.dart';
+import '../menus/MenuDrawer.dart';
 
 class HomePage extends StatefulWidget {
   @override
