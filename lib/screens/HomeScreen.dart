@@ -1,10 +1,8 @@
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
-import '../widgets/FinanceCard.dart';
-import '../widgets/FinanceInfoCard.dart';
-import '../widgets/NotificationsCard.dart';
-import '../widgets/SummaryMonthCardWidget.dart';
+import '../widgets/AppWidgets/FinanceCard.dart';
+import '../widgets/AppWidgets/NotificationsCard.dart';
+import '../widgets/AppWidgets/SummaryMonthCardWidget.dart';
 
 class HomeScreen extends StatefulWidget {
   @override

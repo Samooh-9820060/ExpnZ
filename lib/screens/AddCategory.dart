@@ -1,7 +1,9 @@
+import 'package:expnz/widgets/SimpleWidgets/ExpnZButton.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_iconpicker/flutter_iconpicker.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+
+import '../widgets/SimpleWidgets/ExpnZTextField.dart';
 
 class AddCategoryScreen extends StatefulWidget {
   @override
@@ -94,44 +96,10 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Redesigned Text Field for Category
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(25),
-                gradient: LinearGradient(
-                  colors: [Colors.blueGrey[800]!, Colors.blueGrey[700]!],
-                ),
-              ),
-              child: TextField(
-                controller: _categoryController,
-                style: TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  labelText: "Enter Category",
-                  labelStyle: TextStyle(color: Colors.white),
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.all(20),
-                ),
-              ),
-            ),
+            CustomTextField(label: "Enter Category", controller: _categoryController),
             SizedBox(height: 16),
             // Redesigned Text Field for Description
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(25),
-                gradient: LinearGradient(
-                  colors: [Colors.blueGrey[800]!, Colors.blueGrey[700]!],
-                ),
-              ),
-              child: TextField(
-                controller: _descriptionController,
-                style: TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  labelText: "Enter Description",
-                  labelStyle: TextStyle(color: Colors.white),
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.all(20),
-                ),
-              ),
-            ),
+            CustomTextField(label: "Enter Description", controller: _descriptionController),
             SizedBox(height: 16),
             // Redesigned Button for Icon Picker
             ElevatedButton(
@@ -160,7 +128,7 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
                 ],
               ),
               style: ElevatedButton.styleFrom(
-                primary: Colors.blueGrey[700],
+                backgroundColor: Colors.blueGrey[700],
                 padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 textStyle: TextStyle(
                   fontSize: 16,
@@ -173,8 +141,6 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
               ),
             ),
             SizedBox(height: 16),
-            // Redesigned Button for Color Picker
-            // Redesigned Button for Color Picker
             // Redesigned Button for Color Picker
             ElevatedButton(
               onPressed: _pickColor,
@@ -215,7 +181,7 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
                 ],
               ),
               style: ElevatedButton.styleFrom(
-                primary: Colors.blueGrey[700],
+                backgroundColor: Colors.blueGrey[700],
                 padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 textStyle: TextStyle(
                   fontSize: 16,
@@ -230,26 +196,9 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
 
             SizedBox(height: 32),
             // Redesigned Add Button
-            ElevatedButton(
-              onPressed: () {
-                // Implement your code to add the category here
-                // After adding, navigate back to the Home Screen
-                Navigator.pop(context);
-              },
-              child: Text("Add", style: TextStyle(color: Colors.white)),
-              style: ElevatedButton.styleFrom(
-                primary: Colors.blueAccent,
-                padding: EdgeInsets.symmetric(horizontal: 50, vertical: 20),
-                textStyle: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(50.0),
-                ),
-                elevation: 5,
-              ),
-            ),
+            ExpnZButton(label: "Add", onPressed: (){
+
+            })
           ],
         ),
       ),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../widgets/SearchTransactionCard.dart';
+import '../widgets/AppWidgets/SearchTransactionCard.dart';
 
 class SearchScreen extends StatefulWidget {
   @override

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:expnz/screens/AccountsScreen.dart';
 import 'package:expnz/screens/CategoriesScreen.dart';
 import 'package:expnz/screens/OverviewScreen.dart';
@@ -111,7 +113,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   child: AnimatedOpacity(
                     opacity: isOpened ? 1 : 0,
                     duration: Duration(milliseconds: 300),
-                    child: FloatingActionMenu(isOpened: isOpened),
+                    child: FloatingActionMenu(
+                      isOpened: isOpened,
+                      closeMenu: toggleMenu,  // Pass the toggleMenu function here
+                    ),
                   ),
                 ),
                 Positioned(

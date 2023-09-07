@@ -1,6 +1,9 @@
 import 'package:currency_picker/currency_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:flutter_iconpicker/flutter_iconpicker.dart';
+
+import '../widgets/SimpleWidgets/ExpnZButton.dart';
+import '../widgets/SimpleWidgets/ExpnZTextField.dart';
 
 class AddAccountScreen extends StatefulWidget {
   @override
@@ -11,7 +14,7 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
   late TextEditingController _accountNameController;
   late TextEditingController _cardNumberController;
   Currency? selectedCurrency;  // Default currency
-  Color selectedColor = Colors.blue; // Default color
+  IconData selectedIcon = Icons.star;  // Default icon
 
   @override
   void initState() {
@@ -46,32 +49,19 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
     super.dispose();
   }
 
-  void _pickColor() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Pick a color!'),
-          content: SingleChildScrollView(
-            child: ColorPicker(
-              pickerColor: selectedColor,
-              onColorChanged: (Color color) {
-                setState(() => selectedColor = color);
-              },
-              pickerAreaHeightPercent: 0.8,
-            ),
-          ),
-          actions: <Widget>[
-            ElevatedButton(
-              child: const Text('Got it'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
-    );
+
+  void _pickIcon() async {
+    IconData? icon = await FlutterIconPicker.showIconPicker(context,
+        iconPackModes: [
+          IconPack.material,
+          IconPack.cupertino,
+          IconPack.fontAwesomeIcons
+        ]);
+    if (icon != null) {
+      setState(() {
+        selectedIcon = icon;
+      });
+    }
   }
 
   @override
@@ -96,45 +86,34 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Redesigned Button for Color Picker
+            // Add your new ElevatedButton
             ElevatedButton(
-              onPressed: _pickColor,
+              onPressed: _pickIcon,
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.start,
                 children: [
-                  Row(
+                  Icon(
+                    selectedIcon,
+                    color: Colors.white,
+                  ),
+                  SizedBox(width: 10),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        Icons.color_lens,
-                        color: Colors.white,
-                      ),
-                      SizedBox(width: 10),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text("Pick a Color"),
-                          Text(
-                            "Tap to choose color",
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w300,
-                            ),
-                          ),
-                        ],
+                      Text("Select Icon"),
+                      Text(
+                        "Tap to choose icon",
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w300,
+                        ),
                       ),
                     ],
-                  ),
-                  Container(
-                    width: 24,
-                    height: 24,
-                    decoration: BoxDecoration(
-                      color: selectedColor,
-                      shape: BoxShape.circle,
-                    ),
                   ),
                 ],
               ),
               style: ElevatedButton.styleFrom(
-                primary: Colors.blueGrey[700],
+                backgroundColor: Colors.blueGrey[700],
                 padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 textStyle: TextStyle(
                   fontSize: 16,
@@ -148,24 +127,7 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
             ),
             SizedBox(height: 16),
             // Redesigned Text Field for Account Name
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(25),
-                gradient: LinearGradient(
-                  colors: [Colors.blueGrey[800]!, Colors.blueGrey[700]!],
-                ),
-              ),
-              child: TextField(
-                controller: _accountNameController,
-                style: TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  labelText: "Enter Account Name",
-                  labelStyle: TextStyle(color: Colors.white),
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.all(20),
-                ),
-              ),
-            ),
+            CustomTextField(label: "Enter Account Name", controller: _accountNameController),
             SizedBox(height: 16),
             // Button for Currency Selection
             ElevatedButton(
@@ -186,7 +148,7 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
                 ],
               ),
               style: ElevatedButton.styleFrom(
-                primary: Colors.blueGrey[700],
+                backgroundColor: Colors.blueGrey[700],
                 padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 textStyle: TextStyle(
                   fontSize: 16,
@@ -199,59 +161,12 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
               ),
             ),
             SizedBox(height: 16),
-            // Redesigned Text Field for Card Number (Last 4 Digits)
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(25),
-                gradient: LinearGradient(
-                  colors: [Colors.blueGrey[800]!, Colors.blueGrey[700]!],
-                ),
-              ),
-              child: TextField(
-                controller: _cardNumberController,
-                style: TextStyle(color: Colors.white),
-                maxLines: 1,
-                decoration: InputDecoration(
-                  labelText: "Enter Card Number (Last 4 Digits, Optional)",
-                  labelStyle: TextStyle(color: Colors.white),
-                  counterText: "",
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                ),
-                keyboardType: TextInputType.number,
-                maxLength: 4,
-                onChanged: (value) {
-                  setState(() {
-                    if (_cardNumberController.text.length <= 4) {
-                      _cardNumberController.text = value;
-                      _cardNumberController.selection = TextSelection.fromPosition(TextPosition(offset: value.length));
-                    }
-                  });
-                },
-              ),
-            ),
+            CustomTextField(label: "Enter Card Number (Last 4 Digits, Optional)", controller: _cardNumberController, isNumber: true, maxLength: 4),
             SizedBox(height: 32),
             // Redesigned Add Button
-            ElevatedButton(
-              onPressed: () {
-                // Implement your code to add the account here
-                // After adding, navigate back to the Home Screen
-                Navigator.pop(context);
-              },
-              child: Text("Add", style: TextStyle(color: Colors.white)),
-              style: ElevatedButton.styleFrom(
-                primary: Colors.blueAccent,
-                padding: EdgeInsets.symmetric(horizontal: 50, vertical: 20),
-                textStyle: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(50.0),
-                ),
-                elevation: 5,
-              ),
-            ),
+            ExpnZButton(label: "Add", onPressed: (){
+
+            })
           ],
         ),
       ),

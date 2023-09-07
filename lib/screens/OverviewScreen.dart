@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../widgets/OverviewCategoryCard.dart';
+
+import '../widgets/AppWidgets/OverviewCategoryCard.dart';
 
 class OverviewScreen extends StatefulWidget {
   @override

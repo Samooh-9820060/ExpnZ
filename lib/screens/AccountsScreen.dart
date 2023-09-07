@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../widgets/AccountCard.dart';
+import '../widgets/AppWidgets/AccountCard.dart';
 
 class AccountsScreen extends StatefulWidget {
   @override

@@ -1,11 +1,13 @@
 import 'package:expnz/screens/AddAccount.dart';
 import 'package:expnz/screens/AddCategory.dart';
+import 'package:expnz/screens/AddTransaction.dart';
 import 'package:flutter/material.dart';
 
 class FloatingActionMenu extends StatelessWidget {
   final bool isOpened;
+  final VoidCallback closeMenu;
 
-  FloatingActionMenu({required this.isOpened});
+  FloatingActionMenu({required this.isOpened, required this.closeMenu});
 
   Widget buildMenuItem(
       IconData icon, String label, VoidCallback onPressed) {
@@ -25,8 +27,10 @@ class FloatingActionMenu extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(50),
+          onTap: () {
+            onPressed();
+            closeMenu();  // Close the menu
+          },          borderRadius: BorderRadius.circular(50),
           child: Padding(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),  // Reduced padding
             child: Row(
@@ -62,7 +66,12 @@ class FloatingActionMenu extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.end,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              buildMenuItem(Icons.add_chart, "Add Transaction", () {}),
+              buildMenuItem(Icons.add_chart, "Add Transaction", () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => AddTransactionScreen()),
+                );
+              }),
               buildMenuItem(Icons.payment, "Add Account", () {
                 Navigator.push(
                   context,

@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../widgets/CategoryCard.dart';
+import '../widgets/AppWidgets/CategoryCard.dart';
 
 class CategoriesScreen extends StatefulWidget {
   @override
