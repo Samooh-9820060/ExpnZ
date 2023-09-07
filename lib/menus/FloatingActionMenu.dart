@@ -1,3 +1,4 @@
+import 'package:expnz/screens/AddAccount.dart';
 import 'package:expnz/screens/AddCategory.dart';
 import 'package:flutter/material.dart';
 
@@ -62,7 +63,12 @@ class FloatingActionMenu extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               buildMenuItem(Icons.add_chart, "Add Transaction", () {}),
-              buildMenuItem(Icons.payment, "Add Account", () {}),
+              buildMenuItem(Icons.payment, "Add Account", () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => AddAccountScreen()),
+                );
+              }),
               buildMenuItem(Icons.payment, "Add Category", () {
                 Navigator.push(
                   context,
