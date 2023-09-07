@@ -5,12 +5,14 @@ class CustomTextField extends StatelessWidget {
   final TextEditingController controller;
   final bool isNumber;
   final int? maxLength;
+  final bool isError;
 
   CustomTextField({
     required this.label,
     required this.controller,
     this.isNumber = false,
     this.maxLength,
+    this.isError = false,
   });
 
   @override
@@ -19,7 +21,7 @@ class CustomTextField extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.blueGrey[700],
+          color: isError ? Colors.red[300] : Colors.blueGrey[700],
           borderRadius: BorderRadius.circular(25),
           boxShadow: [
             BoxShadow(
@@ -49,7 +51,7 @@ class CustomTextField extends StatelessWidget {
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(25),
               borderSide: BorderSide(
-                color: Colors.blueAccent,
+                color: isError ? Colors.red : Colors.blueAccent,
               ),
             ),
             enabledBorder: OutlineInputBorder(

@@ -8,6 +8,8 @@ class CategoryCard extends StatefulWidget {
   final String expense;
   final IconData iconData;
   final Animation<double> animation;
+  final Color primaryColor;
+  final Function onDelete;
 
   CategoryCard({
     required this.categoryName,
@@ -15,6 +17,8 @@ class CategoryCard extends StatefulWidget {
     required this.expense,
     required this.iconData,
     required this.animation,
+    required this.primaryColor,
+    required this.onDelete,
   });
 
   @override
@@ -74,7 +78,7 @@ class _CategoryCardState extends State<CategoryCard> with SingleTickerProviderSt
           child: Row(
             children: [
               CircleAvatar(
-                backgroundColor: Colors.white.withOpacity(0.2),
+                backgroundColor: widget.primaryColor,
                 child: Icon(widget.iconData, color: Colors.white, size: 24),
               ),
               SizedBox(width: 16),
@@ -99,8 +103,8 @@ class _CategoryCardState extends State<CategoryCard> with SingleTickerProviderSt
                 ],
               ),
               IconButton(
-                onPressed: () {},
-                icon: Icon(Icons.edit, color: Colors.white),
+                onPressed: () => widget.onDelete(), // Call the callback function here
+                icon: Icon(Icons.delete, color: Colors.white),
               ),
             ],
           ),

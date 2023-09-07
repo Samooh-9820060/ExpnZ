@@ -2,8 +2,9 @@ import 'package:expnz/widgets/SimpleWidgets/ExpnZButton.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_iconpicker/flutter_iconpicker.dart';
-
+import '../database/CategoriesDB.dart';
 import '../widgets/SimpleWidgets/ExpnZTextField.dart';
+import '../widgets/SimpleWidgets/ModernSnackBar.dart';
 
 class AddCategoryScreen extends StatefulWidget {
   @override
@@ -15,12 +16,21 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
   late TextEditingController _descriptionController;
   IconData selectedIcon = Icons.star;  // Default icon
   Color selectedColor = Colors.blue; // Default color
+  bool isDuplicateCategory = false;
+  bool isProcessing = false;
 
   @override
   void initState() {
     super.initState();
     _categoryController = TextEditingController();
     _descriptionController = TextEditingController();
+
+    _categoryController.addListener(() async {
+      bool duplicate = await CategoriesDB().checkIfCategoryExists(_categoryController.text);
+      setState(() {
+        isDuplicateCategory = duplicate;
+      });
+    });
   }
 
   @override
@@ -61,7 +71,13 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
           ),
           actions: <Widget>[
             ElevatedButton(
-              child: const Text('Got it'),
+              child: Text('Got it', style: TextStyle(color: Colors.white)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: selectedColor,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
               onPressed: () {
                 Navigator.of(context).pop();
               },
@@ -72,6 +88,62 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
     );
   }
 
+  //database functions
+  void _addCategory() async {
+    if (isProcessing) return;
+    setState(() {
+      isProcessing = true;
+    });
+
+    if (isDuplicateCategory) {
+      await showModernSnackBar(
+        context: context,
+        message: "Category name cannot be duplicated",
+        backgroundColor: Colors.red,
+      );
+      setState(() {
+        isProcessing = false;
+      });
+      return;
+    }
+
+
+    if (_categoryController.text.trim().isEmpty || _descriptionController.text.trim().isEmpty) {
+      await showModernSnackBar(
+        context: context,
+        message: "Category name or description cannot be empty!",
+        backgroundColor: Colors.red,
+      );
+      setState(() {
+        isProcessing = false;
+      });
+      return;
+    }
+
+    // Prepare data to insert
+    Map<String, dynamic> row = {
+      'name': _categoryController.text,
+      'description': _descriptionController.text,
+      'icon': selectedIcon.codePoint.toString(),
+      'color': selectedColor.value.toRadixString(16),
+    };
+
+    final id = await CategoriesDB().insertCategory(row);
+
+    if (id != null) {
+      await showModernSnackBar(
+        context: context,
+        message: "Category added successfully!",
+        backgroundColor: Colors.green,
+      );
+      setState(() {
+        isProcessing = false;
+      });
+      Navigator.pop(context);
+    } else {
+      // Your logic for insert failed
+    }
+  }
 
 
   @override
@@ -96,7 +168,7 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Redesigned Text Field for Category
-            CustomTextField(label: "Enter Category", controller: _categoryController),
+            CustomTextField(label: "Enter Category", controller: _categoryController, isError: isDuplicateCategory),
             SizedBox(height: 16),
             // Redesigned Text Field for Description
             CustomTextField(label: "Enter Description", controller: _descriptionController),
@@ -196,9 +268,10 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
 
             SizedBox(height: 32),
             // Redesigned Add Button
-            ExpnZButton(label: "Add", onPressed: (){
-
-            })
+            ExpnZButton(
+              label: isProcessing ? "Processing..." : "Add",  // Update this line
+              onPressed: isProcessing ? null : _addCategory,  // Update this line
+            ),
           ],
         ),
       ),
