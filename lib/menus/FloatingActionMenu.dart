@@ -78,12 +78,17 @@ class FloatingActionMenu extends StatelessWidget {
                   MaterialPageRoute(builder: (context) => AddAccountScreen()),
                 );
               }),
-              buildMenuItem(Icons.payment, "Add Category", () {
-                Navigator.push(
+              buildMenuItem(Icons.payment, "Add Category", () async {
+                final result = await Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => AddCategoryScreen()),
                 );
-              }),            ],
+
+                if (result != null && result == true) {
+
+                }
+              }),
+            ],
           ),
         ),
       ),

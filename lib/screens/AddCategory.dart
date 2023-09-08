@@ -5,8 +5,18 @@ import 'package:flutter_iconpicker/flutter_iconpicker.dart';
 import '../database/CategoriesDB.dart';
 import '../widgets/SimpleWidgets/ExpnZTextField.dart';
 import '../widgets/SimpleWidgets/ModernSnackBar.dart';
+import '../models/CategoriesModel.dart';
+import 'package:provider/provider.dart';
+
+
 
 class AddCategoryScreen extends StatefulWidget {
+  final int? categoryId;
+
+  AddCategoryScreen({
+    this.categoryId,
+  });
+
   @override
   _AddCategoryScreenState createState() => _AddCategoryScreenState();
 }
@@ -14,10 +24,11 @@ class AddCategoryScreen extends StatefulWidget {
 class _AddCategoryScreenState extends State<AddCategoryScreen> {
   late TextEditingController _categoryController;
   late TextEditingController _descriptionController;
-  IconData selectedIcon = Icons.star;  // Default icon
-  Color selectedColor = Colors.blue; // Default color
+  late IconData selectedIcon = Icons.star;  // Default icon
+  late Color selectedColor = Colors.blue; // Default color
   bool isDuplicateCategory = false;
   bool isProcessing = false;
+  bool isModifyMode = false;
 
   @override
   void initState() {
@@ -29,9 +40,48 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
       bool duplicate = await CategoriesDB().checkIfCategoryExists(_categoryController.text);
       setState(() {
         isDuplicateCategory = duplicate;
+        //isModifyMode = duplicate;
       });
     });
+
+    if (widget.categoryId != null){
+      _loadExistingCategory(widget.categoryId!);
+    } else {
+      selectedIcon = Icons.star;
+      selectedColor = Colors.blue;
+    }
   }
+
+  void _loadExistingCategory(int id) async {
+    final category = await CategoriesDB().getSelectedCategory(id);
+    print("Loaded category: $category");  // Debug line
+
+    if (category != null) {
+      setState(() {
+        isModifyMode = true;
+        _categoryController.text = category[CategoriesDB.columnName] as String;
+        _descriptionController.text = category[CategoriesDB.columnDescription] as String;
+        selectedIcon = IconData(
+            category[CategoriesDB.columnIcon] is String ?
+            int.parse(category[CategoriesDB.columnIcon] as String) :
+            category[CategoriesDB.columnIcon] as int,
+            fontFamily: 'MaterialIcons'
+        );
+
+        selectedColor = Color(
+            category[CategoriesDB.columnColor] is String ?
+            int.parse(category[CategoriesDB.columnColor] as String) :
+            category[CategoriesDB.columnColor] as int
+        );
+      });
+    } else {
+      setState(() {
+        selectedIcon = Icons.star;
+        selectedColor = Colors.blue;
+      });
+    }
+  }
+
 
   @override
   void dispose() {
@@ -89,23 +139,11 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
   }
 
   //database functions
-  void _addCategory() async {
+  void _addModifyCategory() async {
     if (isProcessing) return;
     setState(() {
       isProcessing = true;
     });
-
-    if (isDuplicateCategory) {
-      await showModernSnackBar(
-        context: context,
-        message: "Category name cannot be duplicated",
-        backgroundColor: Colors.red,
-      );
-      setState(() {
-        isProcessing = false;
-      });
-      return;
-    }
 
 
     if (_categoryController.text.trim().isEmpty || _descriptionController.text.trim().isEmpty) {
@@ -120,31 +158,77 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
       return;
     }
 
-    // Prepare data to insert
-    Map<String, dynamic> row = {
-      'name': _categoryController.text,
-      'description': _descriptionController.text,
-      'icon': selectedIcon.codePoint.toString(),
-      'color': selectedColor.value.toRadixString(16),
-    };
+    // Check if category name is duplicated
+    isDuplicateCategory = await CategoriesDB().checkIfCategoryExists(
+        _categoryController.text.trim(),
+        isModifyMode ? widget.categoryId : null
+    );
 
-    final id = await CategoriesDB().insertCategory(row);
-
-    if (id != null) {
+    if (isDuplicateCategory) {
       await showModernSnackBar(
         context: context,
-        message: "Category added successfully!",
-        backgroundColor: Colors.green,
+        message: "Category name cannot be duplicated",
+        backgroundColor: Colors.red,
       );
       setState(() {
         isProcessing = false;
       });
-      Navigator.pop(context);
-    } else {
-      // Your logic for insert failed
+      return;
     }
-  }
 
+    if (isDuplicateCategory && !isModifyMode) {
+      await showModernSnackBar(
+        context: context,
+        message: "Category name cannot be duplicated",
+        backgroundColor: Colors.red,
+      );
+      setState(() {
+        isProcessing = false;
+      });
+      return;
+    }
+
+
+    // Prepare data to insert or update
+    Map<String, dynamic> row = {
+      'name': _categoryController.text,
+      'description': _descriptionController.text,
+      'icon': selectedIcon.codePoint.toString(),
+      'color': selectedColor.value,
+    };
+
+    final int? id;
+
+    if (isModifyMode) {
+      // Update existing category
+      id = await CategoriesDB().updateCategory(widget.categoryId!, row);
+    } else {
+      // Add new category
+      id = await CategoriesDB().insertCategory(row);
+    }
+
+    final categoriesModel = Provider.of<CategoriesModel>(context, listen: false);
+    if (id != null && id > 0) {
+      await showModernSnackBar(
+        context: context,
+        message: isModifyMode ? "Category updated successfully!" : "Category added successfully!",
+        backgroundColor: Colors.green,
+      );
+      categoriesModel.fetchCategories();
+      setState(() {
+        isProcessing = false;
+      });
+      Navigator.pop(context, true);
+    } else {
+      await showModernSnackBar(
+        context: context,
+        message: isModifyMode ? "Category was not updated" : "Category was not added",
+        backgroundColor: Colors.redAccent,
+      );
+      setState(() {
+        isProcessing = false;
+      });    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -158,7 +242,7 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
             Navigator.pop(context);
           },
         ),
-        title: Text("Add Category", style: TextStyle(color: Colors.white)),
+        title: Text(isModifyMode ? "Modify Category" : "Add Category", style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.blueGrey[900],
       ),
       body: SingleChildScrollView(
@@ -269,9 +353,10 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
             SizedBox(height: 32),
             // Redesigned Add Button
             ExpnZButton(
-              label: isProcessing ? "Processing..." : "Add",  // Update this line
-              onPressed: isProcessing ? null : _addCategory,  // Update this line
+              label: isProcessing ? "Processing..." : (isModifyMode ? "Modify" : "Add"),
+              onPressed: isProcessing ? null : (_addModifyCategory),
             ),
+
           ],
         ),
       ),

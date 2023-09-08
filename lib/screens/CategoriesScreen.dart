@@ -1,7 +1,7 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../database/CategoriesDB.dart';
-import '../utils/utility_functions.dart';
+import '../models/CategoriesModel.dart';
 import '../widgets/AppWidgets/CategoryCard.dart';
 
 class CategoriesScreen extends StatefulWidget {
@@ -17,6 +17,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> with SingleTickerPr
   @override
   void initState() {
     super.initState();
+
+    Provider.of<CategoriesModel>(context, listen: false).fetchCategories();
     _controller = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
@@ -33,22 +35,39 @@ class _CategoriesScreenState extends State<CategoriesScreen> with SingleTickerPr
     super.dispose();
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Container(
       color: Colors.blueGrey[900],
-      child: FutureBuilder<List<Map<String, dynamic>>>(
-        future: db.getAllCategories(),  // Fetching the categories from database
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return CircularProgressIndicator();
-          } else if (snapshot.hasError) {
-            return Text('Error: ${snapshot.error}');
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return Text('No categories available.');
+      child: Consumer<CategoriesModel>(
+        builder: (context, categoriesModel, child) {
+          if (categoriesModel.categories.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.category_outlined,
+                    color: Colors.grey,
+                    size: 64,
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'No categories available.',
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            );
           } else {
             // Sort the list of categories by name in ascending order
-            List<Map<String, dynamic>> sortedData = List.from(snapshot.data!);
+            List<Map<String, dynamic>> sortedData = List.from(categoriesModel.categories!);
             sortedData.sort((a, b) => a[CategoriesDB.columnName].compareTo(b[CategoriesDB.columnName]));
 
             return ListView.builder(
@@ -56,14 +75,16 @@ class _CategoriesScreenState extends State<CategoriesScreen> with SingleTickerPr
               itemBuilder: (context, index) {
                 final category = sortedData[index];
                 return buildAnimatedCategoryCard(
-                  category[CategoriesDB.columnName],
-                  "\$200",
-                  "\$50",
-                  IconData(
+                  key: ValueKey(category[CategoriesDB.columnId]),
+                  categoryId: category[CategoriesDB.columnId],
+                  categoryName: category[CategoriesDB.columnName],
+                  income: "\$200",
+                  expense: "\$50",
+                  iconData: IconData(
                     int.tryParse(category[CategoriesDB.columnIcon]) ?? Icons.error.codePoint,
                     fontFamily: 'MaterialIcons',
                   ),
-                  hexToColor(category[CategoriesDB.columnColor]),
+                  primaryColor: Color(category[CategoriesDB.columnColor]),
                 );
               },
             );
@@ -73,7 +94,15 @@ class _CategoriesScreenState extends State<CategoriesScreen> with SingleTickerPr
     );
   }
 
-  Widget buildAnimatedCategoryCard(String categoryName, String income, String expense, IconData iconData, Color primaryColor) {
+  Widget buildAnimatedCategoryCard({
+    Key? key,
+    required int categoryId,
+    required String categoryName,
+    required String income,
+    required String expense,
+    required IconData iconData,
+    required Color primaryColor
+  }) {
     return AnimatedBuilder(
       animation: _animation,
       builder: (context, child) {
@@ -82,15 +111,17 @@ class _CategoriesScreenState extends State<CategoriesScreen> with SingleTickerPr
           child: Transform.scale(
             scale: _animation.value,
             child: CategoryCard(
+              key: key,  // Pass the key here
+              categoryId: categoryId,
               categoryName: categoryName,
               income: income,
               expense: expense,
               iconData: iconData,
               animation: _animation,
               primaryColor: primaryColor,
-              onDelete: () async {  // Pass the callback here
-                await CategoriesDB().deleteCategory(categoryName);  // Replace with your actual delete function
-                setState(() {});  // Refresh the state to reflect the change
+              onDelete: () async {
+                await Provider.of<CategoriesModel>(context, listen: false)
+                    .deleteCategory(categoryId);
               },
             ),
           ),

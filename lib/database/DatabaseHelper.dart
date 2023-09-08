@@ -51,7 +51,7 @@ class DatabaseHelper {
             ${CategoriesDB.columnName} TEXT NOT NULL,
             ${CategoriesDB.columnDescription} TEXT NOT NULL,
             ${CategoriesDB.columnIcon} TEXT NOT NULL,
-            ${CategoriesDB.columnColor} TEXT NOT NULL
+            ${CategoriesDB.columnColor} INTEGER NOT NULL
           )
     ''');
   }
