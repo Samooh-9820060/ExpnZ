@@ -17,6 +17,11 @@ import '../widgets/SimpleWidgets/ModernSnackBar.dart';
 enum TransactionType { income, expense, transfer }
 
 class AddTransactionScreen extends StatefulWidget {
+
+  Map<String, dynamic>? transaction;
+
+  AddTransactionScreen({this.transaction});
+
   @override
   _AddTransactionScreenState createState() => _AddTransactionScreenState();
 }
@@ -36,6 +41,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
   final TextEditingController _categorySearchController = TextEditingController();
   bool _showDropdown = false;
   bool isProcessing = false;
+  bool updateMode = false;
 
   List<Map<String, dynamic>> filteredCategories = [];
   List<Map<String, dynamic>> selectedCategoriesList = [];
@@ -56,6 +62,46 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
     _amountController = TextEditingController();
     Provider.of<AccountsModel>(context, listen: false).fetchAccounts();
     Provider.of<CategoriesModel>(context, listen: false).fetchCategories();
+    if (widget.transaction != null) { updateMode = true; loadTransactionData(); }
+  }
+
+  void loadTransactionData() {
+    final String name = widget.transaction?['name'] ?? 'Unknown';
+    final String description = widget.transaction?['description'] ?? 'Unknown';
+    final int accountId = widget.transaction?['account_id'];
+    final String date = widget.transaction?['date'];
+    final String time = widget.transaction?['time'] ?? 'Unknown';
+    final double amount = widget.transaction?['amount'] ?? 0.0;
+    final String type = widget.transaction?['type'] ?? 'Unknown';
+    final List<dynamic> categories = jsonDecode(widget.transaction?['categories'] ?? '[]');
+
+    if (type == 'expense') {
+      _selectedType = TransactionType.expense;
+    } else if (type == 'income') {
+      _selectedType = TransactionType.income;
+    }
+    _nameController.text = name;
+    _descriptionController.text = description;
+    _amountController.text = amount.toString();
+    if (date != null && time != null) {
+      // Combine the date and time into a single DateTime object
+      DateTime completeDateTime = DateTime.parse("$date $time");
+      selectedDate = DateTime.parse(date);
+      // Extract the time from the complete DateTime object
+      selectedTime = TimeOfDay.fromDateTime(completeDateTime);
+    }
+
+    final accountsModel = Provider.of<AccountsModel>(context, listen: false);
+    if (accountId != null) {
+      selectedAccoutIndex = accountsModel.accounts.indexWhere((account) => account[AccountsDB.accountId] == accountId);
+      if (selectedAccoutIndex != -1) {
+        selectedAccoutId = accountId;
+      }
+    }
+    final String? categoriesJson = widget.transaction?['categories'];
+    if (categoriesJson != null) {
+      selectedCategoriesList = List<Map<String, dynamic>>.from(jsonDecode(categoriesJson));
+    }
   }
 
   @override
@@ -67,11 +113,16 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
   }
 
   //modify or insert transactions
-  void _addUpdateTransaction() async {
+  void _addUpdateTransaction({bool isUpdate = false, Map<String, dynamic>? existingTransaction}) async {
     if (isProcessing) return;
     setState(() {
       isProcessing = true;
     });
+
+    if (updateMode) {
+      isUpdate = updateMode;
+      existingTransaction = widget.transaction;
+    }
 
     // Validate input fields
     String name = _nameController.text.trim();
@@ -124,7 +175,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
         TransactionsDB.columnName: name,
         TransactionsDB.columnDescription: description,
         TransactionsDB.columnAmount: amount,
-        TransactionsDB.columnDate: selectedDate.toIso8601String(),
+        TransactionsDB.columnDate: DateFormat('yyyy-MM-dd').format(selectedDate),
         TransactionsDB.columnTime: selectedTime.format(context),
         TransactionsDB.columnAccountId: selectedFromAccountId,
         TransactionsDB.columnCategories: jsonEncode(selectedCategoriesList),
@@ -136,21 +187,36 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
         TransactionsDB.columnName: name,
         TransactionsDB.columnDescription: description,
         TransactionsDB.columnAmount: amount,
-        TransactionsDB.columnDate: selectedDate.toIso8601String(),
+        TransactionsDB.columnDate: DateFormat('yyyy-MM-dd').format(selectedDate),
         TransactionsDB.columnTime: selectedTime.format(context),
         TransactionsDB.columnAccountId: selectedToAccountId,
         TransactionsDB.columnCategories: jsonEncode(selectedCategoriesList),
       };
 
-      final idFrom = await TransactionsDB().insertTransaction(rowFrom);
-      final idTo = await TransactionsDB().insertTransaction(rowTo);
       final transactionsModel = Provider.of<TransactionsModel>(context, listen: false);
+      bool successFrom = false, successTo = false;
 
-      if (idFrom != null && idFrom > -1 && idTo != null && idTo > -1) {
+      if (isUpdate && existingTransaction != null) {
+        // Update the existing transactions (you need to manage IDs for both 'from' and 'to' transactions)
+        final idFrom = await TransactionsDB().updateTransaction(existingTransaction['from_id'], rowFrom);
+        final idTo = await TransactionsDB().updateTransaction(existingTransaction['to_id'], rowTo);
+
+        successFrom = idFrom != null && idFrom > 0;
+        successTo = idTo != null && idTo > 0;
+      } else {
+        // Insert new transactions
+        final idFrom = await TransactionsDB().insertTransaction(rowFrom);
+        final idTo = await TransactionsDB().insertTransaction(rowTo);
+
+        successFrom = idFrom != null && idFrom > 0;
+        successTo = idTo != null && idTo > 0;
+      }
+
+      if (successFrom && successTo) {
         // Both transactions were successful
         await showModernSnackBar(
           context: context,
-          message: "Transfer transaction added successfully!",
+          message: isUpdate ? "Transfer transaction updated successfully!" : "Transfer transaction added successfully!",
           backgroundColor: Colors.green,
         );
         transactionsModel.fetchTransactions();
@@ -162,7 +228,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
         // Handle failure
         await showModernSnackBar(
           context: context,
-          message: "Transfer transaction was not added",
+          message: isUpdate ? "Transfer transaction was not updated" : "Transfer transaction was not added",
           backgroundColor: Colors.redAccent,
         );
         setState(() {
@@ -192,21 +258,29 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
         TransactionsDB.columnName: name,
         TransactionsDB.columnDescription: description,
         TransactionsDB.columnAmount: amount,
-        TransactionsDB.columnDate: selectedDate.toIso8601String(),
+        TransactionsDB.columnDate: DateFormat('yyyy-MM-dd').format(selectedDate),
         TransactionsDB.columnTime: selectedTime.format(context),  // You might want to store this differently
         TransactionsDB.columnAccountId: selectedAccoutId,
         TransactionsDB.columnCategories: jsonEncode(selectedCategoriesList),  // Storing categories as a JSON string
       };
 
-      // Insert the transaction into the database
-      final id = await TransactionsDB().insertTransaction(row);
-
       final transactionsModel = Provider.of<TransactionsModel>(context, listen: false);
+      bool success = false;
 
-      if (id != null && id > 0) {
+      if (isUpdate && existingTransaction != null) {
+        // Update the existing transaction
+        final id = await TransactionsDB().updateTransaction(existingTransaction['_id'], row);
+        success = id != null && id > 0;
+      } else {
+        // Insert a new transaction
+        final id = await TransactionsDB().insertTransaction(row);
+        success = id != null && id > 0;
+      }
+
+      if (success) {
         await showModernSnackBar(
           context: context,
-          message: "Transaction added successfully!",
+          message: isUpdate ? "Transaction updated successfully!" : "Transaction added successfully!",
           backgroundColor: Colors.green,
         );
         transactionsModel.fetchTransactions();
@@ -217,7 +291,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
       } else {
         await showModernSnackBar(
           context: context,
-          message: "Transaction was not added",
+          message: isUpdate ? "Transaction was not updated" : "Transaction was not added",
           backgroundColor: Colors.redAccent,
         );
         setState(() {
@@ -308,7 +382,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
             Navigator.pop(context);
           },
         ),
-        title: Text("Add Transaction", style: TextStyle(color: Colors.white)),
+        title: Text(
+            updateMode ? "Update Transaction" : "Add Transaction",
+            style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.blueGrey[900],
       ),
       body: GestureDetector(
@@ -644,7 +720,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                       ),
                       SizedBox(height: 20),
                       ExpnZButton(
-                        label: "Add",
+                        label: updateMode ? "Update" : "Add",
                         onPressed: _addUpdateTransaction,
                         primaryColor: Colors.blueAccent,  // Optional
                         textColor: Colors.white,  // Optional

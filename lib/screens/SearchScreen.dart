@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/AccountsModel.dart';
 import '../models/TransactionsModel.dart';
 import '../widgets/AppWidgets/SearchTransactionCard.dart';
+import 'AddTransaction.dart';
 
 class SearchScreen extends StatefulWidget {
   @override
@@ -126,7 +127,25 @@ class _SearchScreenState extends State<SearchScreen> {
                                   transaction['_id'], _searchController.text.toLowerCase());
                               Provider.of<TransactionsModel>(
                                   context, listen: false).fetchTransactions();
-                            }
+                            },
+                            onUpdate: () async {
+                              print("Navigating to AddTransactionScreen...");
+                              final result = await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => AddTransactionScreen(
+                                    transaction: transaction,
+                                  ),
+                                ),
+                              );
+                              print("Returned from AddTransactionScreen with result: $result");
+
+                              if (result != null && result == true) {
+                                print("Refreshing Transactions...");
+                                await Provider.of<TransactionsModel>(context, listen: false).fetchTransactions();
+                                Provider.of<TransactionsModel>(context, listen: false).filterTransactions(_searchController.text.toLowerCase());
+                              }
+                            },
                           );
                         }
                       },

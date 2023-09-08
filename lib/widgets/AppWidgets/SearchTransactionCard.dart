@@ -6,8 +6,9 @@ class TransactionCard extends StatelessWidget {
   final Map<String, dynamic> transaction;
   final String accountName;
   final Function onDelete;
+  final Function onUpdate;
 
-  TransactionCard({required this.transaction, required this.accountName, required this.onDelete});
+  TransactionCard({required this.transaction, required this.accountName, required this.onDelete, required this.onUpdate});
 
   IconData getCategoryIcon(int iconCode) {
     return IconData(
@@ -58,6 +59,7 @@ class TransactionCard extends StatelessWidget {
 
     return GestureDetector(
       onLongPress: () => showDeleteDialog(context),
+      onTap: () => onUpdate(),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
         child: Container(
