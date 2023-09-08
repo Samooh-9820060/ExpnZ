@@ -5,12 +5,14 @@ class AccountCard extends StatelessWidget {
   final String currency;
   final String accountName;
   final bool isSelected;
+  final int accountId;
 
   AccountCard({
     required this.icon,
     required this.currency,
     required this.accountName,
     this.isSelected = false,
+    required this.accountId,
   });
 
   @override

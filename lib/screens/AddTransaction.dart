@@ -1,6 +1,11 @@
+import 'dart:convert';
+
+import 'package:expnz/models/AccountsModel.dart';
 import 'package:expnz/widgets/SimpleWidgets/ExpnZTextField.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../database/AccountsDB.dart';
 import '../widgets/AppWidgets/CategoryChip.dart';
 import '../widgets/AppWidgets/SelectAccountCard.dart';
 import '../widgets/SimpleWidgets/ExpnZButton.dart';
@@ -246,31 +251,43 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                         SizedBox(height: 10),
                         Container(
                           height: 150, // set the height
-                          child: ListView.builder(
-                            padding: EdgeInsets.zero,
-                            scrollDirection: Axis.horizontal,
-                            itemCount: 3, // Change this with the number of account cards you have
-                            itemBuilder: (context, index) {
-                              final accounts = <Map<String, dynamic>>[
-                                {'icon': Icons.account_balance_wallet, 'currency': 'USD', 'accountName': 'Savings'},
-                                {'icon': Icons.money, 'currency': 'EUR', 'accountName': 'Checking'},
-                                {'icon': Icons.add, 'currency': '', 'accountName': 'Create New'},
-                              ];
-                              final account = accounts[index];
-                              return GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    selectedAccoutIndex = index;
-                                  });
-                                },
-                                child: AccountCard(
-                                  icon: account['icon'],
-                                  currency: account['currency'],
-                                  accountName: account['accountName'],
-                                  isSelected: index == selectedAccoutIndex,
-                                ),
-                              );
-                            },
+                          child: Consumer<AccountsModel>(
+                            builder: (context, accountsModel, child) {
+                              if (accountsModel.accounts.isEmpty) {
+                                return Center(
+                                  child: Text('No accounts available.'),
+                                );
+                              } else {
+                                return ListView.builder(
+                                  padding: EdgeInsets.zero,
+                                  scrollDirection: Axis.horizontal,
+                                  itemCount: accountsModel.accounts.length,
+                                  itemBuilder: (context, index) {
+                                    final account = accountsModel.accounts[index];
+                                    Map<String, dynamic> currencyMap = jsonDecode(account[AccountsDB.accountCurrency]);
+                                    String currencyCode = currencyMap['code'] as String;
+
+                                    return GestureDetector(
+                                      onTap: () {
+                                        setState(() {
+                                          selectedAccoutIndex = index;
+                                        });
+                                      },
+                                      child: AccountCard(
+                                        accountId: account[AccountsDB.accountId],
+                                        icon: IconData(
+                                          int.tryParse(account[AccountsDB.accountIcon]) ?? Icons.error.codePoint,
+                                          fontFamily: 'MaterialIcons',
+                                        ),
+                                        currency: currencyCode,
+                                        accountName: account[AccountsDB.accountName],
+                                        isSelected: index == selectedAccoutIndex,
+                                      ),
+                                    );
+                                  },
+                                );
+                              }
+                            }, // This is where the missing '}' should be placed.
                           ),
                         ),
                       ],
@@ -445,31 +462,43 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                         ),
                         SizedBox(height: 10),
                         Container(
-                          height: 150,
-                          child: ListView.builder(
-                            padding: EdgeInsets.zero,
-                            scrollDirection: Axis.horizontal,
-                            itemCount: 3,
-                            itemBuilder: (context, index) {
-                              final accounts = <Map<String, dynamic>>[
-                                {'icon': Icons.account_balance_wallet, 'currency': 'USD', 'accountName': 'Savings'},
-                                {'icon': Icons.money, 'currency': 'EUR', 'accountName': 'Checking'},
-                                {'icon': Icons.add, 'currency': '', 'accountName': 'Create New'},
-                              ];
-                              final account = accounts[index];
-                              return GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    selectedFromAccountIndex = index;
-                                  });
-                                },
-                                child: AccountCard(
-                                  icon: account['icon'],
-                                  currency: account['currency'],
-                                  accountName: account['accountName'],
-                                  isSelected: index == selectedFromAccountIndex,
-                                ),
-                              );
+                          height: 150, // set the height
+                          child: Consumer<AccountsModel>(
+                            builder: (context, accountsModel, child) {
+                              if (accountsModel.accounts.isEmpty) {
+                                return Center(
+                                  child: Text('No accounts available.'),
+                                );
+                              } else {
+                                return ListView.builder(
+                                  padding: EdgeInsets.zero,
+                                  scrollDirection: Axis.horizontal,
+                                  itemCount: accountsModel.accounts.length,
+                                  itemBuilder: (context, index) {
+                                    final account = accountsModel.accounts[index];
+                                    Map<String, dynamic> currencyMap = jsonDecode(account[AccountsDB.accountCurrency]);
+                                    String currencyCode = currencyMap['code'] as String;
+
+                                    return GestureDetector(
+                                      onTap: () {
+                                        setState(() {
+                                          selectedFromAccountIndex = index;
+                                        });
+                                      },
+                                      child: AccountCard(
+                                        accountId: account[AccountsDB.accountId],
+                                        icon: IconData(
+                                          int.tryParse(account[AccountsDB.accountIcon]) ?? Icons.error.codePoint,
+                                          fontFamily: 'MaterialIcons',
+                                        ),
+                                        currency: currencyCode,
+                                        accountName: account[AccountsDB.accountName],
+                                        isSelected: index == selectedFromAccountIndex,
+                                      ),
+                                    );
+                                  },
+                                );
+                              }
                             },
                           ),
                         ),
@@ -489,31 +518,43 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                         ),
                         SizedBox(height: 10),
                         Container(
-                          height: 150,
-                          child: ListView.builder(
-                            padding: EdgeInsets.zero,
-                            scrollDirection: Axis.horizontal,
-                            itemCount: 3,
-                            itemBuilder: (context, index) {
-                              final accounts = <Map<String, dynamic>>[
-                                {'icon': Icons.account_balance_wallet, 'currency': 'USD', 'accountName': 'Savings'},
-                                {'icon': Icons.money, 'currency': 'EUR', 'accountName': 'Checking'},
-                                {'icon': Icons.add, 'currency': '', 'accountName': 'Create New'},
-                              ];
-                              final account = accounts[index];
-                              return GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    selectedToAccountIndex = index;
-                                  });
-                                },
-                                child: AccountCard(
-                                  icon: account['icon'],
-                                  currency: account['currency'],
-                                  accountName: account['accountName'],
-                                  isSelected: index == selectedToAccountIndex,
-                                ),
-                              );
+                          height: 150, // set the height
+                          child: Consumer<AccountsModel>(
+                            builder: (context, accountsModel, child) {
+                              if (accountsModel.accounts.isEmpty) {
+                                return Center(
+                                  child: Text('No accounts available.'),
+                                );
+                              } else {
+                                return ListView.builder(
+                                  padding: EdgeInsets.zero,
+                                  scrollDirection: Axis.horizontal,
+                                  itemCount: accountsModel.accounts.length,
+                                  itemBuilder: (context, index) {
+                                    final account = accountsModel.accounts[index];
+                                    Map<String, dynamic> currencyMap = jsonDecode(account[AccountsDB.accountCurrency]);
+                                    String currencyCode = currencyMap['code'] as String;
+
+                                    return GestureDetector(
+                                      onTap: () {
+                                        setState(() {
+                                          selectedToAccountIndex = index;
+                                        });
+                                      },
+                                      child: AccountCard(
+                                        accountId: account[AccountsDB.accountId],
+                                        icon: IconData(
+                                          int.tryParse(account[AccountsDB.accountIcon]) ?? Icons.error.codePoint,
+                                          fontFamily: 'MaterialIcons',
+                                        ),
+                                        currency: currencyCode,
+                                        accountName: account[AccountsDB.accountName],
+                                        isSelected: index == selectedToAccountIndex,
+                                      ),
+                                    );
+                                  },
+                                );
+                              }
                             },
                           ),
                         ),
