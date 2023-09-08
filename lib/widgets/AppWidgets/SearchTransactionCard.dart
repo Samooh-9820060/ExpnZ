@@ -5,13 +5,37 @@ import 'package:flutter/material.dart';
 class TransactionCard extends StatelessWidget {
   final Map<String, dynamic> transaction;
   final String accountName;
+  final Function onDelete;
 
-  TransactionCard({required this.transaction, required this.accountName});
+  TransactionCard({required this.transaction, required this.accountName, required this.onDelete});
 
   IconData getCategoryIcon(int iconCode) {
     return IconData(
       iconCode,
       fontFamily: 'MaterialIcons',
+    );
+  }
+
+  void showDeleteDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Delete Transaction'),
+        content: Text('Are you sure you want to delete this transaction?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              onDelete();  // Call the delete function
+              Navigator.pop(context);
+            },
+            child: Text('Delete'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -32,78 +56,81 @@ class TransactionCard extends StatelessWidget {
     final Color? amountColor = type == 'income' ? Colors.greenAccent[400] : (type == 'expense' ? Colors.redAccent[100] : Colors.white);
 
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(18.0),
-          color: Colors.blueGrey[700],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 16,
-                      backgroundColor: Colors.blueGrey[800],
-                      child: Icon(
-                        getCategoryIcon(categoryIcon),
-                        color: Colors.white,
-                        size: 16,
-                      ),
-                    ),
-                    SizedBox(width: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          name,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
+    return GestureDetector(
+      onLongPress: () => showDeleteDialog(context),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18.0),
+            color: Colors.blueGrey[700],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 16,
+                        backgroundColor: Colors.blueGrey[800],
+                        child: Icon(
+                          getCategoryIcon(categoryIcon),
+                          color: Colors.white,
+                          size: 16,
                         ),
-                        SizedBox(height: 2),
-                        Text(
-                          "$account • $date",
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.7),
-                            fontSize: 10,
+                      ),
+                      SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            name,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
+                          SizedBox(height: 2),
+                          Text(
+                            "$account • $date",
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.7),
+                              fontSize: 10,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        time,
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.7),
+                          fontSize: 10,
                         ),
-                      ],
-                    ),
-                  ],
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      time,
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.7),
-                        fontSize: 10,
                       ),
-                    ),
-                    SizedBox(height: 6),
-                    Text(
-                      '\$$amount',
-                      style: TextStyle(
-                        color: amountColor,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                      SizedBox(height: 6),
+                      Text(
+                        '\$$amount',
+                        style: TextStyle(
+                          color: amountColor,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),

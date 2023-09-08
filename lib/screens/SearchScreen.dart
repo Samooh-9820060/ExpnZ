@@ -12,73 +12,6 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _searchController = TextEditingController();
-  final List<Map<String, dynamic>> transactions = [
-    {
-      'categories': ['Groceries', 'Entertainment', 'Others'],
-      'name': 'test10',
-      'account': 'Savings',
-      'date': '03 Sun, 06:31 PM',
-      'amount': '200.00',
-    },
-    {
-      'categories': ['Groceries', 'Entertainment', 'Others'],
-      'name': 'test9',
-      'account': 'Savings',
-      'date': '03 Sun, 06:31 PM',
-      'amount': '200.00',
-    },
-    {
-      'categories': ['Groceries', 'Entertainment', 'Others'],
-      'name': 'test8',
-      'account': 'Savings',
-      'date': '03 Sun, 06:31 PM',
-      'amount': '200.00',
-    },
-    {
-      'categories': ['Groceries', 'Entertainment', 'Others'],
-      'name': 'test6',
-      'account': 'Savings',
-      'date': '03 Sun, 06:31 PM',
-      'amount': '200.00',
-    },
-    {
-      'categories': ['Groceries', 'Entertainment', 'Others'],
-      'name': 'test5',
-      'account': 'Savings',
-      'date': '03 Sun, 06:31 PM',
-      'amount': '200.00',
-    },
-    {
-      'categories': ['Groceries', 'Entertainment', 'Others'],
-      'name': 'test4',
-      'account': 'Savings',
-      'date': '03 Sun, 06:31 PM',
-      'amount': '200.00',
-    },
-    {
-      'categories': ['Groceries', 'Entertainment', 'Others'],
-      'name': 'test3',
-      'account': 'Savings',
-      'date': '03 Sun, 06:31 PM',
-      'amount': '200.00',
-    },
-    {
-      'categories': ['Groceries', 'Entertainment', 'Others'],
-      'name': 'test2',
-      'account': 'Savings',
-      'date': '03 Sun, 06:31 PM',
-      'amount': '200.00',
-    },
-    {
-      'categories': ['Groceries', 'Entertainment', 'Others'],
-      'name': 'test1',
-      'account': 'Savings',
-      'date': '03 Sun, 06:31 PM',
-      'amount': '200.00',
-    },
-    // Add more transactions here
-  ];
-
   List<Map<String, dynamic>> filteredTransactions = [];
 
   @override
@@ -187,6 +120,13 @@ class _SearchScreenState extends State<SearchScreen> {
                           return TransactionCard(
                             transaction: transaction,
                             accountName: snapshot.data ?? 'Unknown',
+                            onDelete: () {
+                              Provider.of<TransactionsModel>(
+                                  context, listen: false).deleteTransactions(
+                                  transaction['_id'], _searchController.text.toLowerCase());
+                              Provider.of<TransactionsModel>(
+                                  context, listen: false).fetchTransactions();
+                            }
                           );
                         }
                       },

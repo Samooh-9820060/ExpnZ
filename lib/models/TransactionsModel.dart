@@ -12,9 +12,12 @@ class TransactionsModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> deleteTransactions(int transactionId) async {
+  Future<void> deleteTransactions(int transactionId, String? searchText) async {
     await db.deleteTransaction(transactionId);
     await fetchTransactions();  // Refresh the categories
+    if (searchText != null) {
+      filterTransactions(searchText!);
+    }
     notifyListeners();  // Notify the UI to rebuild
   }
 
