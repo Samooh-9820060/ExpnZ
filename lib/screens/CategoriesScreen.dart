@@ -17,7 +17,6 @@ class _CategoriesScreenState extends State<CategoriesScreen> with SingleTickerPr
   @override
   void initState() {
     super.initState();
-
     Provider.of<CategoriesModel>(context, listen: false).fetchCategories();
     _controller = AnimationController(
       duration: const Duration(milliseconds: 500),
