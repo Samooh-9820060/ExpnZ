@@ -28,7 +28,6 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
   IconData selectedIcon = Icons.star;  // Default icon
   bool isModifyMode = false;
   bool isProcessing = false;
-  int selectedAccountId = 0;
 
   @override
   void initState() {
@@ -39,6 +38,7 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
 
     if (widget.accountId != null){
       _loadExistingAccount(widget.accountId!);
+      isModifyMode = true;
     } else {
       selectedIcon = Icons.star;
     }
@@ -139,13 +139,13 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
 
     final int? id;
     if (isModifyMode) {
-      id = await AccountsDB().updateAccount(selectedAccountId, row);
+      id = await AccountsDB().updateAccount(widget.accountId!, row);
     } else {
       id = await AccountsDB().insertAccount(row);
     }
 
     final accountsModel = Provider.of<AccountsModel>(context, listen: false);
-    if (id != null && id > 0) {
+    if (id != null && id > -1) {
       await showModernSnackBar(
         context: context,
         message: isModifyMode ? "Account updated successfully!" : "Account added successfully!",
@@ -204,7 +204,11 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
             Navigator.pop(context);
           },
         ),
-        title: Text("Add Account", style: TextStyle(color: Colors.white)),
+        title:
+        Text(
+            isModifyMode ? "Modify Account" : "Add Account",
+            style: TextStyle(color: Colors.white)
+        ),
         backgroundColor: Colors.blueGrey[900],
       ),
       body: SingleChildScrollView(

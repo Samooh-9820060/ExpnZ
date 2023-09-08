@@ -32,12 +32,14 @@ class AccountsDB {
   //method to update account by its id
   Future<int> updateAccount(int id, Map<String, dynamic> row) async {
     final db = await DatabaseHelper.instance.database;
-    return await db!.update(
+    int updatedRows = await db!.update(
       tableName,
       row,
       where: '$accountId = ?',
       whereArgs: [id],
     );
+    print("Updated $updatedRows rows.");
+    return updatedRows;
   }
 
   // method to get an account by its id
