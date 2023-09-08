@@ -54,7 +54,6 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
 
   void _loadExistingCategory(int id) async {
     final category = await CategoriesDB().getSelectedCategory(id);
-    print("Loaded category: $category");  // Debug line
 
     if (category != null) {
       setState(() {
@@ -227,7 +226,8 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
       );
       setState(() {
         isProcessing = false;
-      });    }
+      });
+    }
   }
 
   @override

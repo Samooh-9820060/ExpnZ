@@ -12,7 +12,6 @@ class CategoryCard extends StatefulWidget {
   final IconData iconData;
   final Animation<double> animation;
   final Color primaryColor;
-  final Function onDelete;
 
   CategoryCard({
     this.key,
@@ -23,7 +22,6 @@ class CategoryCard extends StatefulWidget {
     required this.iconData,
     required this.animation,
     required this.primaryColor,
-    required this.onDelete,
   }) : super(key: key);
 
   @override
@@ -87,7 +85,8 @@ class _CategoryCardState extends State<CategoryCard> with TickerProviderStateMix
                 ),
               ).then((value) {
                 setState(() {});
-              });          },
+              });
+              },
             child: Container(
               margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
               padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -132,14 +131,6 @@ class _CategoryCardState extends State<CategoryCard> with TickerProviderStateMix
                       SizedBox(width: 16),
                       infoColumn("Expense", _animatedNumberString(_numberAnimation.value, widget.expense), Colors.red),
                     ],
-                  ),
-                  IconButton(
-                    onPressed: () {
-                      _deleteController.forward().then((_) {
-                        widget.onDelete(); // This should remove the category and rebuild the list
-                      });
-                    },
-                    icon: Icon(Icons.delete, color: Colors.white),
                   ),
                 ],
               ),

@@ -1,11 +1,22 @@
+import 'dart:convert';
+
 import 'package:currency_picker/currency_picker.dart';
+import 'package:expnz/models/AccountsModel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_iconpicker/flutter_iconpicker.dart';
-
+import 'package:provider/provider.dart';
+import '../database/AccountsDB.dart';
 import '../widgets/SimpleWidgets/ExpnZButton.dart';
 import '../widgets/SimpleWidgets/ExpnZTextField.dart';
+import '../widgets/SimpleWidgets/ModernSnackBar.dart';
 
 class AddAccountScreen extends StatefulWidget {
+  final int? accountId;
+
+  AddAccountScreen({
+    this.accountId,
+  });
+
   @override
   _AddAccountScreenState createState() => _AddAccountScreenState();
 }
@@ -15,6 +26,9 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
   late TextEditingController _cardNumberController;
   Currency? selectedCurrency;  // Default currency
   IconData selectedIcon = Icons.star;  // Default icon
+  bool isModifyMode = false;
+  bool isProcessing = false;
+  int selectedAccountId = 0;
 
   @override
   void initState() {
@@ -23,7 +37,50 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
     _cardNumberController = TextEditingController();
     //selectedCurrency = Currency(code: 'USD', name: 'United States Dollar', symbol: '\$');
 
+    if (widget.accountId != null){
+      _loadExistingAccount(widget.accountId!);
+    } else {
+      selectedIcon = Icons.star;
+    }
   }
+
+  void _loadExistingAccount(int id) async {
+    final account = await AccountsDB().getSelectedAccount(id);
+
+    if (account != null) {
+      setState(() {
+        isModifyMode = true;
+        _accountNameController.text = account[AccountsDB.accountName] as String;
+        _cardNumberController.text = account[AccountsDB.accountCardNumber] as String;
+        String currencyJson = account[AccountsDB.accountCurrency] as String;
+        Map<String, dynamic> currencyMap = jsonDecode(currencyJson);
+        selectedCurrency = Currency(
+          code: currencyMap['code'] as String,
+          name: currencyMap['name'] as String,
+          symbol: currencyMap['symbol'] as String,
+          flag: currencyMap['flag'] as String,
+          decimalDigits: currencyMap['decimalDigits'] as int,
+          decimalSeparator: currencyMap['decimalSeparator'] as String,
+          namePlural: currencyMap['namePlural'] as String,
+          number: currencyMap['number'] as int,
+          spaceBetweenAmountAndSymbol: currencyMap['spaceBetweenAmountAndSymbol'] as bool,
+          symbolOnLeft: currencyMap['symbolOnLeft'] as bool,
+          thousandsSeparator: currencyMap['thousandsSeparator'] as String,
+        );
+        selectedIcon = IconData(
+            account[AccountsDB.accountIcon] is String ?
+            int.parse(account[AccountsDB.accountIcon] as String) :
+            account[AccountsDB.accountIcon] as int,
+            fontFamily: 'MaterialIcons'
+        );
+      });
+    } else {
+      setState(() {
+        selectedIcon = Icons.star;
+      });
+    }
+  }
+
 
   void _pickCurrency() {
     showCurrencyPicker(
@@ -40,6 +97,77 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
       },
     );
   }
+
+  void _addOrUpdateAccount() async {
+    if (isProcessing) return;
+    setState(() {
+      isProcessing = true;
+    });
+
+    if (_accountNameController.text.trim().isEmpty ||
+        (selectedCurrency == null)) {
+      await showModernSnackBar(
+        context: context,
+        message: "Account name and currency needs to be selected!",
+        backgroundColor: Colors.red,
+      );
+      setState(() {
+        isProcessing = false;
+      });
+      return;
+    }
+
+    Map<String, dynamic> row = {
+      AccountsDB.accountName: _accountNameController.text.trim(),
+      AccountsDB.accountCurrency: jsonEncode({
+        'code': selectedCurrency!.code,
+        'name': selectedCurrency!.name,
+        'symbol': selectedCurrency!.symbol,
+        'flag': selectedCurrency!.flag,
+        'decimalDigits': selectedCurrency!.decimalDigits,
+        'decimalSeparator': selectedCurrency!.decimalSeparator,
+        'namePlural': selectedCurrency!.namePlural,
+        'number': selectedCurrency!.number,
+        'spaceBetweenAmountAndSymbol': selectedCurrency!.spaceBetweenAmountAndSymbol,
+        'symbolOnLeft': selectedCurrency!.symbolOnLeft,
+        'thousandsSeparator': selectedCurrency!.thousandsSeparator,
+      }),
+      AccountsDB.accountIcon: selectedIcon.codePoint,
+      AccountsDB.accountCardNumber: _cardNumberController.text.trim(),
+    };
+
+
+    final int? id;
+    if (isModifyMode) {
+      id = await AccountsDB().updateAccount(selectedAccountId, row);
+    } else {
+      id = await AccountsDB().insertAccount(row);
+    }
+
+    final accountsModel = Provider.of<AccountsModel>(context, listen: false);
+    if (id != null && id > 0) {
+      await showModernSnackBar(
+        context: context,
+        message: isModifyMode ? "Account updated successfully!" : "Account added successfully!",
+        backgroundColor: Colors.green,
+      );
+      accountsModel.fetchAccounts();
+      setState(() {
+        isProcessing = false;
+      });
+      Navigator.pop(context, true);
+    } else {
+      await showModernSnackBar(
+        context: context,
+        message: isModifyMode ? "Account was not updated" : "Account was not added",
+        backgroundColor: Colors.redAccent,
+      );
+      setState(() {
+        isProcessing = false;
+      });
+    }
+  }
+
 
 
   @override
@@ -164,9 +292,10 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
             CustomTextField(label: "Enter Card Number (Last 4 Digits, Optional)", controller: _cardNumberController, isNumber: true, maxLength: 4),
             SizedBox(height: 32),
             // Redesigned Add Button
-            ExpnZButton(label: "Add", onPressed: (){
-
-            })
+            ExpnZButton(
+              label: isProcessing ? "Processing..." : (isModifyMode ? "Modify" : "Add"),
+              onPressed: isProcessing ? null : (_addOrUpdateAccount),
+            ),
           ],
         ),
       ),

@@ -1,22 +1,27 @@
+import 'package:expnz/screens/AddAccount.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 class ModernAccountCard extends StatefulWidget {
+  final int accountId;
   final String accountName;
   final String totalBalance;
   final String income;
   final String expense;
   final String? cardNumber;
   final String currency;
+  final IconData iconData;
 
   ModernAccountCard({
+    required this.accountId,
     required this.accountName,
     required this.totalBalance,
     required this.income,
     required this.expense,
     this.cardNumber,
     required this.currency,
+    required this.iconData,
   });
 
   @override
@@ -55,88 +60,107 @@ class _ModernAccountCardState extends State<ModernAccountCard> with SingleTicker
     return AnimatedBuilder(
       animation: _numberController,
       builder: (context, child) {
-        return Container(
-          width: double.infinity,
-          margin: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-          padding: EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Colors.black, Colors.grey[850]!],
-            ),
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.5),
-                offset: Offset(0, 4),
-                blurRadius: 10.0,
+        return InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => AddAccountScreen(accountId: this.widget.accountId),
               ),
-            ],
-          ),
-          child: Stack(
-            children: [
-              // Currency Symbol at the top-left corner
-              Positioned(
-                top: 10,
-                child: Text(
-                  widget.currency,
-                  style: GoogleFonts.roboto(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+            ).then((value) {
+              setState(() {});
+            });
+          },
+          child: Container(
+            width: double.infinity,
+            margin: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            padding: EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Colors.black, Colors.grey[850]!],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.5),
+                  offset: Offset(0, 4),
+                  blurRadius: 10.0,
+                ),
+              ],
+            ),
+            child: Stack(
+              children: [
+                // Add this Positioned widget to display the icon
+                Positioned(
+                  right: 0,
+                  child: Container(
+                    padding: EdgeInsets.all(6),
+                    child: Icon(
+                      widget.iconData, // replace with the icon you want to use
+                      color: Colors.white,
+                      size: 32,
+                    ),
                   ),
                 ),
-              ),
-              // Custom design element in the top-right corner
-              Positioned(
-                top: 10,
-                right: 10,
-                child: CustomPaint(
-                  size: Size(40, 40),
-                  painter: MyPainter(),
+                // Currency Symbol at the top-left corner
+                Positioned(
+                  top: 10,
+                  child: Text(
+                    widget.currency,
+                    style: GoogleFonts.roboto(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(0, 50, 0, 0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Optional Card Number or Placeholder
-                    if (widget.cardNumber != null)
+                // Custom design element in the top-right corner
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(0, 50, 0, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Optional Card Number or Placeholder
+                      if (widget.cardNumber != null && widget.cardNumber!.isNotEmpty)
+                        Padding(
+                          padding: EdgeInsets.only(top: 15),
+                          child: Text(
+                            '**** **** **** '+widget.cardNumber!,
+                            style: GoogleFonts.robotoMono(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        )
+                      else
+                        SizedBox(height: 24), // Placeholder
+                      SizedBox(height: 24),
+                      // Account name
                       Text(
-                        widget.cardNumber!,
-                        style: GoogleFonts.robotoMono(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                        widget.accountName,
+                        style: GoogleFonts.roboto(
+                          fontSize: 16,
+                          color: Colors.white70,
                         ),
-                      )
-                    else
-                      SizedBox(height: 24), // Placeholder
-                    SizedBox(height: 24),
-                    // Account name
-                    Text(
-                      widget.accountName,
-                      style: GoogleFonts.roboto(
-                        fontSize: 16,
-                        color: Colors.white70,
                       ),
-                    ),
-                    SizedBox(height: 16),
-                    // Balance, Income, and Expense
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        infoColumn("Balance", _animatedNumberString(_numberAnimation.value, widget.totalBalance), Colors.white),
-                        infoColumn("Income", _animatedNumberString(_numberAnimation.value, widget.income), Colors.green),
-                        infoColumn("Expense", _animatedNumberString(_numberAnimation.value, widget.expense), Colors.red),
-                      ],
-                    ),
-                  ],
+                      SizedBox(height: 16),
+                      // Balance, Income, and Expense
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          infoColumn("Balance", _animatedNumberString(_numberAnimation.value, widget.totalBalance), Colors.white),
+                          infoColumn("Income", _animatedNumberString(_numberAnimation.value, widget.income), Colors.green),
+                          infoColumn("Expense", _animatedNumberString(_numberAnimation.value, widget.expense), Colors.red),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },

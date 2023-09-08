@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import './screens/MainPage.dart';
+import 'models/AccountsModel.dart';
 import 'models/CategoriesModel.dart';
 
 void main() {
   runApp(
-    ChangeNotifierProvider(
-      create: (context) => CategoriesModel(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => CategoriesModel()),
+        ChangeNotifierProvider(create: (context) => AccountsModel()), // Add this line
+      ],
       child: MyApp(),
     ),
-  );}
+  );
+}
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});

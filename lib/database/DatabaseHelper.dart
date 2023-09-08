@@ -39,7 +39,7 @@ class DatabaseHelper {
             ${AccountsDB.accountName} TEXT NOT NULL,
             ${AccountsDB.accountCurrency} TEXT NOT NULL,
             ${AccountsDB.accountIcon} TEXT NOT NULL,
-            ${AccountsDB.accountCardNumber} INTEGER NULL
+            ${AccountsDB.accountCardNumber} TEXT NULL
           )
     ''');
   }

@@ -103,28 +103,57 @@ class _CategoriesScreenState extends State<CategoriesScreen> with SingleTickerPr
     required IconData iconData,
     required Color primaryColor
   }) {
-    return AnimatedBuilder(
-      animation: _animation,
-      builder: (context, child) {
-        return Opacity(
-          opacity: _animation.value,
-          child: Transform.scale(
-            scale: _animation.value,
-            child: CategoryCard(
-              key: key,  // Pass the key here
-              categoryId: categoryId,
-              categoryName: categoryName,
-              income: income,
-              expense: expense,
-              iconData: iconData,
-              animation: _animation,
-              primaryColor: primaryColor,
-              onDelete: () async {
-                await Provider.of<CategoriesModel>(context, listen: false)
-                    .deleteCategory(categoryId);
+    return GestureDetector(
+      onLongPress: () {
+        _showDeleteConfirmationDialog(context, categoryId);
+      },
+      child: AnimatedBuilder(
+        animation: _animation,
+        builder: (context, child) {
+          return Opacity(
+            opacity: _animation.value,
+            child: Transform.scale(
+              scale: _animation.value,
+              child: CategoryCard(
+                key: key,  // Pass the key here
+                categoryId: categoryId,
+                categoryName: categoryName,
+                income: income,
+                expense: expense,
+                iconData: iconData,
+                animation: _animation,
+                primaryColor: primaryColor,
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showDeleteConfirmationDialog(BuildContext context, int categoryId) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Delete Category"),
+          content: Text("Are you sure you want to delete this category?"),
+          actions: [
+            TextButton(
+              child: Text("Cancel"),
+              onPressed: () {
+                Navigator.of(context).pop();
               },
             ),
-          ),
+            TextButton(
+              child: Text("Delete"),
+              onPressed: () async {
+                await Provider.of<CategoriesModel>(context, listen: false)
+                    .deleteCategory(categoryId);
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
         );
       },
     );

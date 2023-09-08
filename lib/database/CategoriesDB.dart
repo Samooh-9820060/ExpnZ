@@ -40,7 +40,7 @@ class CategoriesDB {
   }
 
 
-  // method to delete a category by its name
+  // method to delete a category by its id
   Future<int> deleteCategory(int id) async {
     final db = await DatabaseHelper.instance.database;
     return await db!.delete(
