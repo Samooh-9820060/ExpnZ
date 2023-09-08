@@ -534,6 +534,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                             );
                                           } else {
                                             List<Map<String, dynamic>> sortedData = List.from(categoriesModel.categories);
+                                            sortedData = sortedData.where((category) {
+                                              return category[CategoriesDB.columnName]
+                                                  .toLowerCase()
+                                                  .contains(_categorySearchController.text.toLowerCase());
+                                            }).toList();
                                             sortedData.sort((a, b) => a[CategoriesDB.columnName].compareTo(b[CategoriesDB.columnName]));
 
                                             double itemHeight = 55.0; // Approximate height of one ListTile
@@ -901,6 +906,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                             );
                                           } else {
                                             List<Map<String, dynamic>> sortedData = List.from(categoriesModel.categories);
+                                            sortedData = sortedData.where((category) {
+                                              return category[CategoriesDB.columnName]
+                                                  .toLowerCase()
+                                                  .contains(_categorySearchController.text.toLowerCase());
+                                            }).toList();
                                             sortedData.sort((a, b) => a[CategoriesDB.columnName].compareTo(b[CategoriesDB.columnName]));
 
                                             double itemHeight = 55.0; // Approximate height of one ListTile
