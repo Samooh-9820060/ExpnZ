@@ -26,6 +26,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
   int selectedFromAccountIndex = -1;
   int selectedToAccountIndex = -1;
   int selectedAccoutIndex = -1;
+  int selectedFromAccountId = -1;
+  int selectedToAccountId = -1;
+  int selectedAccoutId = -1;
 
   late TextEditingController _nameController;
   late TextEditingController _descriptionController;
@@ -123,7 +126,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
         TransactionsDB.columnAmount: amount,
         TransactionsDB.columnDate: selectedDate.toIso8601String(),
         TransactionsDB.columnTime: selectedTime.format(context),
-        TransactionsDB.columnAccountId: selectedFromAccountIndex,
+        TransactionsDB.columnAccountId: selectedFromAccountId,
         TransactionsDB.columnCategories: jsonEncode(selectedCategoriesList),
       };
 
@@ -135,7 +138,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
         TransactionsDB.columnAmount: amount,
         TransactionsDB.columnDate: selectedDate.toIso8601String(),
         TransactionsDB.columnTime: selectedTime.format(context),
-        TransactionsDB.columnAccountId: selectedToAccountIndex,
+        TransactionsDB.columnAccountId: selectedToAccountId,
         TransactionsDB.columnCategories: jsonEncode(selectedCategoriesList),
       };
 
@@ -191,7 +194,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
         TransactionsDB.columnAmount: amount,
         TransactionsDB.columnDate: selectedDate.toIso8601String(),
         TransactionsDB.columnTime: selectedTime.format(context),  // You might want to store this differently
-        TransactionsDB.columnAccountId: selectedAccoutIndex,  // Assuming this is the account ID
+        TransactionsDB.columnAccountId: selectedAccoutId,
         TransactionsDB.columnCategories: jsonEncode(selectedCategoriesList),  // Storing categories as a JSON string
       };
 
@@ -450,6 +453,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                         onTap: () {
                                           setState(() {
                                             selectedAccoutIndex = index;
+                                            selectedAccoutId = account[AccountsDB.accountId];
                                           });
                                         },
                                         child: AccountCard(
@@ -766,6 +770,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                         onTap: () {
                                           setState(() {
                                             selectedFromAccountIndex = index;
+                                            selectedFromAccountId = account[AccountsDB.accountId];
                                           });
                                         },
                                         child: AccountCard(
@@ -822,6 +827,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                         onTap: () {
                                           setState(() {
                                             selectedToAccountIndex = index;
+                                            selectedToAccountId = account[AccountsDB.accountId];
                                           });
                                         },
                                         child: AccountCard(

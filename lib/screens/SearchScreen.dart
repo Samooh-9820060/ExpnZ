@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../models/AccountsModel.dart';
+import '../models/TransactionsModel.dart';
 import '../widgets/AppWidgets/SearchTransactionCard.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -82,25 +85,13 @@ class _SearchScreenState extends State<SearchScreen> {
   void initState() {
     super.initState();
     _searchController.addListener(_filterTransactions);
+    Provider.of<TransactionsModel>(context, listen: false).fetchTransactions();
   }
 
   void _filterTransactions() {
     String searchText = _searchController.text.toLowerCase();
-    if (searchText.isNotEmpty) {
-      List<Map<String, dynamic>> tempTransactions = [];
-      for (var transaction in transactions) {
-        if (transaction.values.any((element) => element.toString().toLowerCase().contains(searchText))) {
-          tempTransactions.add(transaction);
-        }
-      }
-      setState(() {
-        filteredTransactions = tempTransactions;
-      });
-    } else {
-      setState(() {
-        filteredTransactions = [];
-      });
-    }
+    Provider.of<TransactionsModel>(context, listen: false)
+        .filterTransactions(searchText);
   }
 
   @override
@@ -126,7 +117,7 @@ class _SearchScreenState extends State<SearchScreen> {
           children: [
             Expanded(
               child: Container(
-                padding: EdgeInsets.symmetric(vertical: 2),  // Reduced padding
+                padding: EdgeInsets.symmetric(vertical: 2), // Reduced padding
                 decoration: BoxDecoration(
                   color: Colors.blueGrey[700],
                   borderRadius: BorderRadius.circular(20),
@@ -139,14 +130,17 @@ class _SearchScreenState extends State<SearchScreen> {
                         decoration: InputDecoration(
                           hintText: 'Search...',
                           contentPadding:
-                          EdgeInsets.symmetric(horizontal: 12, vertical: 8),  // Reduced padding
+                              EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          // Reduced padding
                           border: InputBorder.none,
                         ),
                         style: TextStyle(color: Colors.white),
                       ),
                     ),
                     IconButton(
-                      icon: Icon(Icons.filter_alt, color: Colors.white, size: 20),  // Reduced icon size
+                      icon:
+                          Icon(Icons.filter_alt, color: Colors.white, size: 20),
+                      // Reduced icon size
                       onPressed: () {
                         // Add filter logic here
                       },
@@ -158,60 +152,85 @@ class _SearchScreenState extends State<SearchScreen> {
           ],
         ),
       ),
-      body: Container(
-        color: Colors.blueGrey[900],
-        child: filteredTransactions.isNotEmpty
-            ? SingleChildScrollView(
+      body: Consumer<TransactionsModel>(
+        builder: (context, transactionsModel, child) {
+          var transactionsToShow =
+              transactionsModel.filteredTransactions.isNotEmpty ||
+                      _searchController.text.isNotEmpty
+                  ? transactionsModel.filteredTransactions
+                  : transactionsModel.transactions;
+          return Container(
+            color: Colors.blueGrey[900],
+            child: _searchController.text.isNotEmpty  // <-- Check if text is entered
+                ? (transactionsToShow.isNotEmpty
+                ? SingleChildScrollView(
               child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Text(
-                  'Result',
-                  style: TextStyle(fontSize: 18, color: Colors.white),
-                ),
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Text(
+                      'Result',
+                      style: TextStyle(fontSize: 18, color: Colors.white),
+                    ),
+                  ),
+                  for (var transaction in transactionsToShow)
+                    FutureBuilder<String>(
+                      future: Provider.of<AccountsModel>(context, listen: false).getAccountNameById(transaction['account_id']),
+                      builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return CircularProgressIndicator();
+                        } else if (snapshot.hasError) {
+                          return Text('Error: ${snapshot.error}');
+                        } else {
+                          // display created posts
+                          return TransactionCard(
+                            transaction: transaction,
+                            accountName: snapshot.data ?? 'Unknown',
+                          );
+                        }
+                      },
+                    ),
+                ],
               ),
-              for (var transaction in filteredTransactions)
-                TransactionCard(
-                  transaction: transaction,
-                ),
-          ],
-        ),
             )
-            : _searchController.text.isNotEmpty
-            ? Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.sentiment_dissatisfied,
-                size: 50,
-                color: Colors.white,
+                : Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.sentiment_dissatisfied,
+                    size: 50,
+                    color: Colors.white,
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    'Sorry, nothing found',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ],
               ),
-              Text(
-                'Sorry, nothing found',
-                style: TextStyle(color: Colors.white),
+            ))
+                : Center(  // <-- This will be displayed when the search box is empty
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.sentiment_very_satisfied,
+                    size: 50,
+                    color: Colors.white,
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    'Please enter something to search',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ],
               ),
-            ],
-          ),
-        )
-            : Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.sentiment_very_satisfied,
-                size: 50,
-                color: Colors.white,
-              ),
-              Text(
-                'Please enter something to search',
-                style: TextStyle(color: Colors.white),
-              ),
-            ],
-          ),
-        ),      ),
+            ),
+          );
+        },
+      ),
     );
   }
 }

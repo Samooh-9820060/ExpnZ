@@ -16,5 +16,10 @@ class AccountsModel extends ChangeNotifier {
     await fetchAccounts();  // Refresh the categories
     notifyListeners();  // Notify the UI to rebuild
   }
+
+  Future<String> getAccountNameById(int id) async {
+    final account = await db.getSelectedAccount(id);
+    return account != null ? account[AccountsDB.accountName].toString() : 'Unknown';
+  }
 }
 

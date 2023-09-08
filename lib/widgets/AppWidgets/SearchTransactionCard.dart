@@ -1,83 +1,111 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 
 class TransactionCard extends StatelessWidget {
   final Map<String, dynamic> transaction;
+  final String accountName;
 
-  TransactionCard({required this.transaction});
+  TransactionCard({required this.transaction, required this.accountName});
 
-  IconData getCategoryIcon(String category) {
-    switch (category) {
-      case 'Groceries':
-        return Icons.shopping_cart;
-      case 'Entertainment':
-        return Icons.movie;
-      case 'Others':
-        return Icons.more_horiz;
-      default:
-        return Icons.help_outline;
-    }
+  IconData getCategoryIcon(int iconCode) {
+    return IconData(
+      iconCode,
+      fontFamily: 'MaterialIcons',
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: Colors.blueGrey[800],
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10.0),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
+    final String name = transaction['name'] ?? 'Unknown';
+    final String account = accountName;
+    final String date = transaction['date'] != null
+        ? transaction['date'].split('T')[0]
+        : 'Unknown';
+    final String time = transaction['time'] ?? 'Unknown';
+    final double amount = transaction['amount'] ?? 0.0;
+    final String type = transaction['type'] ?? 'Unknown';
+    final List<dynamic> categories = jsonDecode(transaction['categories'] ?? '[]');
+    final int categoryIcon = categories.isNotEmpty ? categories[0]['icon'] : Icons.help_outline.codePoint;
+
+    // Determine color based on transaction type
+    final Color? amountColor = type == 'income' ? Colors.greenAccent[400] : (type == 'expense' ? Colors.redAccent[100] : Colors.white);
+
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18.0),
+          color: Colors.blueGrey[700],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                CircleAvatar(
-                  radius: 16,
-                  backgroundColor: Colors.blueGrey[700],
-                  child: Icon(
-                    getCategoryIcon(transaction['categories'][0]),
-                    color: Colors.white,
-                    size: 16,
-                  ),
-                ),
-                SizedBox(width: 8),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                Row(
                   children: [
-                    Padding(
-                      padding: EdgeInsets.only(bottom: 5),
-                      child: Text(
-                        transaction['name'],
-                        style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                    CircleAvatar(
+                      radius: 16,
+                      backgroundColor: Colors.blueGrey[800],
+                      child: Icon(
+                        getCategoryIcon(categoryIcon),
+                        color: Colors.white,
+                        size: 16,
                       ),
                     ),
-                    Row(  // Added this Row to contain both account and date
+                    SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          transaction['account'],
-                          style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12),
+                          name,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
+                        SizedBox(height: 2),
                         Text(
-                          ' • ',  // This is the bold dot
-                          style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          transaction['date'],
-                          style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10),
+                          "$account • $date",
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.7),
+                            fontSize: 10,
+                          ),
                         ),
                       ],
                     ),
                   ],
                 ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      time,
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.7),
+                        fontSize: 10,
+                      ),
+                    ),
+                    SizedBox(height: 6),
+                    Text(
+                      '\$$amount',
+                      style: TextStyle(
+                        color: amountColor,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
-            Text(
-              '\$${transaction['amount']}',
-              style: TextStyle(color: Colors.greenAccent, fontSize: 14, fontWeight: FontWeight.bold),
-            ),
-          ],
+          ),
         ),
       ),
     );
