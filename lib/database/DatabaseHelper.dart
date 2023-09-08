@@ -4,6 +4,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'CategoriesDB.dart';
+import 'TransactionsDB.dart';
 
 class DatabaseHelper {
   static final _databaseName = "ExpnzDatabase.db";
@@ -30,6 +31,7 @@ class DatabaseHelper {
   Future _onCreate(Database db, int version) async {
     await _createCategoriesTable(db); // creating the Categories table
     await _createAccountsTable(db); // creating the Accounts table
+    await _createTransactionsTable(db); // creating the transactions table
   }
 
   Future _createAccountsTable(Database db) async {
@@ -54,5 +56,22 @@ class DatabaseHelper {
             ${CategoriesDB.columnColor} INTEGER NOT NULL
           )
     ''');
+  }
+
+  Future _createTransactionsTable(Database db) async {
+    await db.execute('''
+        CREATE TABLE ${TransactionsDB.tableName} (
+          ${TransactionsDB.columnId} INTEGER PRIMARY KEY,
+          ${TransactionsDB.columnType} TEXT NOT NULL,
+          ${TransactionsDB.columnName} TEXT NOT NULL,
+          ${TransactionsDB.columnDescription} TEXT NOT NULL,
+          ${TransactionsDB.columnAmount} REAL NOT NULL,
+          ${TransactionsDB.columnDate} TEXT NOT NULL,
+          ${TransactionsDB.columnTime} TEXT NOT NULL,
+          ${TransactionsDB.columnAccountId} INTEGER NOT NULL,
+          ${TransactionsDB.columnCategories} TEXT NOT NULL,
+          FOREIGN KEY (${TransactionsDB.columnAccountId}) REFERENCES ${AccountsDB.tableName}(${AccountsDB.accountId})
+        )
+  ''');
   }
 }

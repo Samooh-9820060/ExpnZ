@@ -1,3 +1,4 @@
+import 'package:expnz/models/TransactionsModel.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import './screens/MainPage.dart';
@@ -9,7 +10,8 @@ void main() {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context) => CategoriesModel()),
-        ChangeNotifierProvider(create: (context) => AccountsModel()), // Add this line
+        ChangeNotifierProvider(create: (context) => AccountsModel()),
+        ChangeNotifierProvider(create: (context) => TransactionsModel()),
       ],
       child: MyApp(),
     ),

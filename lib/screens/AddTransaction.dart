@@ -6,10 +6,13 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../database/AccountsDB.dart';
 import '../database/CategoriesDB.dart';
+import '../database/TransactionsDB.dart';
 import '../models/CategoriesModel.dart';
+import '../models/TransactionsModel.dart';
 import '../widgets/AppWidgets/CategoryChip.dart';
 import '../widgets/AppWidgets/SelectAccountCard.dart';
 import '../widgets/SimpleWidgets/ExpnZButton.dart';
+import '../widgets/SimpleWidgets/ModernSnackBar.dart';
 
 enum TransactionType { income, expense, transfer }
 
@@ -29,10 +32,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
   late TextEditingController _amountController;
   final TextEditingController _categorySearchController = TextEditingController();
   bool _showDropdown = false;
+  bool isProcessing = false;
 
   List<Map<String, dynamic>> filteredCategories = [];
   List<Map<String, dynamic>> selectedCategoriesList = [];
-  List<String> selectedCategories = [];  // Sample categories
   OverlayEntry? overlayEntry;
 
   TransactionType _selectedType = TransactionType.income; // Default to income
@@ -60,6 +63,166 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
     super.dispose();
   }
 
+  //modify or insert transactions
+  void _addUpdateTransaction() async {
+    if (isProcessing) return;
+    setState(() {
+      isProcessing = true;
+    });
+
+    // Validate input fields
+    String name = _nameController.text.trim();
+    String description = _descriptionController.text.trim();
+    String amountStr = _amountController.text.trim();
+    double? amount = double.tryParse(amountStr);
+
+    if (name.isEmpty || description.isEmpty || amount == null || amount <= 0) {
+      await showModernSnackBar(
+        context: context,
+        message: "All fields must be filled and valid!",
+        backgroundColor: Colors.red,
+      );
+      setState(() {
+        isProcessing = false;
+      });
+      return;
+    }
+
+    //validate category selection
+    if (selectedCategoriesList.isEmpty) {
+      await showModernSnackBar(
+        context: context,
+        message: "Please select at least one category",
+        backgroundColor: Colors.red,
+      );
+      setState(() {
+        isProcessing = false;
+      });
+      return;
+    }
+
+    if (_selectedType == TransactionType.transfer) {
+      // Validate account selection
+      if (selectedFromAccountIndex < 0 || selectedToAccountIndex < 0) {
+        await showModernSnackBar(
+          context: context,
+          message: "Please select the from and to accounts",
+          backgroundColor: Colors.red,
+        );
+        setState(() {
+          isProcessing = false;
+        });
+        return;
+      }
+
+      // Prepare data for "withdrawal" from the source account
+      Map<String, dynamic> rowFrom = {
+        TransactionsDB.columnType: "expense",
+        TransactionsDB.columnName: name,
+        TransactionsDB.columnDescription: description,
+        TransactionsDB.columnAmount: amount,
+        TransactionsDB.columnDate: selectedDate.toIso8601String(),
+        TransactionsDB.columnTime: selectedTime.format(context),
+        TransactionsDB.columnAccountId: selectedFromAccountIndex,
+        TransactionsDB.columnCategories: jsonEncode(selectedCategoriesList),
+      };
+
+      // Prepare data for "deposit" into the destination account
+      Map<String, dynamic> rowTo = {
+        TransactionsDB.columnType: "income",
+        TransactionsDB.columnName: name,
+        TransactionsDB.columnDescription: description,
+        TransactionsDB.columnAmount: amount,
+        TransactionsDB.columnDate: selectedDate.toIso8601String(),
+        TransactionsDB.columnTime: selectedTime.format(context),
+        TransactionsDB.columnAccountId: selectedToAccountIndex,
+        TransactionsDB.columnCategories: jsonEncode(selectedCategoriesList),
+      };
+
+      final idFrom = await TransactionsDB().insertTransaction(rowFrom);
+      final idTo = await TransactionsDB().insertTransaction(rowTo);
+      final transactionsModel = Provider.of<TransactionsModel>(context, listen: false);
+
+      if (idFrom != null && idFrom > -1 && idTo != null && idTo > -1) {
+        // Both transactions were successful
+        await showModernSnackBar(
+          context: context,
+          message: "Transfer transaction added successfully!",
+          backgroundColor: Colors.green,
+        );
+        transactionsModel.fetchTransactions();
+        setState(() {
+          isProcessing = false;
+        });
+        Navigator.pop(context, true);
+      } else {
+        // Handle failure
+        await showModernSnackBar(
+          context: context,
+          message: "Transfer transaction was not added",
+          backgroundColor: Colors.redAccent,
+        );
+        setState(() {
+          isProcessing = false;
+        });
+      }
+
+      return;
+    }
+    else {
+      // Validate account selection
+      if (selectedAccoutIndex < 0) {
+        await showModernSnackBar(
+          context: context,
+          message: "Please select the related account",
+          backgroundColor: Colors.redAccent,
+        );
+        setState(() {
+          isProcessing = false;
+        });
+        return;
+      }
+
+      // Prepare the transaction data
+      Map<String, dynamic> row = {
+        TransactionsDB.columnType: _selectedType.toString().split('.').last,  // income, expense or transfer
+        TransactionsDB.columnName: name,
+        TransactionsDB.columnDescription: description,
+        TransactionsDB.columnAmount: amount,
+        TransactionsDB.columnDate: selectedDate.toIso8601String(),
+        TransactionsDB.columnTime: selectedTime.format(context),  // You might want to store this differently
+        TransactionsDB.columnAccountId: selectedAccoutIndex,  // Assuming this is the account ID
+        TransactionsDB.columnCategories: jsonEncode(selectedCategoriesList),  // Storing categories as a JSON string
+      };
+
+      // Insert the transaction into the database
+      final id = await TransactionsDB().insertTransaction(row);
+
+      final transactionsModel = Provider.of<TransactionsModel>(context, listen: false);
+
+      if (id != null && id > 0) {
+        await showModernSnackBar(
+          context: context,
+          message: "Transaction added successfully!",
+          backgroundColor: Colors.green,
+        );
+        transactionsModel.fetchTransactions();
+        setState(() {
+          isProcessing = false;
+        });
+        Navigator.pop(context, true);
+      } else {
+        await showModernSnackBar(
+          context: context,
+          message: "Transaction was not added",
+          backgroundColor: Colors.redAccent,
+        );
+        setState(() {
+          isProcessing = false;
+        });
+      }
+    }
+  }
 
 
   Widget buildTypeButton(TransactionType type, String label) {
@@ -473,9 +636,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                       SizedBox(height: 20),
                       ExpnZButton(
                         label: "Add",
-                        onPressed: () {
-                          // Implement your logic for adding the transaction
-                        },
+                        onPressed: _addUpdateTransaction,
                         primaryColor: Colors.blueAccent,  // Optional
                         textColor: Colors.white,  // Optional
                         fontSize: 18.0,  // Optional
@@ -695,6 +856,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                               ),
                               SizedBox(height: 10),
                               TextField(
+                                focusNode: _categorySearchFocusNode,
                                 controller: _categorySearchController,
                                 decoration: InputDecoration(
                                   hintText: 'Search Category',
@@ -710,24 +872,124 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                     borderRadius: BorderRadius.circular(50.0),
                                   ),
                                 ),
-                                // Here you can implement the search logic to populate suggestions
                                 onChanged: (value) {
-                                  // Implement search logic
+                                  setState(() {
+                                    _showDropdown = value.isNotEmpty;
+                                  });
                                 },
                               ),
-                              SizedBox(height: 20),
+                              SizedBox(height: 10),
+                              if (_showDropdown)
+                                GestureDetector(
+                                  onTap: () {
+                                    // Do nothing to stop event propagation
+                                    return;
+                                  },
+                                  child: Material(
+                                    elevation: 4.0,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(25),
+                                    ),
+                                    color: Colors.blueGrey[700],
+                                    child: Container(
+                                      width: MediaQuery.of(context).size.width, // Adjust as needed
+                                      child: Consumer<CategoriesModel>(
+                                        builder: (context, categoriesModel, child) {
+                                          if (categoriesModel.categories.isEmpty) {
+                                            return Center(
+                                              child: Text('No categories available.'),
+                                            );
+                                          } else {
+                                            List<Map<String, dynamic>> sortedData = List.from(categoriesModel.categories);
+                                            sortedData.sort((a, b) => a[CategoriesDB.columnName].compareTo(b[CategoriesDB.columnName]));
+
+                                            double itemHeight = 55.0; // Approximate height of one ListTile
+                                            double maxHeight = 200.0; // Maximum height you'd like to allow for dropdown
+
+                                            double calculatedHeight = sortedData.length * itemHeight;
+                                            calculatedHeight = calculatedHeight > maxHeight ? maxHeight : calculatedHeight;
+
+                                            return Container(
+                                                height: calculatedHeight,
+                                                child: ListView.builder(
+                                                  padding: EdgeInsets.zero,
+                                                  itemCount: sortedData.length,
+                                                  itemBuilder: (context, index) {
+                                                    final category = sortedData[index];
+                                                    IconData categoryIcon = IconData(
+                                                      int.tryParse(category[CategoriesDB.columnIcon]) ?? Icons.error.codePoint,
+                                                      fontFamily: 'MaterialIcons',
+                                                    );
+                                                    String categoryName = category[CategoriesDB.columnName];
+
+                                                    BorderRadius borderRadius;
+
+                                                    // Top item
+                                                    if (index == 0) {
+                                                      borderRadius = BorderRadius.only(
+                                                        topLeft: Radius.circular(30),
+                                                        topRight: Radius.circular(30),
+                                                      );
+                                                    }
+                                                    // Bottom item
+                                                    else if (index == sortedData.length - 1) {
+                                                      borderRadius = BorderRadius.only(
+                                                        bottomLeft: Radius.circular(30),
+                                                        bottomRight: Radius.circular(30),
+                                                      );
+                                                    }
+                                                    // Middle items
+                                                    else {
+                                                      borderRadius = BorderRadius.zero;
+                                                    }
+
+                                                    return Material(
+                                                      type: MaterialType.transparency, // To make it transparent
+                                                      child: InkWell(
+                                                        onTap: () {
+                                                          setState(() {
+                                                            selectedCategoriesList.add({
+                                                              'name': categoryName,
+                                                              'icon': categoryIcon.codePoint,
+                                                            });
+                                                            _showDropdown = false;
+                                                          });
+                                                        },
+                                                        borderRadius: borderRadius, // Use the dynamic border radius
+                                                        splashColor: Colors.blue,
+                                                        highlightColor: Colors.blue.withOpacity(0.5),
+                                                        child: ListTile(
+                                                          title: Text(categoryName),
+                                                          leading: Icon(categoryIcon),
+                                                        ),
+                                                      ),
+                                                    );
+                                                  },
+                                                )
+                                            );
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              SizedBox(height: 10),
                               Wrap(
-                                spacing: 8.0, // gap between chips
+                                spacing: 8.0,
                                 runSpacing: 8.0,
                                 children: List<Widget>.generate(
-                                  selectedCategories.length,
+                                  selectedCategoriesList.length,
                                       (int index) {
+                                    final category = selectedCategoriesList[index];
                                     return CategoryChip(
-                                      icon: Icons.category,  // This is just a placeholder, use appropriate icon
-                                      label: selectedCategories[index],
+                                      icon: IconData(
+                                        category['icon'],
+                                        fontFamily: 'MaterialIcons',
+                                      ),
+                                      label: category['name'],
                                       onTap: () {
                                         setState(() {
-                                          selectedCategories.removeAt(index);  // Remove the category when the chip is tapped
+                                          selectedCategoriesList.removeAt(index);
                                         });
                                       },
                                     );
@@ -741,9 +1003,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                       SizedBox(height: 20),
                       ExpnZButton(
                         label: "Add",
-                        onPressed: () {
-                          // Implement your logic for adding the transaction
-                        },
+                        onPressed: _addUpdateTransaction,
                         primaryColor: Colors.blueAccent,
                         textColor: Colors.white,
                         fontSize: 18.0,
