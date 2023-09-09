@@ -1,7 +1,12 @@
+import 'package:expnz/models/AccountsModel.dart';
+import 'package:expnz/models/CategoriesModel.dart';
 import 'package:expnz/screens/AddAccount.dart';
 import 'package:expnz/screens/AddCategory.dart';
 import 'package:expnz/screens/AddTransaction.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../models/TransactionsModel.dart';
 
 class FloatingActionMenu extends StatelessWidget {
   final bool isOpened;
@@ -9,10 +14,10 @@ class FloatingActionMenu extends StatelessWidget {
 
   FloatingActionMenu({required this.isOpened, required this.closeMenu});
 
-  Widget buildMenuItem(
-      IconData icon, String label, VoidCallback onPressed) {
+  Widget buildMenuItem(BuildContext context, IconData icon, String label,
+      Future<bool> Function() onPressed) {
     return Container(
-      margin: EdgeInsets.symmetric(vertical: 4),  // Reduced vertical margin
+      margin: EdgeInsets.symmetric(vertical: 4), // Reduced vertical margin
       decoration: BoxDecoration(
         color: Colors.black87,
         borderRadius: BorderRadius.circular(50),
@@ -27,22 +32,29 @@ class FloatingActionMenu extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () {
-            onPressed();
-            closeMenu();  // Close the menu
-          },          borderRadius: BorderRadius.circular(50),
+          onTap: () async {
+            final result = await onPressed();
+            if (result) {
+              Provider.of<TransactionsModel>(context, listen: false).fetchTransactions();
+              Provider.of<CategoriesModel>(context, listen: false).fetchCategories();
+              Provider.of<AccountsModel>(context, listen: false).fetchAccounts();
+            }
+            closeMenu(); // Close the menu
+          },
+          borderRadius: BorderRadius.circular(50),
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),  // Reduced padding
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            // Reduced padding
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, color: Colors.white, size: 20),  // Reduced icon size
-                SizedBox(width: 16),  // Reduced width
+                Icon(icon, color: Colors.white, size: 20), // Reduced icon size
+                SizedBox(width: 16), // Reduced width
                 Text(
                   label,
                   style: TextStyle(
                       color: Colors.white,
-                      fontSize: 16,  // Reduced font size
+                      fontSize: 16, // Reduced font size
                       fontWeight: FontWeight.w600),
                 ),
               ],
@@ -66,27 +78,32 @@ class FloatingActionMenu extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.end,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              buildMenuItem(Icons.add_chart, "Add Transaction", () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => AddTransactionScreen()),
-                );
-              }),
-              buildMenuItem(Icons.payment, "Add Account", () {
-                Navigator.push(
+              buildMenuItem(
+                context,
+                Icons.add_chart,
+                "Add Transaction",
+                () async {
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => AddTransactionScreen()),
+                  );
+                  return result != null && result == true;
+                },
+              ),
+              buildMenuItem(context, Icons.payment, "Add Account", () async {
+                final result = await Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => AddAccountScreen()),
                 );
+                return result != null && result == true;
               }),
-              buildMenuItem(Icons.payment, "Add Category", () async {
+              buildMenuItem(context, Icons.payment, "Add Category", () async {
                 final result = await Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => AddCategoryScreen()),
                 );
-
-                if (result != null && result == true) {
-
-                }
+                return result != null && result == true;
               }),
             ],
           ),

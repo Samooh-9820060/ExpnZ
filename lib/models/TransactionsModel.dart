@@ -35,5 +35,23 @@ class TransactionsModel extends ChangeNotifier {
     }
     notifyListeners();  // Important to notify listeners
   }
+
+  double getTotalIncomeForAccount(int accountId) {
+    return transactions
+        .where((t) => t[TransactionsDB.columnAccountId] == accountId && t[TransactionsDB.columnType] == 'income')
+        .map((t) => t[TransactionsDB.columnAmount] as double)
+        .fold(0.0, (prev, amount) => prev + amount);
+  }
+
+  double getTotalExpenseForAccount(int accountId) {
+    return transactions
+        .where((t) => t[TransactionsDB.columnAccountId] == accountId && t[TransactionsDB.columnType] == 'expense')
+        .map((t) => t[TransactionsDB.columnAmount] as double)
+        .fold(0.0, (prev, amount) => prev + amount);
+  }
+
+  double getBalanceForAccount(int accountId) {
+    return getTotalIncomeForAccount(accountId) - getTotalExpenseForAccount(accountId);
+  }
 }
 

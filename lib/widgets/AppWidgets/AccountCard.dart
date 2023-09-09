@@ -10,7 +10,7 @@ class ModernAccountCard extends StatefulWidget {
   final String income;
   final String expense;
   final String? cardNumber;
-  final String currency;
+  final Map<String, dynamic> currencyMap;
   final IconData iconData;
 
   ModernAccountCard({
@@ -20,8 +20,8 @@ class ModernAccountCard extends StatefulWidget {
     required this.income,
     required this.expense,
     this.cardNumber,
-    required this.currency,
     required this.iconData,
+    required this.currencyMap,
   });
 
   @override
@@ -108,7 +108,7 @@ class _ModernAccountCardState extends State<ModernAccountCard> with SingleTicker
                 Positioned(
                   top: 10,
                   child: Text(
-                    widget.currency,
+                    widget.currencyMap['code'] as String,
                     style: GoogleFonts.roboto(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,

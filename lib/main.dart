@@ -31,7 +31,6 @@ class MyApp extends StatelessWidget {
         brightness: Brightness.dark, // Set brightness as per your design
         visualDensity: VisualDensity.adaptivePlatformDensity,
 
-
         buttonTheme: ButtonThemeData(
           buttonColor: Colors.blueAccent,
           textTheme: ButtonTextTheme.primary,

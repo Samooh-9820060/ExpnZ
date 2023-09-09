@@ -1,14 +1,16 @@
-import 'dart:io';
-
+import 'package:expnz/models/AccountsModel.dart';
+import 'package:expnz/models/TransactionsModel.dart';
 import 'package:expnz/screens/AccountsScreen.dart';
 import 'package:expnz/screens/CategoriesScreen.dart';
 import 'package:expnz/screens/OverviewScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:animated_drawer/views/animated_drawer.dart';
+import 'package:provider/provider.dart';
 
 import '../menus/CustomAppBar.dart';
 import '../menus/CustomBottomNavBar.dart';
 import '../menus/FloatingActionMenu.dart';
+import '../models/CategoriesModel.dart';
 import 'HomeScreen.dart';
 import '../menus/MenuDrawer.dart';
 
@@ -17,7 +19,7 @@ class HomePage extends StatefulWidget {
   _HomePageState createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
+class _HomePageState extends State<HomePage> with TickerProviderStateMixin, WidgetsBindingObserver {
   bool isOpened = false;
   bool isDrawerOpen = false;
   int _currentIndex = 0;
@@ -41,6 +43,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    Future.delayed(Duration.zero, () {
+      Provider.of<CategoriesModel>(context, listen: false).fetchCategories();
+      Provider.of<AccountsModel>(context, listen: false).fetchAccounts();
+      Provider.of<TransactionsModel>(context, listen: false).fetchTransactions();
+    });
     _animationController = AnimationController(
       vsync: this,
       duration: Duration(milliseconds: 300),
