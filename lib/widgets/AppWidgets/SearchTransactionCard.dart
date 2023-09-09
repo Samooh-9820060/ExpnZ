@@ -95,11 +95,17 @@ class TransactionCard extends StatelessWidget {
             currencySymbol = 'Unknown';
           }
 
-          // Use the utility function to get the formatted symbol
+          // Use the utility functions to get the formatted symbol and amount
           String formattedSymbol = formatCurrencySymbol(
               currencyMap['symbol'] ?? 'Unknown',
               currencyMap['spaceBetweenAmountAndSymbol'] ?? false,
               currencyMap['symbolOnLeft'] ?? true
+          );
+
+          String formattedAmount = formatAmountWithSeparator(
+              amount,
+              currencyMap['thousandsSeparator'] ?? ',',
+              currencyMap['decimalDigits'] ?? 2
           );
 
 
@@ -169,8 +175,8 @@ class TransactionCard extends StatelessWidget {
                             SizedBox(height: 6),
                             Text(
                               currencyMap['symbolOnLeft']
-                                  ? '$formattedSymbol${amount.toStringAsFixed(currencyMap['decimalDigits'])}'
-                                  : '${amount.toStringAsFixed(currencyMap['decimalDigits'])}$formattedSymbol',
+                                  ? '$formattedSymbol$formattedAmount'
+                                  : '$formattedAmount$formattedSymbol',
                               style: TextStyle(
                                 color: amountColor,
                                 fontSize: 16,
