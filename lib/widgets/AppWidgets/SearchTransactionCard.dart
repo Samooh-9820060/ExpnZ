@@ -89,7 +89,6 @@ class TransactionCard extends StatelessWidget {
             if (currencyMap['spaceBetweenAmountAndSymbol'] == true) {
               currencySymbol = currencySymbol+" ";
             }
-            print(currencyMap);
           } else {
             accountName = 'Unknown';
             currencySymbol = 'Unknown';

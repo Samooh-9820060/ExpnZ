@@ -16,7 +16,7 @@ class ModernSnackBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Positioned(
-      bottom: 16,
+      top: 30,
       left: 16,
       right: 16,
       child: Material(
@@ -35,7 +35,7 @@ class ModernSnackBar extends StatelessWidget {
             borderRadius: BorderRadius.circular(30),  // Ultra-rounded corners
             boxShadow: [ // Subtle boxShadow
               BoxShadow(
-                color: backgroundColor.withOpacity(0.6),
+                color: Colors.black.withOpacity(0.6),
                 blurRadius: 15,
                 offset: Offset(0, 5),
               ),
@@ -95,4 +95,3 @@ Future<void> showModernSnackBar({
     completer.complete();
   }
 }
-

@@ -214,12 +214,12 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
 
       if (successFrom && successTo) {
         // Both transactions were successful
+        transactionsModel.fetchTransactions();
         await showModernSnackBar(
           context: context,
           message: isUpdate ? "Transfer transaction updated successfully!" : "Transfer transaction added successfully!",
           backgroundColor: Colors.green,
         );
-        transactionsModel.fetchTransactions();
         setState(() {
           isProcessing = false;
         });
@@ -278,12 +278,12 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
       }
 
       if (success) {
+        transactionsModel.fetchTransactions();
         await showModernSnackBar(
           context: context,
           message: isUpdate ? "Transaction updated successfully!" : "Transaction added successfully!",
           backgroundColor: Colors.green,
         );
-        transactionsModel.fetchTransactions();
         setState(() {
           isProcessing = false;
         });
@@ -372,636 +372,267 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.blueGrey[900],
-      appBar: AppBar(
-        elevation: 0,
-        leading: BackButton(
-          color: Colors.white,
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
-        title: Text(
-            updateMode ? "Update Transaction" : "Add Transaction",
-            style: TextStyle(color: Colors.white)),
+    return WillPopScope(
+      onWillPop: () async {
+        Navigator.pop(context, true);
+        return true;
+      },
+      child: Scaffold(
         backgroundColor: Colors.blueGrey[900],
-      ),
-      body: GestureDetector(
-        onTap: () {
-          setState(() {
-            _showDropdown = false;
-          });
-        },
-        child: Stack(
-          children: [
-            SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Transaction Type selector
-                  Row(
-                    children: [
-                      buildTypeButton(TransactionType.income, 'Income'),
-                      SizedBox(width: 16),
-                      buildTypeButton(TransactionType.expense, 'Expense'),
-                      SizedBox(width: 16),
-                      buildTypeButton(TransactionType.transfer, 'Transfer'),
-                    ],
-                  ),
+        appBar: AppBar(
+          elevation: 0,
+          leading: BackButton(
+            color: Colors.white,
+            onPressed: () {
+              Navigator.pop(context, true);
+            },
+          ),
+          title: Text(
+              updateMode ? "Update Transaction" : "Add Transaction",
+              style: TextStyle(color: Colors.white)),
+          backgroundColor: Colors.blueGrey[900],
+        ),
+        body: GestureDetector(
+          onTap: () {
+            setState(() {
+              _showDropdown = false;
+            });
+          },
+          child: Stack(
+            children: [
+              SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Transaction Type selector
+                    Row(
+                      children: [
+                        buildTypeButton(TransactionType.income, 'Income'),
+                        SizedBox(width: 16),
+                        buildTypeButton(TransactionType.expense, 'Expense'),
+                        SizedBox(width: 16),
+                        buildTypeButton(TransactionType.transfer, 'Transfer'),
+                      ],
+                    ),
 
-                  // Fields for Income and Expense
-                  if (_selectedType == TransactionType.income || _selectedType == TransactionType.expense)
-                    ...[
-                      SizedBox(height: 16),
-                      // Name
-                      CustomTextField(label: "Name", controller: _nameController),
-                      SizedBox(height: 16),
-                      // Description
-                      CustomTextField(label: "Description", controller: _descriptionController),
-                      SizedBox(height: 16),
-                      // Amount
-                      CustomTextField(label: "Amount", controller: _amountController, isNumber: true,),
-                      SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          // Date Button
-                          InkWell(
-                            onTap: () => _selectDate(context),
-                            borderRadius: BorderRadius.circular(50),
-                            child: Container(
-                              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                              decoration: BoxDecoration(
-                                color: Colors.blueGrey[700],
-                                borderRadius: BorderRadius.circular(50),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black12,
-                                    blurRadius: 10,
-                                    offset: Offset(0, 5),
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.calendar_today, color: Colors.white),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    DateFormat('yyyy-MM-dd').format(selectedDate),
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
+                    // Fields for Income and Expense
+                    if (_selectedType == TransactionType.income || _selectedType == TransactionType.expense)
+                      ...[
+                        SizedBox(height: 16),
+                        // Name
+                        CustomTextField(label: "Name", controller: _nameController),
+                        SizedBox(height: 16),
+                        // Description
+                        CustomTextField(label: "Description", controller: _descriptionController),
+                        SizedBox(height: 16),
+                        // Amount
+                        CustomTextField(label: "Amount", controller: _amountController, isNumber: true,),
+                        SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            // Date Button
+                            InkWell(
+                              onTap: () => _selectDate(context),
+                              borderRadius: BorderRadius.circular(50),
+                              child: Container(
+                                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: Colors.blueGrey[700],
+                                  borderRadius: BorderRadius.circular(50),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black12,
+                                      blurRadius: 10,
+                                      offset: Offset(0, 5),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-
-                          // Time Button
-                          InkWell(
-                            onTap: () => _selectTime(context),
-                            borderRadius: BorderRadius.circular(50),
-                            child: Container(
-                              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                              decoration: BoxDecoration(
-                                color: Colors.blueGrey[700],
-                                borderRadius: BorderRadius.circular(50),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black12,
-                                    blurRadius: 10,
-                                    offset: Offset(0, 5),
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.access_time, color: Colors.white),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    "${selectedTime.format(context)}",
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
+                                  ],
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.calendar_today, color: Colors.white),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      DateFormat('yyyy-MM-dd').format(selectedDate),
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 20),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Select Account',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          SizedBox(height: 10),
-                          Container(
-                            height: 150, // set the height
-                            child: Consumer<AccountsModel>(
-                              builder: (context, accountsModel, child) {
-                                if (accountsModel.accounts.isEmpty) {
-                                  return Center(
-                                    child: Text('No accounts available.'),
-                                  );
-                                } else {
-                                  return ListView.builder(
-                                    padding: EdgeInsets.zero,
-                                    scrollDirection: Axis.horizontal,
-                                    itemCount: accountsModel.accounts.length,
-                                    itemBuilder: (context, index) {
-                                      final account = accountsModel.accounts[index];
-                                      Map<String, dynamic> currencyMap = jsonDecode(account[AccountsDB.accountCurrency]);
-                                      String currencyCode = currencyMap['code'] as String;
 
-                                      return GestureDetector(
-                                        onTap: () {
-                                          setState(() {
-                                            selectedAccoutIndex = index;
-                                            selectedAccoutId = account[AccountsDB.accountId];
-                                          });
-                                        },
-                                        child: AccountCard(
-                                          accountId: account[AccountsDB.accountId],
-                                          icon: IconData(
-                                            int.tryParse(account[AccountsDB.accountIcon]) ?? Icons.error.codePoint,
-                                            fontFamily: 'MaterialIcons',
+                            // Time Button
+                            InkWell(
+                              onTap: () => _selectTime(context),
+                              borderRadius: BorderRadius.circular(50),
+                              child: Container(
+                                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: Colors.blueGrey[700],
+                                  borderRadius: BorderRadius.circular(50),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black12,
+                                      blurRadius: 10,
+                                      offset: Offset(0, 5),
+                                    ),
+                                  ],
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.access_time, color: Colors.white),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      "${selectedTime.format(context)}",
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 20),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Select Account',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            SizedBox(height: 10),
+                            Container(
+                              height: 150, // set the height
+                              child: Consumer<AccountsModel>(
+                                builder: (context, accountsModel, child) {
+                                  if (accountsModel.accounts.isEmpty) {
+                                    return Center(
+                                      child: Text('No accounts available.'),
+                                    );
+                                  } else {
+                                    return ListView.builder(
+                                      padding: EdgeInsets.zero,
+                                      scrollDirection: Axis.horizontal,
+                                      itemCount: accountsModel.accounts.length,
+                                      itemBuilder: (context, index) {
+                                        final account = accountsModel.accounts[index];
+                                        Map<String, dynamic> currencyMap = jsonDecode(account[AccountsDB.accountCurrency]);
+                                        String currencyCode = currencyMap['code'] as String;
+
+                                        return GestureDetector(
+                                          onTap: () {
+                                            setState(() {
+                                              selectedAccoutIndex = index;
+                                              selectedAccoutId = account[AccountsDB.accountId];
+                                            });
+                                          },
+                                          child: AccountCard(
+                                            accountId: account[AccountsDB.accountId],
+                                            icon: IconData(
+                                              int.tryParse(account[AccountsDB.accountIcon]) ?? Icons.error.codePoint,
+                                              fontFamily: 'MaterialIcons',
+                                            ),
+                                            currency: currencyCode,
+                                            accountName: account[AccountsDB.accountName],
+                                            isSelected: index == selectedAccoutIndex,
                                           ),
-                                          currency: currencyCode,
-                                          accountName: account[AccountsDB.accountName],
-                                          isSelected: index == selectedAccoutIndex,
-                                        ),
-                                      );
-                                    },
-                                  );
-                                }
-                              }, // This is where the missing '}' should be placed.
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 16),
-                      // Category Selector
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SizedBox(height: 10),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Select Category',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              SizedBox(height: 10),
-                              TextField(
-                                focusNode: _categorySearchFocusNode,
-                                controller: _categorySearchController,
-                                decoration: InputDecoration(
-                                  hintText: 'Search Category',
-                                  fillColor: Colors.blueGrey[700],
-                                  filled: true,
-                                  prefixIcon: Icon(Icons.search),
-                                  border: OutlineInputBorder(
-                                    borderSide: BorderSide.none,  // Removes the underline border
-                                    borderRadius: BorderRadius.circular(50.0),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderSide: BorderSide(color: Colors.blue, width: 1),
-                                    borderRadius: BorderRadius.circular(50.0),
-                                  ),
-                                ),
-                                onChanged: (value) {
-                                  setState(() {
-                                    _showDropdown = value.isNotEmpty;
-                                  });
-                                },
-                              ),
-                              SizedBox(height: 10),
-                              if (_showDropdown)
-                                GestureDetector(
-                                  onTap: () {
-                                    // Do nothing to stop event propagation
-                                    return;
-                                  },
-                                  child: Material(
-                                    elevation: 4.0,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(25),
-                                    ),
-                                    color: Colors.blueGrey[700],
-                                    child: Container(
-                                      width: MediaQuery.of(context).size.width, // Adjust as needed
-                                      child: Consumer<CategoriesModel>(
-                                        builder: (context, categoriesModel, child) {
-                                          if (categoriesModel.categories.isEmpty) {
-                                            return Center(
-                                              child: Text('No categories available.'),
-                                            );
-                                          } else {
-                                            List<Map<String, dynamic>> sortedData = List.from(categoriesModel.categories);
-                                            sortedData = sortedData.where((category) {
-                                              return category[CategoriesDB.columnName]
-                                                  .toLowerCase()
-                                                  .contains(_categorySearchController.text.toLowerCase());
-                                            }).toList();
-                                            sortedData.sort((a, b) => a[CategoriesDB.columnName].compareTo(b[CategoriesDB.columnName]));
-
-                                            double itemHeight = 55.0; // Approximate height of one ListTile
-                                            double maxHeight = 200.0; // Maximum height you'd like to allow for dropdown
-
-                                            double calculatedHeight = sortedData.length * itemHeight;
-                                            calculatedHeight = calculatedHeight > maxHeight ? maxHeight : calculatedHeight;
-
-                                            return Container(
-                                              height: calculatedHeight,
-                                              child: ListView.builder(
-                                                padding: EdgeInsets.zero,
-                                                itemCount: sortedData.length,
-                                                itemBuilder: (context, index) {
-                                                  final category = sortedData[index];
-                                                  IconData categoryIcon = IconData(
-                                                    int.tryParse(category[CategoriesDB.columnIcon]) ?? Icons.error.codePoint,
-                                                    fontFamily: 'MaterialIcons',
-                                                  );
-                                                  String categoryName = category[CategoriesDB.columnName];
-
-                                                  BorderRadius borderRadius;
-
-                                                  // Top item
-                                                  if (index == 0) {
-                                                    borderRadius = BorderRadius.only(
-                                                      topLeft: Radius.circular(30),
-                                                      topRight: Radius.circular(30),
-                                                    );
-                                                  }
-                                                  // Bottom item
-                                                  else if (index == sortedData.length - 1) {
-                                                    borderRadius = BorderRadius.only(
-                                                      bottomLeft: Radius.circular(30),
-                                                      bottomRight: Radius.circular(30),
-                                                    );
-                                                  }
-                                                  // Middle items
-                                                  else {
-                                                    borderRadius = BorderRadius.zero;
-                                                  }
-
-                                                  return Material(
-                                                    type: MaterialType.transparency, // To make it transparent
-                                                    child: InkWell(
-                                                      onTap: () {
-                                                        setState(() {
-                                                          selectedCategoriesList.add({
-                                                            'name': categoryName,
-                                                            'icon': categoryIcon.codePoint,
-                                                          });
-                                                          _showDropdown = false;
-                                                        });
-                                                      },
-                                                      borderRadius: borderRadius, // Use the dynamic border radius
-                                                      splashColor: Colors.blue,
-                                                      highlightColor: Colors.blue.withOpacity(0.5),
-                                                      child: ListTile(
-                                                        title: Text(categoryName),
-                                                        leading: Icon(categoryIcon),
-                                                      ),
-                                                    ),
-                                                  );
-                                                },
-                                              )
-                                            );
-                                          }
-                                        },
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              SizedBox(height: 10),
-                              Wrap(
-                                spacing: 8.0,
-                                runSpacing: 8.0,
-                                children: List<Widget>.generate(
-                                  selectedCategoriesList.length,
-                                      (int index) {
-                                    final category = selectedCategoriesList[index];
-                                    return CategoryChip(
-                                      icon: IconData(
-                                        category['icon'],
-                                        fontFamily: 'MaterialIcons',
-                                      ),
-                                      label: category['name'],
-                                      onTap: () {
-                                        setState(() {
-                                          selectedCategoriesList.removeAt(index);
-                                        });
+                                        );
                                       },
                                     );
+                                  }
+                                }, // This is where the missing '}' should be placed.
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 16),
+                        // Category Selector
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(height: 10),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Select Category',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                SizedBox(height: 10),
+                                TextField(
+                                  focusNode: _categorySearchFocusNode,
+                                  controller: _categorySearchController,
+                                  decoration: InputDecoration(
+                                    hintText: 'Search Category',
+                                    fillColor: Colors.blueGrey[700],
+                                    filled: true,
+                                    prefixIcon: Icon(Icons.search),
+                                    border: OutlineInputBorder(
+                                      borderSide: BorderSide.none,  // Removes the underline border
+                                      borderRadius: BorderRadius.circular(50.0),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderSide: BorderSide(color: Colors.blue, width: 1),
+                                      borderRadius: BorderRadius.circular(50.0),
+                                    ),
+                                  ),
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _showDropdown = value.isNotEmpty;
+                                    });
                                   },
                                 ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 20),
-                      ExpnZButton(
-                        label: updateMode ? "Update" : "Add",
-                        onPressed: _addUpdateTransaction,
-                        primaryColor: Colors.blueAccent,  // Optional
-                        textColor: Colors.white,  // Optional
-                        fontSize: 18.0,  // Optional
-                      ),
-                    ],
-                  // Fields for Transfer
-                  if (_selectedType == TransactionType.transfer)
-                    ...[
-                      SizedBox(height: 16),
-                      // Name
-                      CustomTextField(label: "Name", controller: _nameController),
-                      SizedBox(height: 16),
-                      // Description
-                      CustomTextField(label: "Description", controller: _descriptionController),
-                      SizedBox(height: 16),
-                      // Amount
-                      CustomTextField(label: "Amount", controller: _amountController, isNumber: true,),
-                      SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          // Date Button
-                          InkWell(
-                            onTap: () => _selectDate(context),
-                            borderRadius: BorderRadius.circular(50),
-                            child: Container(
-                              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                              decoration: BoxDecoration(
-                                color: Colors.blueGrey[700],
-                                borderRadius: BorderRadius.circular(50),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black12,
-                                    blurRadius: 10,
-                                    offset: Offset(0, 5),
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.calendar_today, color: Colors.white),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    DateFormat('yyyy-MM-dd').format(selectedDate),
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-
-                          // Time Button
-                          InkWell(
-                            onTap: () => _selectTime(context),
-                            borderRadius: BorderRadius.circular(50),
-                            child: Container(
-                              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                              decoration: BoxDecoration(
-                                color: Colors.blueGrey[700],
-                                borderRadius: BorderRadius.circular(50),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black12,
-                                    blurRadius: 10,
-                                    offset: Offset(0, 5),
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.access_time, color: Colors.white),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    "${selectedTime.format(context)}",
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-
-                        ],
-                      ),
-                      SizedBox(height: 20),
-                      // From Account
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'From Account',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          SizedBox(height: 10),
-                          Container(
-                            height: 150, // set the height
-                            child: Consumer<AccountsModel>(
-                              builder: (context, accountsModel, child) {
-                                if (accountsModel.accounts.isEmpty) {
-                                  return Center(
-                                    child: Text('No accounts available.'),
-                                  );
-                                } else {
-                                  return ListView.builder(
-                                    padding: EdgeInsets.zero,
-                                    scrollDirection: Axis.horizontal,
-                                    itemCount: accountsModel.accounts.length,
-                                    itemBuilder: (context, index) {
-                                      final account = accountsModel.accounts[index];
-                                      Map<String, dynamic> currencyMap = jsonDecode(account[AccountsDB.accountCurrency]);
-                                      String currencyCode = currencyMap['code'] as String;
-
-                                      return GestureDetector(
-                                        onTap: () {
-                                          setState(() {
-                                            selectedFromAccountIndex = index;
-                                            selectedFromAccountId = account[AccountsDB.accountId];
-                                          });
-                                        },
-                                        child: AccountCard(
-                                          accountId: account[AccountsDB.accountId],
-                                          icon: IconData(
-                                            int.tryParse(account[AccountsDB.accountIcon]) ?? Icons.error.codePoint,
-                                            fontFamily: 'MaterialIcons',
-                                          ),
-                                          currency: currencyCode,
-                                          accountName: account[AccountsDB.accountName],
-                                          isSelected: index == selectedFromAccountIndex,
-                                        ),
-                                      );
+                                SizedBox(height: 10),
+                                if (_showDropdown)
+                                  GestureDetector(
+                                    onTap: () {
+                                      // Do nothing to stop event propagation
+                                      return;
                                     },
-                                  );
-                                }
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 16),
-                      // To Account
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'To Account',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          SizedBox(height: 10),
-                          Container(
-                            height: 150, // set the height
-                            child: Consumer<AccountsModel>(
-                              builder: (context, accountsModel, child) {
-                                if (accountsModel.accounts.isEmpty) {
-                                  return Center(
-                                    child: Text('No accounts available.'),
-                                  );
-                                } else {
-                                  return ListView.builder(
-                                    padding: EdgeInsets.zero,
-                                    scrollDirection: Axis.horizontal,
-                                    itemCount: accountsModel.accounts.length,
-                                    itemBuilder: (context, index) {
-                                      final account = accountsModel.accounts[index];
-                                      Map<String, dynamic> currencyMap = jsonDecode(account[AccountsDB.accountCurrency]);
-                                      String currencyCode = currencyMap['code'] as String;
+                                    child: Material(
+                                      elevation: 4.0,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(25),
+                                      ),
+                                      color: Colors.blueGrey[700],
+                                      child: Container(
+                                        width: MediaQuery.of(context).size.width, // Adjust as needed
+                                        child: Consumer<CategoriesModel>(
+                                          builder: (context, categoriesModel, child) {
+                                            if (categoriesModel.categories.isEmpty) {
+                                              return Center(
+                                                child: Text('No categories available.'),
+                                              );
+                                            } else {
+                                              List<Map<String, dynamic>> sortedData = List.from(categoriesModel.categories);
+                                              sortedData = sortedData.where((category) {
+                                                return category[CategoriesDB.columnName]
+                                                    .toLowerCase()
+                                                    .contains(_categorySearchController.text.toLowerCase());
+                                              }).toList();
+                                              sortedData.sort((a, b) => a[CategoriesDB.columnName].compareTo(b[CategoriesDB.columnName]));
 
-                                      return GestureDetector(
-                                        onTap: () {
-                                          setState(() {
-                                            selectedToAccountIndex = index;
-                                            selectedToAccountId = account[AccountsDB.accountId];
-                                          });
-                                        },
-                                        child: AccountCard(
-                                          accountId: account[AccountsDB.accountId],
-                                          icon: IconData(
-                                            int.tryParse(account[AccountsDB.accountIcon]) ?? Icons.error.codePoint,
-                                            fontFamily: 'MaterialIcons',
-                                          ),
-                                          currency: currencyCode,
-                                          accountName: account[AccountsDB.accountName],
-                                          isSelected: index == selectedToAccountIndex,
-                                        ),
-                                      );
-                                    },
-                                  );
-                                }
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 16),
-                      // Category Selector
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SizedBox(height: 10),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Select Category',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              SizedBox(height: 10),
-                              TextField(
-                                focusNode: _categorySearchFocusNode,
-                                controller: _categorySearchController,
-                                decoration: InputDecoration(
-                                  hintText: 'Search Category',
-                                  fillColor: Colors.blueGrey[700],
-                                  filled: true,
-                                  prefixIcon: Icon(Icons.search),
-                                  border: OutlineInputBorder(
-                                    borderSide: BorderSide.none,  // Removes the underline border
-                                    borderRadius: BorderRadius.circular(50.0),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderSide: BorderSide(color: Colors.blue, width: 1),
-                                    borderRadius: BorderRadius.circular(50.0),
-                                  ),
-                                ),
-                                onChanged: (value) {
-                                  setState(() {
-                                    _showDropdown = value.isNotEmpty;
-                                  });
-                                },
-                              ),
-                              SizedBox(height: 10),
-                              if (_showDropdown)
-                                GestureDetector(
-                                  onTap: () {
-                                    // Do nothing to stop event propagation
-                                    return;
-                                  },
-                                  child: Material(
-                                    elevation: 4.0,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(25),
-                                    ),
-                                    color: Colors.blueGrey[700],
-                                    child: Container(
-                                      width: MediaQuery.of(context).size.width, // Adjust as needed
-                                      child: Consumer<CategoriesModel>(
-                                        builder: (context, categoriesModel, child) {
-                                          if (categoriesModel.categories.isEmpty) {
-                                            return Center(
-                                              child: Text('No categories available.'),
-                                            );
-                                          } else {
-                                            List<Map<String, dynamic>> sortedData = List.from(categoriesModel.categories);
-                                            sortedData = sortedData.where((category) {
-                                              return category[CategoriesDB.columnName]
-                                                  .toLowerCase()
-                                                  .contains(_categorySearchController.text.toLowerCase());
-                                            }).toList();
-                                            sortedData.sort((a, b) => a[CategoriesDB.columnName].compareTo(b[CategoriesDB.columnName]));
+                                              double itemHeight = 55.0; // Approximate height of one ListTile
+                                              double maxHeight = 200.0; // Maximum height you'd like to allow for dropdown
 
-                                            double itemHeight = 55.0; // Approximate height of one ListTile
-                                            double maxHeight = 200.0; // Maximum height you'd like to allow for dropdown
+                                              double calculatedHeight = sortedData.length * itemHeight;
+                                              calculatedHeight = calculatedHeight > maxHeight ? maxHeight : calculatedHeight;
 
-                                            double calculatedHeight = sortedData.length * itemHeight;
-                                            calculatedHeight = calculatedHeight > maxHeight ? maxHeight : calculatedHeight;
-
-                                            return Container(
+                                              return Container(
                                                 height: calculatedHeight,
                                                 child: ListView.builder(
                                                   padding: EdgeInsets.zero,
@@ -1058,53 +689,428 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                                     );
                                                   },
                                                 )
-                                            );
-                                          }
-                                        },
+                                              );
+                                            }
+                                          },
+                                        ),
                                       ),
                                     ),
                                   ),
+                                SizedBox(height: 10),
+                                Wrap(
+                                  spacing: 8.0,
+                                  runSpacing: 8.0,
+                                  children: List<Widget>.generate(
+                                    selectedCategoriesList.length,
+                                        (int index) {
+                                      final category = selectedCategoriesList[index];
+                                      return CategoryChip(
+                                        icon: IconData(
+                                          category['icon'],
+                                          fontFamily: 'MaterialIcons',
+                                        ),
+                                        label: category['name'],
+                                        onTap: () {
+                                          setState(() {
+                                            selectedCategoriesList.removeAt(index);
+                                          });
+                                        },
+                                      );
+                                    },
+                                  ),
                                 ),
-                              SizedBox(height: 10),
-                              Wrap(
-                                spacing: 8.0,
-                                runSpacing: 8.0,
-                                children: List<Widget>.generate(
-                                  selectedCategoriesList.length,
-                                      (int index) {
-                                    final category = selectedCategoriesList[index];
-                                    return CategoryChip(
-                                      icon: IconData(
-                                        category['icon'],
-                                        fontFamily: 'MaterialIcons',
+                              ],
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 20),
+                        ExpnZButton(
+                          label: updateMode ? "Update" : "Add",
+                          onPressed: _addUpdateTransaction,
+                          primaryColor: Colors.blueAccent,  // Optional
+                          textColor: Colors.white,  // Optional
+                          fontSize: 18.0,  // Optional
+                        ),
+                      ],
+                    // Fields for Transfer
+                    if (_selectedType == TransactionType.transfer)
+                      ...[
+                        SizedBox(height: 16),
+                        // Name
+                        CustomTextField(label: "Name", controller: _nameController),
+                        SizedBox(height: 16),
+                        // Description
+                        CustomTextField(label: "Description", controller: _descriptionController),
+                        SizedBox(height: 16),
+                        // Amount
+                        CustomTextField(label: "Amount", controller: _amountController, isNumber: true,),
+                        SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            // Date Button
+                            InkWell(
+                              onTap: () => _selectDate(context),
+                              borderRadius: BorderRadius.circular(50),
+                              child: Container(
+                                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: Colors.blueGrey[700],
+                                  borderRadius: BorderRadius.circular(50),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black12,
+                                      blurRadius: 10,
+                                      offset: Offset(0, 5),
+                                    ),
+                                  ],
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.calendar_today, color: Colors.white),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      DateFormat('yyyy-MM-dd').format(selectedDate),
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
                                       ),
-                                      label: category['name'],
-                                      onTap: () {
-                                        setState(() {
-                                          selectedCategoriesList.removeAt(index);
-                                        });
-                                      },
-                                    );
-                                  },
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 20),
-                      ExpnZButton(
-                        label: "Add",
-                        onPressed: _addUpdateTransaction,
-                        primaryColor: Colors.blueAccent,
-                        textColor: Colors.white,
-                        fontSize: 18.0,
-                      ),
-                    ],
-                ],
+                            ),
+
+                            // Time Button
+                            InkWell(
+                              onTap: () => _selectTime(context),
+                              borderRadius: BorderRadius.circular(50),
+                              child: Container(
+                                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: Colors.blueGrey[700],
+                                  borderRadius: BorderRadius.circular(50),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black12,
+                                      blurRadius: 10,
+                                      offset: Offset(0, 5),
+                                    ),
+                                  ],
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.access_time, color: Colors.white),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      "${selectedTime.format(context)}",
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+
+                          ],
+                        ),
+                        SizedBox(height: 20),
+                        // From Account
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'From Account',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            SizedBox(height: 10),
+                            Container(
+                              height: 150, // set the height
+                              child: Consumer<AccountsModel>(
+                                builder: (context, accountsModel, child) {
+                                  if (accountsModel.accounts.isEmpty) {
+                                    return Center(
+                                      child: Text('No accounts available.'),
+                                    );
+                                  } else {
+                                    return ListView.builder(
+                                      padding: EdgeInsets.zero,
+                                      scrollDirection: Axis.horizontal,
+                                      itemCount: accountsModel.accounts.length,
+                                      itemBuilder: (context, index) {
+                                        final account = accountsModel.accounts[index];
+                                        Map<String, dynamic> currencyMap = jsonDecode(account[AccountsDB.accountCurrency]);
+                                        String currencyCode = currencyMap['code'] as String;
+
+                                        return GestureDetector(
+                                          onTap: () {
+                                            setState(() {
+                                              selectedFromAccountIndex = index;
+                                              selectedFromAccountId = account[AccountsDB.accountId];
+                                            });
+                                          },
+                                          child: AccountCard(
+                                            accountId: account[AccountsDB.accountId],
+                                            icon: IconData(
+                                              int.tryParse(account[AccountsDB.accountIcon]) ?? Icons.error.codePoint,
+                                              fontFamily: 'MaterialIcons',
+                                            ),
+                                            currency: currencyCode,
+                                            accountName: account[AccountsDB.accountName],
+                                            isSelected: index == selectedFromAccountIndex,
+                                          ),
+                                        );
+                                      },
+                                    );
+                                  }
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 16),
+                        // To Account
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'To Account',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            SizedBox(height: 10),
+                            Container(
+                              height: 150, // set the height
+                              child: Consumer<AccountsModel>(
+                                builder: (context, accountsModel, child) {
+                                  if (accountsModel.accounts.isEmpty) {
+                                    return Center(
+                                      child: Text('No accounts available.'),
+                                    );
+                                  } else {
+                                    return ListView.builder(
+                                      padding: EdgeInsets.zero,
+                                      scrollDirection: Axis.horizontal,
+                                      itemCount: accountsModel.accounts.length,
+                                      itemBuilder: (context, index) {
+                                        final account = accountsModel.accounts[index];
+                                        Map<String, dynamic> currencyMap = jsonDecode(account[AccountsDB.accountCurrency]);
+                                        String currencyCode = currencyMap['code'] as String;
+
+                                        return GestureDetector(
+                                          onTap: () {
+                                            setState(() {
+                                              selectedToAccountIndex = index;
+                                              selectedToAccountId = account[AccountsDB.accountId];
+                                            });
+                                          },
+                                          child: AccountCard(
+                                            accountId: account[AccountsDB.accountId],
+                                            icon: IconData(
+                                              int.tryParse(account[AccountsDB.accountIcon]) ?? Icons.error.codePoint,
+                                              fontFamily: 'MaterialIcons',
+                                            ),
+                                            currency: currencyCode,
+                                            accountName: account[AccountsDB.accountName],
+                                            isSelected: index == selectedToAccountIndex,
+                                          ),
+                                        );
+                                      },
+                                    );
+                                  }
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 16),
+                        // Category Selector
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(height: 10),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Select Category',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                SizedBox(height: 10),
+                                TextField(
+                                  focusNode: _categorySearchFocusNode,
+                                  controller: _categorySearchController,
+                                  decoration: InputDecoration(
+                                    hintText: 'Search Category',
+                                    fillColor: Colors.blueGrey[700],
+                                    filled: true,
+                                    prefixIcon: Icon(Icons.search),
+                                    border: OutlineInputBorder(
+                                      borderSide: BorderSide.none,  // Removes the underline border
+                                      borderRadius: BorderRadius.circular(50.0),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderSide: BorderSide(color: Colors.blue, width: 1),
+                                      borderRadius: BorderRadius.circular(50.0),
+                                    ),
+                                  ),
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _showDropdown = value.isNotEmpty;
+                                    });
+                                  },
+                                ),
+                                SizedBox(height: 10),
+                                if (_showDropdown)
+                                  GestureDetector(
+                                    onTap: () {
+                                      // Do nothing to stop event propagation
+                                      return;
+                                    },
+                                    child: Material(
+                                      elevation: 4.0,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(25),
+                                      ),
+                                      color: Colors.blueGrey[700],
+                                      child: Container(
+                                        width: MediaQuery.of(context).size.width, // Adjust as needed
+                                        child: Consumer<CategoriesModel>(
+                                          builder: (context, categoriesModel, child) {
+                                            if (categoriesModel.categories.isEmpty) {
+                                              return Center(
+                                                child: Text('No categories available.'),
+                                              );
+                                            } else {
+                                              List<Map<String, dynamic>> sortedData = List.from(categoriesModel.categories);
+                                              sortedData = sortedData.where((category) {
+                                                return category[CategoriesDB.columnName]
+                                                    .toLowerCase()
+                                                    .contains(_categorySearchController.text.toLowerCase());
+                                              }).toList();
+                                              sortedData.sort((a, b) => a[CategoriesDB.columnName].compareTo(b[CategoriesDB.columnName]));
+
+                                              double itemHeight = 55.0; // Approximate height of one ListTile
+                                              double maxHeight = 200.0; // Maximum height you'd like to allow for dropdown
+
+                                              double calculatedHeight = sortedData.length * itemHeight;
+                                              calculatedHeight = calculatedHeight > maxHeight ? maxHeight : calculatedHeight;
+
+                                              return Container(
+                                                  height: calculatedHeight,
+                                                  child: ListView.builder(
+                                                    padding: EdgeInsets.zero,
+                                                    itemCount: sortedData.length,
+                                                    itemBuilder: (context, index) {
+                                                      final category = sortedData[index];
+                                                      IconData categoryIcon = IconData(
+                                                        int.tryParse(category[CategoriesDB.columnIcon]) ?? Icons.error.codePoint,
+                                                        fontFamily: 'MaterialIcons',
+                                                      );
+                                                      String categoryName = category[CategoriesDB.columnName];
+
+                                                      BorderRadius borderRadius;
+
+                                                      // Top item
+                                                      if (index == 0) {
+                                                        borderRadius = BorderRadius.only(
+                                                          topLeft: Radius.circular(30),
+                                                          topRight: Radius.circular(30),
+                                                        );
+                                                      }
+                                                      // Bottom item
+                                                      else if (index == sortedData.length - 1) {
+                                                        borderRadius = BorderRadius.only(
+                                                          bottomLeft: Radius.circular(30),
+                                                          bottomRight: Radius.circular(30),
+                                                        );
+                                                      }
+                                                      // Middle items
+                                                      else {
+                                                        borderRadius = BorderRadius.zero;
+                                                      }
+
+                                                      return Material(
+                                                        type: MaterialType.transparency, // To make it transparent
+                                                        child: InkWell(
+                                                          onTap: () {
+                                                            setState(() {
+                                                              selectedCategoriesList.add({
+                                                                'name': categoryName,
+                                                                'icon': categoryIcon.codePoint,
+                                                              });
+                                                              _showDropdown = false;
+                                                            });
+                                                          },
+                                                          borderRadius: borderRadius, // Use the dynamic border radius
+                                                          splashColor: Colors.blue,
+                                                          highlightColor: Colors.blue.withOpacity(0.5),
+                                                          child: ListTile(
+                                                            title: Text(categoryName),
+                                                            leading: Icon(categoryIcon),
+                                                          ),
+                                                        ),
+                                                      );
+                                                    },
+                                                  )
+                                              );
+                                            }
+                                          },
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                SizedBox(height: 10),
+                                Wrap(
+                                  spacing: 8.0,
+                                  runSpacing: 8.0,
+                                  children: List<Widget>.generate(
+                                    selectedCategoriesList.length,
+                                        (int index) {
+                                      final category = selectedCategoriesList[index];
+                                      return CategoryChip(
+                                        icon: IconData(
+                                          category['icon'],
+                                          fontFamily: 'MaterialIcons',
+                                        ),
+                                        label: category['name'],
+                                        onTap: () {
+                                          setState(() {
+                                            selectedCategoriesList.removeAt(index);
+                                          });
+                                        },
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 20),
+                        ExpnZButton(
+                          label: "Add",
+                          onPressed: _addUpdateTransaction,
+                          primaryColor: Colors.blueAccent,
+                          textColor: Colors.white,
+                          fontSize: 18.0,
+                        ),
+                      ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
