@@ -1,3 +1,4 @@
+import 'package:currency_picker/currency_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../database/AccountsDB.dart';
@@ -20,6 +21,11 @@ class AccountsModel extends ChangeNotifier {
   Future<String> getAccountNameById(int id) async {
     final account = await db.getSelectedAccount(id);
     return account != null ? account[AccountsDB.accountName].toString() : 'Unknown';
+  }
+
+  Future<Object> getAccountDetailsById(int id) async {
+    final account = await db.getSelectedAccount(id);
+    return account != null ? account : 'Unknown';
   }
 }
 

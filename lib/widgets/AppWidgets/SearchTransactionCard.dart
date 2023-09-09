@@ -1,14 +1,21 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../../database/AccountsDB.dart';
+import '../../models/AccountsModel.dart';
+import '../../utils/currency_utils.dart';
 
 class TransactionCard extends StatelessWidget {
   final Map<String, dynamic> transaction;
-  final String accountName;
   final Function onDelete;
   final Function onUpdate;
 
-  TransactionCard({required this.transaction, required this.accountName, required this.onDelete, required this.onUpdate});
+  TransactionCard({required this.transaction,
+    required this.onDelete,
+    required this.onUpdate,
+  });
 
   IconData getCategoryIcon(int iconCode) {
     return IconData(
@@ -30,7 +37,7 @@ class TransactionCard extends StatelessWidget {
           ),
           ElevatedButton(
             onPressed: () {
-              onDelete();  // Call the delete function
+              onDelete(); // Call the delete function
               Navigator.pop(context);
             },
             child: Text('Delete'),
@@ -43,100 +50,144 @@ class TransactionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final String name = transaction['name'] ?? 'Unknown';
-    final String account = accountName;
     final String date = transaction['date'] != null
         ? transaction['date'].split('T')[0]
         : 'Unknown';
     final String time = transaction['time'] ?? 'Unknown';
     final double amount = transaction['amount'] ?? 0.0;
     final String type = transaction['type'] ?? 'Unknown';
-    final List<dynamic> categories = jsonDecode(transaction['categories'] ?? '[]');
-    final int categoryIcon = categories.isNotEmpty ? categories[0]['icon'] : Icons.help_outline.codePoint;
+    final List<dynamic> categories =
+        jsonDecode(transaction['categories'] ?? '[]');
+    final int categoryIcon = categories.isNotEmpty
+        ? categories[0]['icon']
+        : Icons.help_outline.codePoint;
 
     // Determine color based on transaction type
-    final Color? amountColor = type == 'income' ? Colors.greenAccent[400] : (type == 'expense' ? Colors.redAccent[100] : Colors.white);
+    final Color? amountColor = type == 'income'
+        ? Colors.greenAccent[400]
+        : (type == 'expense' ? Colors.redAccent[100] : Colors.white);
+
+    return FutureBuilder<Object>(
+      future: Provider.of<AccountsModel>(context, listen: false)
+          .getAccountDetailsById(transaction['account_id']),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return CircularProgressIndicator();
+        } else if (snapshot.hasError) {
+          return Text('Error: ${snapshot.error}');
+        } else {
+          final account = snapshot.data;
+          String accountName;
+          String currencySymbol;
+          Map<String, dynamic> currencyMap = new Map<String, dynamic>();
+
+          if (account is Map<String, dynamic>) {
+            accountName = account[AccountsDB.accountName] ?? 'Unknown';
+            currencyMap =
+                jsonDecode(account[AccountsDB.accountCurrency]);
+            currencySymbol = currencyMap['symbol'] ?? 'Unknown';
+            if (currencyMap['spaceBetweenAmountAndSymbol'] == true) {
+              currencySymbol = currencySymbol+" ";
+            }
+            print(currencyMap);
+          } else {
+            accountName = 'Unknown';
+            currencySymbol = 'Unknown';
+          }
+
+          // Use the utility function to get the formatted symbol
+          String formattedSymbol = formatCurrencySymbol(
+              currencyMap['symbol'] ?? 'Unknown',
+              currencyMap['spaceBetweenAmountAndSymbol'] ?? false,
+              currencyMap['symbolOnLeft'] ?? true
+          );
 
 
-    return GestureDetector(
-      onLongPress: () => showDeleteDialog(context),
-      onTap: () => onUpdate(),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18.0),
-            color: Colors.blueGrey[700],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 16,
-                        backgroundColor: Colors.blueGrey[800],
-                        child: Icon(
-                          getCategoryIcon(categoryIcon),
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                      ),
-                      SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            name,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
+          return GestureDetector(
+            onLongPress: () => showDeleteDialog(context),
+            onTap: () => onUpdate(),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(18.0),
+                  color: Colors.blueGrey[700],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 16,
+                              backgroundColor: Colors.blueGrey[800],
+                              child: Icon(
+                                getCategoryIcon(categoryIcon),
+                                color: Colors.white,
+                                size: 16,
+                              ),
                             ),
-                          ),
-                          SizedBox(height: 2),
-                          Text(
-                            "$account • $date",
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.7),
-                              fontSize: 10,
+                            SizedBox(width: 12),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  name,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                SizedBox(height: 2),
+                                Text(
+                                  "$accountName • $date",
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.7),
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        time,
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.7),
-                          fontSize: 10,
+                          ],
                         ),
-                      ),
-                      SizedBox(height: 6),
-                      Text(
-                        '\$$amount',
-                        style: TextStyle(
-                          color: amountColor,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              time,
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.7),
+                                fontSize: 10,
+                              ),
+                            ),
+                            SizedBox(height: 6),
+                            Text(
+                              currencyMap['symbolOnLeft']
+                                  ? '$formattedSymbol${amount.toStringAsFixed(currencyMap['decimalDigits'])}'
+                                  : '${amount.toStringAsFixed(currencyMap['decimalDigits'])}$formattedSymbol',
+                              style: TextStyle(
+                                color: amountColor,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ],
+                ),
               ),
             ),
-          ),
-        ),
-      ),
+          );
+        }
+      },
     );
   }
 }

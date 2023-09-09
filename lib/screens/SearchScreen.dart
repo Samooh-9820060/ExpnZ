@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../database/AccountsDB.dart';
 import '../models/AccountsModel.dart';
 import '../models/TransactionsModel.dart';
 import '../widgets/AppWidgets/SearchTransactionCard.dart';
@@ -95,98 +98,95 @@ class _SearchScreenState extends State<SearchScreen> {
                   : transactionsModel.transactions;
           return Container(
             color: Colors.blueGrey[900],
-            child: _searchController.text.isNotEmpty  // <-- Check if text is entered
+            child: _searchController
+                    .text.isNotEmpty // <-- Check if text is entered
                 ? (transactionsToShow.isNotEmpty
-                ? SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Text(
-                      'Result',
-                      style: TextStyle(fontSize: 18, color: Colors.white),
-                    ),
-                  ),
-                  for (var transaction in transactionsToShow)
-                    FutureBuilder<String>(
-                      future: Provider.of<AccountsModel>(context, listen: false).getAccountNameById(transaction['account_id']),
-                      builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return CircularProgressIndicator();
-                        } else if (snapshot.hasError) {
-                          return Text('Error: ${snapshot.error}');
-                        } else {
-                          // display created posts
-                          return TransactionCard(
-                            transaction: transaction,
-                            accountName: snapshot.data ?? 'Unknown',
-                            onDelete: () {
-                              Provider.of<TransactionsModel>(
-                                  context, listen: false).deleteTransactions(
-                                  transaction['_id'], _searchController.text.toLowerCase());
-                              Provider.of<TransactionsModel>(
-                                  context, listen: false).fetchTransactions();
-                            },
-                            onUpdate: () async {
-                              print("Navigating to AddTransactionScreen...");
-                              final result = await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => AddTransactionScreen(
-                                    transaction: transaction,
-                                  ),
-                                ),
-                              );
-                              print("Returned from AddTransactionScreen with result: $result");
+                    ? SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Text(
+                                'Result',
+                                style: TextStyle(
+                                    fontSize: 18, color: Colors.white),
+                              ),
+                            ),
+                            for (var transaction in transactionsToShow)
+                              TransactionCard(
+                                transaction: transaction,
+                                onDelete: () {
+                                  Provider.of<TransactionsModel>(context,
+                                          listen: false)
+                                      .deleteTransactions(transaction['_id'],
+                                          _searchController.text.toLowerCase());
+                                  Provider.of<TransactionsModel>(context,
+                                          listen: false)
+                                      .fetchTransactions();
+                                },
+                                onUpdate: () async {
+                                  final result = await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          AddTransactionScreen(
+                                        transaction: transaction,
+                                      ),
+                                    ),
+                                  );
 
-                              if (result != null && result == true) {
-                                print("Refreshing Transactions...");
-                                await Provider.of<TransactionsModel>(context, listen: false).fetchTransactions();
-                                Provider.of<TransactionsModel>(context, listen: false).filterTransactions(_searchController.text.toLowerCase());
-                              }
-                            },
-                          );
-                        }
-                      },
-                    ),
-                ],
-              ),
-            )
+                                  if (result != null && result == true) {
+                                    await Provider.of<TransactionsModel>(
+                                            context,
+                                            listen: false)
+                                        .fetchTransactions();
+                                    Provider.of<TransactionsModel>(context,
+                                            listen: false)
+                                        .filterTransactions(_searchController
+                                            .text
+                                            .toLowerCase());
+                                  }
+                                },
+                              )
+                          ],
+                        ),
+                      )
+                    : Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.sentiment_dissatisfied,
+                              size: 50,
+                              color: Colors.white,
+                            ),
+                            SizedBox(height: 10),
+                            Text(
+                              'Sorry, nothing found',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ],
+                        ),
+                      ))
                 : Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.sentiment_dissatisfied,
-                    size: 50,
-                    color: Colors.white,
+                    // <-- This will be displayed when the search box is empty
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.sentiment_very_satisfied,
+                          size: 50,
+                          color: Colors.white,
+                        ),
+                        SizedBox(height: 10),
+                        Text(
+                          'Please enter something to search',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ],
+                    ),
                   ),
-                  SizedBox(height: 10),
-                  Text(
-                    'Sorry, nothing found',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ],
-              ),
-            ))
-                : Center(  // <-- This will be displayed when the search box is empty
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.sentiment_very_satisfied,
-                    size: 50,
-                    color: Colors.white,
-                  ),
-                  SizedBox(height: 10),
-                  Text(
-                    'Please enter something to search',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ],
-              ),
-            ),
           );
         },
       ),
