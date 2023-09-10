@@ -1,12 +1,18 @@
+import 'dart:ffi';
+
 import 'package:expnz/widgets/SimpleWidgets/ExpnZButton.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_iconpicker/flutter_iconpicker.dart';
+import 'package:image_cropper/image_cropper.dart';
 import '../database/CategoriesDB.dart';
+import '../utils/image_utils.dart';
 import '../widgets/SimpleWidgets/ExpnZTextField.dart';
 import '../widgets/SimpleWidgets/ModernSnackBar.dart';
 import '../models/CategoriesModel.dart';
 import 'package:provider/provider.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 
 
 
@@ -24,11 +30,13 @@ class AddCategoryScreen extends StatefulWidget {
 class _AddCategoryScreenState extends State<AddCategoryScreen> {
   late TextEditingController _categoryController;
   late TextEditingController _descriptionController;
-  late IconData selectedIcon = Icons.star;  // Default icon
+  late IconData selectedIcon = Icons.search;  // Default icon
   late Color selectedColor = Colors.blue; // Default color
   bool isDuplicateCategory = false;
   bool isProcessing = false;
   bool isModifyMode = false;
+  File? selectedImage;
+  XFile? _pickedFile;
 
   @override
   void initState() {
@@ -47,35 +55,47 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
     if (widget.categoryId != null){
       _loadExistingCategory(widget.categoryId!);
     } else {
-      selectedIcon = Icons.star;
+      selectedIcon = Icons.search;
       selectedColor = Colors.blue;
     }
   }
 
   void _loadExistingCategory(int id) async {
     final category = await CategoriesDB().getSelectedCategory(id);
+    IconData? newSelectedIcon;
+    File? newSelectedImage;
+    Color? newSelectedColor;
 
     if (category != null) {
+      isModifyMode = true;
+
+      if (category[CategoriesDB.columnSelectedImageBlob] == null) {
+        newSelectedIcon = IconData(
+          category[CategoriesDB.columnIconCodePoint] as int,
+          fontFamily: category[CategoriesDB.columnIconFontFamily] as String,
+        );
+      } else {
+        newSelectedIcon = Icons.search;
+        List<int> retrievedImageBytes = category[CategoriesDB.columnSelectedImageBlob];
+        newSelectedImage = await bytesToFile(retrievedImageBytes);
+      }
+
+      newSelectedColor = Color(
+        category[CategoriesDB.columnColor] is String ?
+        int.parse(category[CategoriesDB.columnColor] as String) :
+        category[CategoriesDB.columnColor] as int,
+      );
+
       setState(() {
-        isModifyMode = true;
         _categoryController.text = category[CategoriesDB.columnName] as String;
         _descriptionController.text = category[CategoriesDB.columnDescription] as String;
-        selectedIcon = IconData(
-            category[CategoriesDB.columnIcon] is String ?
-            int.parse(category[CategoriesDB.columnIcon] as String) :
-            category[CategoriesDB.columnIcon] as int,
-            fontFamily: 'MaterialIcons'
-        );
-
-        selectedColor = Color(
-            category[CategoriesDB.columnColor] is String ?
-            int.parse(category[CategoriesDB.columnColor] as String) :
-            category[CategoriesDB.columnColor] as int
-        );
+        selectedIcon = newSelectedIcon!;
+        selectedImage = newSelectedImage;
+        selectedColor = newSelectedColor!;
       });
     } else {
       setState(() {
-        selectedIcon = Icons.star;
+        selectedIcon = Icons.search;
         selectedColor = Colors.blue;
       });
     }
@@ -89,6 +109,66 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
     super.dispose();
   }
 
+
+
+  Future<void> _pickImage() async {
+    final ImagePicker _picker = ImagePicker();
+    final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+
+    setState(() {
+      if (pickedFile != null) {
+        //selectedImage = File(pickedFile.path);
+        setState(() {
+          _pickedFile = pickedFile;
+          _cropImage();
+        });
+        selectedIcon = Icons.search;
+      } else {
+        print("No image selected.");
+      }
+    });
+  }
+  Future<void> _cropImage() async {
+    if (_pickedFile != null) {
+      final croppedFile = await ImageCropper().cropImage(
+        sourcePath: _pickedFile!.path,
+        compressFormat: ImageCompressFormat.png,
+        compressQuality: 50,
+        cropStyle: CropStyle.circle,
+        uiSettings: [
+          AndroidUiSettings(
+              toolbarTitle: 'Cropper',
+              toolbarColor: Colors.blueGrey[900],
+              toolbarWidgetColor: Colors.white,
+              backgroundColor: Colors.blueGrey[900],
+              initAspectRatio: CropAspectRatioPreset.original,
+              lockAspectRatio: false),
+          IOSUiSettings(
+            title: 'Cropper',
+          ),
+          WebUiSettings(
+            context: context,
+            presentStyle: CropperPresentStyle.dialog,
+            boundary: const CroppieBoundary(
+              width: 520,
+              height: 520,
+            ),
+            viewPort:
+            const CroppieViewPort(width: 480, height: 480, type: 'circle'),
+            enableExif: true,
+            enableZoom: true,
+            showZoomer: true,
+          ),
+        ],
+      );
+      print('test');
+      if (croppedFile != null) {
+        setState(() {
+          selectedImage = File(croppedFile.path);
+        });
+      }
+    }
+  }
   void _pickIcon() async {
     IconData? icon = await FlutterIconPicker.showIconPicker(context,
         iconPackModes: [
@@ -99,10 +179,10 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
     if (icon != null) {
       setState(() {
         selectedIcon = icon;
+        selectedImage = null;
       });
     }
   }
-
   void _pickColor() {
     showDialog(
       context: context,
@@ -136,7 +216,6 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
       },
     );
   }
-
   //database functions
   void _addModifyCategory() async {
     if (isProcessing) return;
@@ -187,13 +266,18 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
       return;
     }
 
-
+    List<int>? imageBytes = null;
+    if (selectedImage != null) {
+      imageBytes = await selectedImage!.readAsBytes();
+    }
     // Prepare data to insert or update
     Map<String, dynamic> row = {
       'name': _categoryController.text,
       'description': _descriptionController.text,
-      'icon': selectedIcon.codePoint.toString(),
       'color': selectedColor.value,
+      'iconCodePoint': selectedIcon.codePoint,
+      'iconFontFamily': selectedIcon.fontFamily,
+      'selectedImageBlob': imageBytes == null ? null : imageBytes,
     };
 
     final int? id;
@@ -258,46 +342,75 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
             CustomTextField(label: "Enter Description", controller: _descriptionController),
             SizedBox(height: 16),
             // Redesigned Button for Icon Picker
-            ElevatedButton(
-              onPressed: _pickIcon,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  Icon(
-                    selectedIcon,
-                    color: Colors.white,
+            // Container for the entire row
+// Container for the entire row
+            Container(
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+              decoration: BoxDecoration(
+                color: Colors.blueGrey[700],
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    spreadRadius: 1,
+                    blurRadius: 7,
+                    offset: Offset(0, 3),
                   ),
-                  SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Choose Icon or Image',
+                    style: TextStyle(color: Colors.white, fontSize: 16),
+                  ),
+                  Row(
                     children: [
-                      Text("Select Icon"),
-                      Text(
-                        "Tap to choose icon",
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w300,
+                      GestureDetector(
+                        onTap: _pickIcon,
+                        child: Container(
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white,
+                          ),
+                          child: Icon(
+                            selectedIcon,
+                            color: Colors.blueGrey[700],
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 16),
+                      GestureDetector(
+                        onTap: _pickImage,
+                        child: Container(
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white,
+                          ),
+                          child: ClipOval(
+                            child: (selectedImage != null)
+                                ? Image.file(
+                              selectedImage!,
+                              fit: BoxFit.cover,
+                            )
+                                : Icon(
+                              Icons.image,
+                              color: Colors.blueGrey[700],
+                            ),
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ],
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blueGrey[700],
-                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                textStyle: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-                elevation: 5,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(50.0),
-                ),
-              ),
             ),
             SizedBox(height: 16),
-            // Redesigned Button for Color Picker
             ElevatedButton(
               onPressed: _pickColor,
               child: Row(

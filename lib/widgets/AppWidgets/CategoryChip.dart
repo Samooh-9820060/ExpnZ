@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
+
+import 'package:provider/provider.dart';
+
+import '../../models/CategoriesModel.dart';
 
 class CategoryChip extends StatefulWidget {
-  final IconData icon;
-  final String label;
   final bool isSelected;
   final Function onTap;
+  final int categoryId;
 
   CategoryChip({
-    required this.icon,
-    required this.label,
     this.isSelected = true,
     required this.onTap,
+    required this.categoryId,
   });
 
   @override
@@ -50,9 +53,22 @@ class _CategoryChipState extends State<CategoryChip>
 
   @override
   Widget build(BuildContext context) {
+    var categoriesModel = Provider.of<CategoriesModel>(context);
+    var categoryDetails = categoriesModel.getCategoryById(widget.categoryId);
+
+    if (categoryDetails == null) {
+      // Handle the case when the category is null (e.g., show a default widget)
+      return SizedBox.shrink();
+    }
+    // Extract details from the category
+    var iconData = IconData(
+      categoryDetails['iconCodePoint'],
+      fontFamily: categoryDetails['iconFontFamily'],
+    );
+    var label = categoryDetails['name'];
+    File? imageFile = categoryDetails['imageFile'];
 
     _controller.forward();
-
 
     return GestureDetector(
       onTap: () => _animateAndRemove(),
@@ -91,9 +107,22 @@ class _CategoryChipState extends State<CategoryChip>
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(widget.icon, color: widget.isSelected ? Colors.blueAccent : Colors.grey),
+              CircleAvatar(
+                backgroundColor: Colors.transparent,
+                radius: 12,
+                child: imageFile == null
+                    ? Icon(
+                  iconData,
+                  color: widget.isSelected ? Colors.blueAccent : Colors.grey,
+                  size: 24,
+                )
+                    : null,
+                backgroundImage: imageFile != null
+                    ? FileImage(imageFile!)
+                    : null,
+              ),
               SizedBox(width: 4),
-              Text(widget.label),
+              Text(label),
               SizedBox(width: 4),
               InkWell(  // Replacing IconButton with InkWell
                 onTap: () => _animateAndRemove(),

@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../database/CategoriesDB.dart';
 import '../models/CategoriesModel.dart';
+import '../utils/image_utils.dart';
 import '../widgets/AppWidgets/CategoryCard.dart';
+import 'dart:io';
 
 class CategoriesScreen extends StatefulWidget {
   @override
@@ -18,7 +20,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> with SingleTickerPr
   @override
   void initState() {
     super.initState();
-    Provider.of<CategoriesModel>(context, listen: false).fetchCategories();
+    final categoriesModel = Provider.of<CategoriesModel>(context, listen: false);
+    categoriesModel.fetchCategories();
     _controller = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
@@ -34,7 +37,6 @@ class _CategoriesScreenState extends State<CategoriesScreen> with SingleTickerPr
     _controller.dispose();
     super.dispose();
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -74,17 +76,12 @@ class _CategoriesScreenState extends State<CategoriesScreen> with SingleTickerPr
               itemCount: sortedData.length,
               itemBuilder: (context, index) {
                 final category = sortedData[index];
+
                 return buildAnimatedCategoryCard(
                   key: ValueKey(category[CategoriesDB.columnId]),
                   categoryId: category[CategoriesDB.columnId],
-                  categoryName: category[CategoriesDB.columnName],
                   income: "\$200",
                   expense: "\$50",
-                  iconData: IconData(
-                    int.tryParse(category[CategoriesDB.columnIcon]) ?? Icons.error.codePoint,
-                    fontFamily: 'MaterialIcons',
-                  ),
-                  primaryColor: Color(category[CategoriesDB.columnColor]),
                 );
               },
             );
@@ -97,11 +94,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> with SingleTickerPr
   Widget buildAnimatedCategoryCard({
     Key? key,
     required int categoryId,
-    required String categoryName,
     required String income,
     required String expense,
-    required IconData iconData,
-    required Color primaryColor
   }) {
     return GestureDetector(
       onLongPress: () {
@@ -117,10 +111,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> with SingleTickerPr
               child: CategoryCard(
                 key: key,
                 categoryId: categoryId,
-                categoryName: categoryName,
-                iconData: iconData,
                 animation: _animation,
-                primaryColor: primaryColor,
               ),
             ),
           );

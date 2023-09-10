@@ -29,7 +29,7 @@ class CustomBottomNavBar extends StatelessWidget {
               _buildNavItem(Icons.home, 'Home', 0),
               _buildNavItem(Icons.account_balance_wallet, 'Accounts', 1),
               _buildNavItem(Icons.category, 'Categories', 2),
-              _buildNavItem(Icons.pie_chart, 'Overview', 3),
+              //_buildNavItem(Icons.pie_chart, 'Overview', 3),
             ],
           ),
         ),

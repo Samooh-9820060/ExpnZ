@@ -56,20 +56,6 @@ class _FinanceCardState extends State<FinanceCard>
     super.dispose();
   }
 
-  Widget _animatedNumber(double animationValue, String targetValue) {
-    int value = (double.parse(targetValue.replaceAll(RegExp(r'[\$,]'), '')) *
-            animationValue)
-        .toInt();
-    return Text(
-      '\$' + value.toString(),
-      style: TextStyle(
-        color: Colors.white,
-        fontSize: 32,
-        fontWeight: FontWeight.bold,
-      ),
-    );
-  }
-
   String _animatedNumberString(double animationValue, String targetValue) {
     int value = (double.parse(targetValue.replaceAll(RegExp(r'[\$,]'), '')) *
             animationValue)

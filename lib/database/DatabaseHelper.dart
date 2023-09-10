@@ -52,8 +52,10 @@ class DatabaseHelper {
             ${CategoriesDB.columnId} INTEGER PRIMARY KEY,
             ${CategoriesDB.columnName} TEXT NOT NULL,
             ${CategoriesDB.columnDescription} TEXT NOT NULL,
-            ${CategoriesDB.columnIcon} TEXT NOT NULL,
-            ${CategoriesDB.columnColor} INTEGER NOT NULL
+            ${CategoriesDB.columnColor} INTEGER NOT NULL,
+            ${CategoriesDB.columnIconCodePoint} INTEGER,
+            ${CategoriesDB.columnIconFontFamily} TEXT,
+            ${CategoriesDB.columnSelectedImageBlob} BLOB
           )
     ''');
   }

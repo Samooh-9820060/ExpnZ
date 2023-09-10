@@ -73,7 +73,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
     final String time = widget.transaction?['time'] ?? 'Unknown';
     final double amount = widget.transaction?['amount'] ?? 0.0;
     final String type = widget.transaction?['type'] ?? 'Unknown';
-    final List<dynamic> categories = jsonDecode(widget.transaction?['categories'] ?? '[]');
 
     if (type == 'expense') {
       _selectedType = TransactionType.expense;
@@ -98,10 +97,23 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
         selectedAccoutId = accountId;
       }
     }
-    final String? categoriesJson = widget.transaction?['categories'];
-    if (categoriesJson != null) {
-      selectedCategoriesList = List<Map<String, dynamic>>.from(jsonDecode(categoriesJson));
+    final String? categoriesString = widget.transaction?['categories'] ?? '';
+
+    if (categoriesString != null) {
+      final List<int> categoryIds = categoriesString
+          .split(',')
+          .map((e) => int.tryParse(e.trim()) ?? 0)
+          .toList();
+
+      selectedCategoriesList.clear();  // Clear the list if you want to start fresh
+
+      for (int categoryId in categoryIds) {
+        selectedCategoriesList.add({
+          'id': categoryId,
+        });
+      }
     }
+
   }
 
   @override
@@ -125,7 +137,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
     }
 
     // Check if the selected categories list contains "Unassigned"
-    bool hasUnassignedCategory = selectedCategoriesList.any((category) => category['name'] == 'Unassigned');
+    bool hasUnassignedCategory = selectedCategoriesList.any((category) => category['id'] == '0');
 
     if (hasUnassignedCategory) {
       await showModernSnackBar(
@@ -184,6 +196,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
         return;
       }
 
+      String categoryIds = selectedCategoriesList.map((category) {
+        return category['id'].toString();
+      }).join(', ');
+
       // Prepare data for "withdrawal" from the source account
       Map<String, dynamic> rowFrom = {
         TransactionsDB.columnType: "expense",
@@ -193,7 +209,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
         TransactionsDB.columnDate: DateFormat('yyyy-MM-dd').format(selectedDate),
         TransactionsDB.columnTime: selectedTime.format(context),
         TransactionsDB.columnAccountId: selectedFromAccountId,
-        TransactionsDB.columnCategories: jsonEncode(selectedCategoriesList),
+        TransactionsDB.columnCategories: categoryIds,
       };
 
       // Prepare data for "deposit" into the destination account
@@ -205,7 +221,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
         TransactionsDB.columnDate: DateFormat('yyyy-MM-dd').format(selectedDate),
         TransactionsDB.columnTime: selectedTime.format(context),
         TransactionsDB.columnAccountId: selectedToAccountId,
-        TransactionsDB.columnCategories: jsonEncode(selectedCategoriesList),
+        TransactionsDB.columnCategories: categoryIds,
       };
 
       final transactionsModel = Provider.of<TransactionsModel>(context, listen: false);
@@ -267,6 +283,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
         return;
       }
 
+      String categoryIds = selectedCategoriesList.map((category) {
+        return category['id'].toString();
+      }).join(', ');
+
       // Prepare the transaction data
       Map<String, dynamic> row = {
         TransactionsDB.columnType: _selectedType.toString().split('.').last,  // income, expense or transfer
@@ -276,7 +296,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
         TransactionsDB.columnDate: DateFormat('yyyy-MM-dd').format(selectedDate),
         TransactionsDB.columnTime: selectedTime.format(context),  // You might want to store this differently
         TransactionsDB.columnAccountId: selectedAccoutId,
-        TransactionsDB.columnCategories: jsonEncode(selectedCategoriesList),  // Storing categories as a JSON string
+        TransactionsDB.columnCategories: categoryIds,
       };
 
       final transactionsModel = Provider.of<TransactionsModel>(context, listen: false);
@@ -387,6 +407,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
 
   @override
   Widget build(BuildContext context) {
+    final categoriesModel = Provider.of<CategoriesModel>(context);
+
     return WillPopScope(
       onWillPop: () async {
         Navigator.pop(context, true);
@@ -635,8 +657,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                             } else {
                                               List<Map<String, dynamic>> sortedData = List.from(categoriesModel.categories);
                                               sortedData = sortedData.where((category) {
-                                                String categoryName = category[CategoriesDB.columnName];
-                                                bool isAlreadySelected = selectedCategoriesList.any((selectedCategory) => selectedCategory['name'] == categoryName);
+                                                int categoryId = category[CategoriesDB.columnId];
+                                                bool isAlreadySelected = selectedCategoriesList.any((selectedCategory) => int.parse(selectedCategory['id'].toString()) == categoryId);
 
                                                 return category[CategoriesDB.columnName]
                                                     .toLowerCase()
@@ -658,9 +680,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                                   itemBuilder: (context, index) {
                                                     final category = sortedData[index];
                                                     IconData categoryIcon = IconData(
-                                                      int.tryParse(category[CategoriesDB.columnIcon]) ?? Icons.error.codePoint,
-                                                      fontFamily: 'MaterialIcons',
+                                                      category[CategoriesDB.columnIconCodePoint],
+                                                      fontFamily: category[CategoriesDB.columnIconFontFamily],
                                                     );
+                                                    String categoryId = category[CategoriesDB.columnId].toString();
                                                     String categoryName = category[CategoriesDB.columnName];
 
                                                     BorderRadius borderRadius;
@@ -690,8 +713,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                                         onTap: () {
                                                           setState(() {
                                                             selectedCategoriesList.add({
-                                                              'name': categoryName,
-                                                              'icon': categoryIcon.codePoint,
+                                                              'id': categoryId,
                                                             });
                                                             _showDropdown = false;
                                                           });
@@ -701,7 +723,12 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                                         highlightColor: Colors.blue.withOpacity(0.5),
                                                         child: ListTile(
                                                           title: Text(categoryName),
-                                                          leading: Icon(categoryIcon),
+                                                          leading: category['imageFile'] == null
+                                                              ? Icon(categoryIcon)
+                                                              : CircleAvatar(
+                                                            backgroundImage: FileImage(category['imageFile']),
+                                                            radius: 12,
+                                                          ),
                                                         ),
                                                       ),
                                                     );
@@ -723,11 +750,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                         (int index) {
                                       final category = selectedCategoriesList[index];
                                       return CategoryChip(
-                                        icon: IconData(
-                                          category['icon'],
-                                          fontFamily: 'MaterialIcons',
-                                        ),
-                                        label: category['name'],
+                                        categoryId: category['id'],
                                         onTap: () {
                                           setState(() {
                                             selectedCategoriesList.removeAt(index);
@@ -1032,9 +1055,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                                     itemBuilder: (context, index) {
                                                       final category = sortedData[index];
                                                       IconData categoryIcon = IconData(
-                                                        int.tryParse(category[CategoriesDB.columnIcon]) ?? Icons.error.codePoint,
-                                                        fontFamily: 'MaterialIcons',
+                                                        category[CategoriesDB.columnIconCodePoint],
+                                                        fontFamily: category[CategoriesDB.columnIconFontFamily],
                                                       );
+                                                      String categoryId = category[CategoriesDB.columnId];
                                                       String categoryName = category[CategoriesDB.columnName];
 
                                                       BorderRadius borderRadius;
@@ -1064,8 +1088,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                                           onTap: () {
                                                             setState(() {
                                                               selectedCategoriesList.add({
-                                                                'name': categoryName,
-                                                                'icon': categoryIcon.codePoint,
+                                                                'id': categoryId,
                                                               });
                                                               _showDropdown = false;
                                                             });
@@ -1097,11 +1120,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                         (int index) {
                                       final category = selectedCategoriesList[index];
                                       return CategoryChip(
-                                        icon: IconData(
-                                          category['icon'],
-                                          fontFamily: 'MaterialIcons',
-                                        ),
-                                        label: category['name'],
+                                        categoryId: category['id'],
                                         onTap: () {
                                           setState(() {
                                             selectedCategoriesList.removeAt(index);

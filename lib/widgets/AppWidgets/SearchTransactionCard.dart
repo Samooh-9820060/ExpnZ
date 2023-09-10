@@ -4,8 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../database/AccountsDB.dart';
+import '../../database/CategoriesDB.dart';
 import '../../models/AccountsModel.dart';
+import '../../models/CategoriesModel.dart';
 import '../../utils/currency_utils.dart';
+import '../../utils/image_utils.dart';
 
 class TransactionCard extends StatelessWidget {
   final Map<String, dynamic> transaction;
@@ -49,6 +52,7 @@ class TransactionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
     final String name = transaction['name'] ?? 'Unknown';
     final String date = transaction['date'] != null
         ? transaction['date'].split('T')[0]
@@ -56,11 +60,17 @@ class TransactionCard extends StatelessWidget {
     final String time = transaction['time'] ?? 'Unknown';
     final double amount = transaction['amount'] ?? 0.0;
     final String type = transaction['type'] ?? 'Unknown';
-    final List<dynamic> categories =
-        jsonDecode(transaction['categories'] ?? '[]');
-    final int categoryIcon = categories.isNotEmpty
-        ? categories[0]['icon']
-        : Icons.help_outline.codePoint;
+    final String categoriesString = transaction['categories'] ?? '';
+    final List<int> categoryIds = categoriesString
+        .split(',')
+        .map((e) => int.tryParse(e.trim()) ?? 0)
+        .toList();
+
+    final categoriesModel = Provider.of<CategoriesModel>(context);
+    final int firstCategoryId = categoryIds.isNotEmpty ? categoryIds.first : 0;
+    final Map<String, dynamic>? firstCategory = categoriesModel.getCategoryById(firstCategoryId);
+    final Widget categoryWidget = getCategoryWidget(firstCategory);
+
 
     // Determine color based on transaction type
     final Color? amountColor = type == 'income'
@@ -127,15 +137,7 @@ class TransactionCard extends StatelessWidget {
                       children: [
                         Row(
                           children: [
-                            CircleAvatar(
-                              radius: 16,
-                              backgroundColor: Colors.blueGrey[800],
-                              child: Icon(
-                                getCategoryIcon(categoryIcon),
-                                color: Colors.white,
-                                size: 16,
-                              ),
-                            ),
+                            categoryWidget,
                             SizedBox(width: 12),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,

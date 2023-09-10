@@ -1,30 +1,27 @@
 import 'dart:convert';
-
+import 'dart:io';
 import 'package:expnz/screens/AddCategory.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../database/AccountsDB.dart';
+import '../../database/CategoriesDB.dart';
 import '../../models/AccountsModel.dart';
+import '../../models/CategoriesModel.dart';
 import '../../models/TransactionsModel.dart';
 import '../../utils/animation_utils.dart';
+import '../../utils/image_utils.dart';
 
 class CategoryCard extends StatefulWidget {
   final Key? key;
   final int categoryId;
-  final String categoryName;
-  final IconData iconData;
   final Animation<double> animation;
-  final Color primaryColor;
 
   CategoryCard({
     this.key,
     required this.categoryId,
-    required this.categoryName,
-    required this.iconData,
     required this.animation,
-    required this.primaryColor,
   }) : super(key: key);
 
   @override
@@ -37,9 +34,10 @@ class _CategoryCardState extends State<CategoryCard>
   late Animation<double> _numberAnimation;
   late AnimationController _deleteController;
   late Animation<double> _deleteAnimation;
-
   late Map<int, double> accountIncome;
   late Map<int, double> accountExpense;
+
+  late Map<String, dynamic> categoryDetails;
 
   bool showMoreInfo = false;
 
@@ -72,9 +70,12 @@ class _CategoryCardState extends State<CategoryCard>
     // Filter transactions related to this category
     List<Map<String, dynamic>> categoryTransactions = transactionsModel.transactions.where((transaction) {
       if (transaction.containsKey('categories')) {
-        // Decode the JSON string into a List<dynamic>
-        List<dynamic> categories = jsonDecode(transaction['categories']);
-        return categories.any((category) => category['name'] == widget.categoryName);
+        List<int> categories = (transaction['categories'] as String)
+            .split(", ")
+            .map((e) => int.tryParse(e) ?? 0)
+            .toList();
+
+        return categories.any((category) => category == widget.categoryId);
       }
       return false;
     }).toList();
@@ -101,6 +102,32 @@ class _CategoryCardState extends State<CategoryCard>
 
   @override
   Widget build(BuildContext context) {
+    var categoriesModel = Provider.of<CategoriesModel>(context);
+    categoryDetails = categoriesModel.getCategoryById(widget.categoryId) ?? {};
+
+    IconData? iconData;
+    if (categoryDetails.containsKey(CategoriesDB.columnIconCodePoint)) {
+      iconData = IconData(
+        categoryDetails[CategoriesDB.columnIconCodePoint],
+        fontFamily: categoryDetails[CategoriesDB.columnIconFontFamily],
+      );
+    }
+
+    Future<File?>? _imageFileFuture;
+    if (categoryDetails.containsKey(CategoriesDB.columnSelectedImageBlob) &&
+        categoryDetails[CategoriesDB.columnSelectedImageBlob] != null) {
+      _imageFileFuture = bytesToFile(
+        categoryDetails[CategoriesDB.columnSelectedImageBlob] as List<int>,
+      );
+    }
+
+    String? categoryName = categoryDetails[CategoriesDB.columnName];
+    Color? primaryColor;
+    if (categoryDetails[CategoriesDB.columnColor] != null) {
+      primaryColor = Color(categoryDetails[CategoriesDB.columnColor] as int);
+    }
+
+
     return AnimatedBuilder(
       animation: _deleteController,
       builder: (context, child) {
@@ -148,15 +175,49 @@ class _CategoryCardState extends State<CategoryCard>
                     children: [
                       Row(
                         children: [
-                          CircleAvatar(
-                            backgroundColor: widget.primaryColor,
-                            child: Icon(widget.iconData,
-                                color: Colors.white, size: 24),
+                          FutureBuilder<File?>(
+                            future: _imageFileFuture,
+                            builder: (context, snapshot) {
+                              if (_imageFileFuture == null) {
+                                // _imageFileFuture is null, show the icon
+                                return CircleAvatar(
+                                  backgroundColor: primaryColor,
+                                  child: Icon(
+                                    iconData,
+                                    color: Colors.white,
+                                    size: 24,
+                                  ),
+                                );
+                              } else if (snapshot.connectionState == ConnectionState.done) {
+                                if (snapshot.hasError) {
+                                  // Handle the error
+                                  return CircleAvatar(
+                                    backgroundColor: primaryColor,
+                                    child: Icon(
+                                      iconData,
+                                      color: Colors.white,
+                                      size: 24,
+                                    ),
+                                  );
+                                }
+
+                                // File is ready
+                                File? file = snapshot.data;
+                                return CircleAvatar(
+                                  backgroundColor: primaryColor,
+                                  child: file == null ? Icon(iconData, color: Colors.white, size: 24) : null,
+                                  backgroundImage: file != null ? FileImage(file) : null,
+                                );
+                              } else {
+                                // File still loading
+                                return CircularProgressIndicator();
+                              }
+                            },
                           ),
                           SizedBox(width: 16),
                           Expanded(
                             child: Text(
-                              widget.categoryName,
+                              categoryName!,
                               maxLines: 3,
                               overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.poppins(
