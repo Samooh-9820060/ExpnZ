@@ -1,14 +1,18 @@
+import 'dart:convert';
+
 import 'package:expnz/screens/AddCategory.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+
+import '../../models/AccountsModel.dart';
+import '../../models/TransactionsModel.dart';
 
 class CategoryCard extends StatefulWidget {
   final Key? key;
   final int categoryId;
   final String categoryName;
-  final String income;
-  final String expense;
   final IconData iconData;
   final Animation<double> animation;
   final Color primaryColor;
@@ -17,8 +21,6 @@ class CategoryCard extends StatefulWidget {
     this.key,
     required this.categoryId,
     required this.categoryName,
-    required this.income,
-    required this.expense,
     required this.iconData,
     required this.animation,
     required this.primaryColor,
@@ -34,6 +36,9 @@ class _CategoryCardState extends State<CategoryCard>
   late Animation<double> _numberAnimation;
   late AnimationController _deleteController;
   late Animation<double> _deleteAnimation;
+
+  late Map<int, double> accountIncome;
+  late Map<int, double> accountExpense;
 
   bool showMoreInfo = false;
 
@@ -53,6 +58,37 @@ class _CategoryCardState extends State<CategoryCard>
     );
     _deleteAnimation =
         Tween<double>(begin: 1, end: 0).animate(_deleteController);
+    _calculateCategoryAmounts();
+  }
+
+  void _calculateCategoryAmounts() {
+    final transactionsModel = Provider.of<TransactionsModel>(context, listen: false);
+
+    // Initialize Maps to store income and expense for each account
+    accountIncome = {};
+    accountExpense = {};
+
+    // Filter transactions related to this category
+    List<Map<String, dynamic>> categoryTransactions = transactionsModel.transactions.where((transaction) {
+      if (transaction.containsKey('categories')) {
+        // Decode the JSON string into a List<dynamic>
+        List<dynamic> categories = jsonDecode(transaction['categories']);
+        return categories.any((category) => category['name'] == widget.categoryName);
+      }
+      return false;
+    }).toList();
+
+    // Loop through filtered transactions and sum the income and expense for each account
+    for (var transaction in categoryTransactions) {
+      int accountId = transaction['account_id'];
+      double amount = transaction['amount'];
+
+      if (transaction['type'] == 'income') {
+        accountIncome[accountId] = (accountIncome[accountId] ?? 0) + amount;
+      } else if (transaction['type'] == 'expense') {
+        accountExpense[accountId] = (accountExpense[accountId] ?? 0) + amount;
+      }
+    }
   }
 
   @override
@@ -72,6 +108,17 @@ class _CategoryCardState extends State<CategoryCard>
 
   @override
   Widget build(BuildContext context) {
+    final accountsModel = Provider.of<AccountsModel>(context, listen: false);
+
+    // Fetch account names for display
+    Future<void> fetchAccountNames() async {
+      for (int accountId in accountIncome.keys) {
+        String accountName = await accountsModel.getAccountNameById(accountId);
+        // Use accountName along with accountIncome[accountId] and accountExpense[accountId] for display
+      }
+    }
+    fetchAccountNames();
+
     return AnimatedBuilder(
       animation: _deleteController,
       builder: (context, child) {
@@ -163,50 +210,104 @@ class _CategoryCardState extends State<CategoryCard>
                         ],
                       ),
                       if (showMoreInfo)
-                        Container(
-                          margin: EdgeInsets.only(top: 10),
-                          padding: EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(height: 20),
+                            Consumer<AccountsModel>(
+                            builder: (context, accountsModel, child) {
+                              // Ensure the accounts list is not empty
+                              if (accountsModel.accounts.isEmpty) {
+                                return Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.info_outline,
+                                        color: Colors.red,
+                                        size: 50.0,
+                                      ),
+                                      SizedBox(height: 10),
+                                      Text(
+                                        "No accounts are there",
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.blueGrey,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }
+
+
+                              List<Widget> accountWidgets = [];
+                              for (var account in accountsModel.accounts) {
+                                int? accountId = account['_id'];
+                                if (accountId == null) {
+                                  // Handle the null case
+                                  continue;
+                                }
+                                String accountName = account['name'];
+                                double income = accountIncome[accountId] ?? 0.0;
+                                double expense = accountExpense[accountId] ?? 0.0;
+
+                                // If both income and expense are zero, don't show this account
+                                if (income == 0.0 && expense == 0.0) {
+                                  continue;
+                                }
+
+                                accountWidgets.add(
+                                  accountInfoRow(accountName, "\$${income.toStringAsFixed(2)}", "\$${expense.toStringAsFixed(2)}"),
+                                );
+                              }
+
+                              if (accountWidgets.isEmpty) {
+                                return Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.info_outline,
+                                        color: Colors.red,
+                                        size: 50.0,
+                                      ),
+                                      SizedBox(height: 10),
+                                      Text(
+                                        "No more info available",
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.blueGrey,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }
+
+                              List<Widget> finalWidgets = [];
+                              for (int i = 0; i < accountWidgets.length; i++) {
+                                finalWidgets.add(accountWidgets[i]);
+                                if (i < accountWidgets.length - 1) {
+                                  finalWidgets.add(Divider(color: Colors.grey));
+                                }
+                              }
+
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: finalWidgets,
+                              );
+                            },
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              accountInfoRow("Account1", "100\$", "200\$"),
-                              Divider(color: Colors.grey),
-                              accountInfoRow("Account2", "300\$", "400\$"),
-                            ],
-                          ),
-                        ),
+                        ]),
                     ]),
               ),
             ]),
           );
         },
       ),
-    );
-  }
-
-  Column infoColumn(String title, String value, Color textColor) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: GoogleFonts.poppins(
-            fontSize: 8,
-            color: Colors.white70,
-          ),
-        ),
-        Text(
-          value,
-          style: GoogleFonts.poppins(
-            fontSize: 10,
-            fontWeight: FontWeight.bold,
-            color: textColor,
-          ),
-        ),
-      ],
     );
   }
 

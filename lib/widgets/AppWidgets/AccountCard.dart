@@ -123,7 +123,7 @@ class _ModernAccountCardState extends State<ModernAccountCard> with SingleTicker
                 Positioned(
                   top: 10,
                   child: Text(
-                    widget.currencyMap['code'] as String,
+                    widget.accountName,
                     style: GoogleFonts.roboto(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -155,7 +155,7 @@ class _ModernAccountCardState extends State<ModernAccountCard> with SingleTicker
                       SizedBox(height: 24),
                       // Account name
                       Text(
-                        widget.accountName,
+                        widget.currencyMap['name'] as String,
                         style: GoogleFonts.roboto(
                           fontSize: 16,
                           color: Colors.white70,

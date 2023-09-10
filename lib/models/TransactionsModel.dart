@@ -14,6 +14,26 @@ class TransactionsModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> deleteTransactionsByAccountId(int accountId, String? searchText, BuildContext context) async {
+    List<Map<String, dynamic>> transactionsToDelete = transactions.where((transaction) {
+      return transaction[TransactionsDB.columnAccountId] == accountId;
+    }).toList();
+
+    for (var transaction in transactionsToDelete) {
+      int transactionId = transaction[TransactionsDB.columnId];
+      await db.deleteTransaction(transactionId);
+    }
+
+    await fetchTransactions(); // Refresh the transactions list
+
+    if (searchText != null) {
+      filterTransactions(context, searchText);
+    }
+
+    notifyListeners();  // Notify the UI to rebuild
+  }
+
+
   Future<void> deleteTransactions(int transactionId, String? searchText, BuildContext context) async {
     await db.deleteTransaction(transactionId);
     await fetchTransactions();  // Refresh the categories
@@ -44,7 +64,6 @@ class TransactionsModel extends ChangeNotifier {
           shouldInclude = true;
         }
 
-        print(transaction);
         if (shouldInclude) {
           tempTransactions.add(transaction);
         }

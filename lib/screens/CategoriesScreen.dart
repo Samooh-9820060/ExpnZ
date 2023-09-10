@@ -114,11 +114,9 @@ class _CategoriesScreenState extends State<CategoriesScreen> with SingleTickerPr
             child: Transform.scale(
               scale: _animation.value,
               child: CategoryCard(
-                key: key,  // Pass the key here
+                key: key,
                 categoryId: categoryId,
                 categoryName: categoryName,
-                income: income,
-                expense: expense,
                 iconData: iconData,
                 animation: _animation,
                 primaryColor: primaryColor,

@@ -150,7 +150,7 @@ class _AccountsScreenState extends State<AccountsScreen> with TickerProviderStat
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text("Delete Account"),
-          content: Text("Are you sure you want to delete this account?"),
+          content: Text("Are you sure you want to delete this account? \n\nThis will delete all transactions associated with this account"),
           actions: [
             TextButton(
               child: Text("Cancel"),
@@ -161,8 +161,8 @@ class _AccountsScreenState extends State<AccountsScreen> with TickerProviderStat
             TextButton(
               child: Text("Delete"),
               onPressed: () async {
-                await Provider.of<AccountsModel>(context, listen: false)
-                    .deleteAccount(accountId);
+                await Provider.of<TransactionsModel>(context, listen: false).deleteTransactionsByAccountId(accountId, null, context);
+                await Provider.of<AccountsModel>(context, listen: false).deleteAccount(accountId);
                 Navigator.of(context).pop();
               },
             ),
