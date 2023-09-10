@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 import '../database/AccountsDB.dart';
 import '../models/AccountsModel.dart';
 import '../models/TransactionsModel.dart';
-import '../utils/currency_utils.dart';
 import '../widgets/AppWidgets/AccountCard.dart';
 
 class AccountsScreen extends StatefulWidget {
@@ -80,36 +79,10 @@ class _AccountsScreenState extends State<AccountsScreen> with TickerProviderStat
                 transactionsModel.fetchTransactions();
 
                 Map<String, dynamic> currencyMap = jsonDecode(account[AccountsDB.accountCurrency]);
-                String currencyCode = currencyMap['code'] as String;
 
                 String totalBalance = transactionsModel.getBalanceForAccount(account[AccountsDB.accountId]).toStringAsFixed(currencyMap['decimalDigits'] ?? 2);
                 String totalIncome = transactionsModel.getTotalIncomeForAccount(account[AccountsDB.accountId]).toStringAsFixed(currencyMap['decimalDigits'] ?? 2);
                 String totalExpense = transactionsModel.getTotalExpenseForAccount(account[AccountsDB.accountId]).toStringAsFixed(currencyMap['decimalDigits'] ?? 2);
-
-                // Use the utility functions to get the formatted symbol and amount
-                String formattedSymbol = formatCurrencySymbol(
-                    currencyMap['symbol'] ?? 'Unknown',
-                    currencyMap['spaceBetweenAmountAndSymbol'] ?? false,
-                    currencyMap['symbolOnLeft'] ?? true
-                );
-
-                String formattedBalance = formatAmountWithSeparator(
-                    double.parse(totalBalance),
-                    currencyMap['thousandsSeparator'] ?? ',',
-                    currencyMap['decimalDigits'] ?? 2
-                );
-
-                String formattedIncome = formatAmountWithSeparator(
-                    double.parse(totalIncome),
-                    currencyMap['thousandsSeparator'] ?? ',',
-                    currencyMap['decimalDigits'] ?? 2
-                );
-
-                String formattedExpense = formatAmountWithSeparator(
-                    double.parse(totalExpense),
-                    currencyMap['thousandsSeparator'] ?? ',',
-                    currencyMap['decimalDigits'] ?? 2
-                );
 
                 return buildAnimatedAccountCard(
                   accountId: account[AccountsDB.accountId],
@@ -162,7 +135,7 @@ class _AccountsScreenState extends State<AccountsScreen> with TickerProviderStat
                 totalBalance: totalBalance,
                 income: income,
                 expense: expense,
-                cardNumber: cardNumber, // example value, replace with real card number
+                cardNumber: cardNumber,
               ),
             ),
           );

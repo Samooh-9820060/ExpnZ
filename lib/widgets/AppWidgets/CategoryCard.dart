@@ -28,11 +28,14 @@ class CategoryCard extends StatefulWidget {
   _CategoryCardState createState() => _CategoryCardState();
 }
 
-class _CategoryCardState extends State<CategoryCard> with TickerProviderStateMixin {
+class _CategoryCardState extends State<CategoryCard>
+    with TickerProviderStateMixin {
   late AnimationController _numberController;
   late Animation<double> _numberAnimation;
   late AnimationController _deleteController;
   late Animation<double> _deleteAnimation;
+
+  bool showMoreInfo = false;
 
   @override
   void initState() {
@@ -41,13 +44,15 @@ class _CategoryCardState extends State<CategoryCard> with TickerProviderStateMix
       duration: const Duration(milliseconds: 1000),
       vsync: this,
     );
-    _numberAnimation = Tween<double>(begin: 0, end: 1).animate(_numberController);
+    _numberAnimation =
+        Tween<double>(begin: 0, end: 1).animate(_numberController);
     _numberController.forward();
     _deleteController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    _deleteAnimation = Tween<double>(begin: 1, end: 0).animate(_deleteController);
+    _deleteAnimation =
+        Tween<double>(begin: 1, end: 0).animate(_deleteController);
   }
 
   @override
@@ -58,7 +63,9 @@ class _CategoryCardState extends State<CategoryCard> with TickerProviderStateMix
   }
 
   String _animatedNumberString(double animationValue, String targetValue) {
-    int value = (double.parse(targetValue.replaceAll(RegExp(r'[\$,]'), '')) * animationValue).toInt();
+    int value = (double.parse(targetValue.replaceAll(RegExp(r'[\$,]'), '')) *
+            animationValue)
+        .toInt();
     final formatter = NumberFormat("#,###");
     return '\$' + formatter.format(value);
   }
@@ -81,60 +88,99 @@ class _CategoryCardState extends State<CategoryCard> with TickerProviderStateMix
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => AddCategoryScreen(categoryId: this.widget.categoryId),
+                  builder: (context) =>
+                      AddCategoryScreen(categoryId: this.widget.categoryId),
                 ),
               ).then((value) {
                 setState(() {});
               });
-              },
-            child: Container(
-              margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Colors.black, Colors.grey[850]!],
-                ),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    offset: Offset(0, 4),
-                    blurRadius: 6.0,
+            },
+            child: Column(children: [
+              Container(
+                margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Colors.black, Colors.grey[850]!],
                   ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    backgroundColor: widget.primaryColor,
-                    child: Icon(widget.iconData, color: Colors.white, size: 24),
-                  ),
-                  SizedBox(width: 16),
-                  Expanded(
-                    child: Text(
-                      widget.categoryName,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        color: Colors.white,
-                      ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      offset: Offset(0, 4),
+                      blurRadius: 6.0,
                     ),
-                  ),
-                  SizedBox(width: 8),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
+                  ],
+                ),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      infoColumn("Income", _animatedNumberString(_numberAnimation.value, widget.income), Colors.green),
-                      SizedBox(width: 16),
-                      infoColumn("Expense", _animatedNumberString(_numberAnimation.value, widget.expense), Colors.red),
-                    ],
-                  ),
-                ],
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            backgroundColor: widget.primaryColor,
+                            child: Icon(widget.iconData,
+                                color: Colors.white, size: 24),
+                          ),
+                          SizedBox(width: 16),
+                          Expanded(
+                            child: Text(
+                              widget.categoryName,
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                          if (showMoreInfo)
+                            IconButton(
+                              icon: Icon(
+                                Icons.arrow_upward,
+                                size: 20.0,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  showMoreInfo = false;
+                                });
+                              },
+                            ),
+                          if (!showMoreInfo)
+                            IconButton(
+                              icon: Icon(
+                                Icons.arrow_downward,
+                                size: 20.0,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  showMoreInfo = true;
+                                });
+                              },
+                            ),
+                        ],
+                      ),
+                      if (showMoreInfo)
+                        Container(
+                          margin: EdgeInsets.only(top: 10),
+                          padding: EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              accountInfoRow("Account1", "100\$", "200\$"),
+                              Divider(color: Colors.grey),
+                              accountInfoRow("Account2", "300\$", "400\$"),
+                            ],
+                          ),
+                        ),
+                    ]),
               ),
-            ),
+            ]),
           );
         },
       ),
@@ -161,6 +207,54 @@ class _CategoryCardState extends State<CategoryCard> with TickerProviderStateMix
           ),
         ),
       ],
+    );
+  }
+
+  Widget accountInfoRow(String accountName, String expense, String income) {
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: 4),
+      padding: EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            accountName,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          Row(
+            children: [
+              Icon(Icons.arrow_upward, color: Colors.green, size: 16),
+              SizedBox(width: 4),
+              Text(
+                income,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.green,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(width: 16),
+              Icon(Icons.arrow_downward, color: Colors.red, size: 16),
+              SizedBox(width: 4),
+              Text(
+                expense,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.red,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

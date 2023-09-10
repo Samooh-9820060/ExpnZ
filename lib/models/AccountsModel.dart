@@ -1,4 +1,3 @@
-import 'package:currency_picker/currency_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../database/AccountsDB.dart';

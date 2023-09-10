@@ -1,8 +1,6 @@
-import 'package:currency_picker/currency_picker.dart';
 import 'package:expnz/screens/AddAccount.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 
 import '../../utils/currency_utils.dart';
 
@@ -53,9 +51,8 @@ class _ModernAccountCardState extends State<ModernAccountCard> with SingleTicker
   }
 
   String _animatedNumberString(double animationValue, String targetValue, Map<String, dynamic> currencyMap) {
-    String currencySymbol = currencyMap['symbol'] ?? '\$';
     String formattedSymbol = formatCurrencySymbol(
-        currencyMap['symbol'] ?? 'Unknown',
+        currencyMap['symbol'] ?? '\$',
         currencyMap['spaceBetweenAmountAndSymbol'] ?? false,
         currencyMap['symbolOnLeft'] ?? true
     );
