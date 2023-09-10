@@ -1,8 +1,7 @@
 import 'package:expnz/screens/AddAccount.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
-import '../../utils/currency_utils.dart';
+import '../../utils/animation_utils.dart';
 
 class ModernAccountCard extends StatefulWidget {
   final int accountId;
@@ -29,7 +28,8 @@ class ModernAccountCard extends StatefulWidget {
   _ModernAccountCardState createState() => _ModernAccountCardState();
 }
 
-class _ModernAccountCardState extends State<ModernAccountCard> with SingleTickerProviderStateMixin {
+class _ModernAccountCardState extends State<ModernAccountCard>
+    with SingleTickerProviderStateMixin {
   late AnimationController _numberController;
   late Animation<double> _numberAnimation;
 
@@ -40,7 +40,8 @@ class _ModernAccountCardState extends State<ModernAccountCard> with SingleTicker
       duration: const Duration(milliseconds: 1000),
       vsync: this,
     );
-    _numberAnimation = Tween<double>(begin: 0, end: 1).animate(_numberController);
+    _numberAnimation =
+        Tween<double>(begin: 0, end: 1).animate(_numberController);
     _numberController.forward();
   }
 
@@ -48,26 +49,6 @@ class _ModernAccountCardState extends State<ModernAccountCard> with SingleTicker
   void dispose() {
     _numberController.dispose();
     super.dispose();
-  }
-
-  String _animatedNumberString(double animationValue, String targetValue, Map<String, dynamic> currencyMap) {
-    String formattedSymbol = formatCurrencySymbol(
-        currencyMap['symbol'] ?? '\$',
-        currencyMap['spaceBetweenAmountAndSymbol'] ?? false,
-        currencyMap['symbolOnLeft'] ?? true
-    );
-
-    double value = (double.parse(targetValue.replaceAll(RegExp(r'[\$,]'), '')) * animationValue).toDouble();
-    String formattedAmount = formatAmountWithSeparator(
-        value,
-        currencyMap['thousandsSeparator'] ?? ',',
-        currencyMap['decimalDigits'] ?? 2
-    );
-
-    //final formatter = NumberFormat("#,###");
-    return currencyMap['symbolOnLeft']
-        ? '$formattedSymbol$formattedAmount'
-        : '$formattedAmount$formattedSymbol';
   }
 
   @override
@@ -80,7 +61,8 @@ class _ModernAccountCardState extends State<ModernAccountCard> with SingleTicker
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => AddAccountScreen(accountId: this.widget.accountId),
+                builder: (context) =>
+                    AddAccountScreen(accountId: this.widget.accountId),
               ),
             ).then((value) {
               setState(() {});
@@ -88,8 +70,8 @@ class _ModernAccountCardState extends State<ModernAccountCard> with SingleTicker
           },
           child: Container(
             width: double.infinity,
-            margin: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-            padding: EdgeInsets.all(24),
+            margin: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+            padding: EdgeInsets.all(16),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
@@ -105,74 +87,73 @@ class _ModernAccountCardState extends State<ModernAccountCard> with SingleTicker
                 ),
               ],
             ),
-            child: Stack(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Add this Positioned widget to display the icon
-                Positioned(
-                  right: 0,
-                  child: Container(
-                    padding: EdgeInsets.all(6),
-                    child: Icon(
-                      widget.iconData, // replace with the icon you want to use
-                      color: Colors.white,
-                      size: 32,
-                    ),
-                  ),
-                ),
-                // Currency Symbol at the top-left corner
-                Positioned(
-                  top: 10,
-                  child: Text(
-                    widget.accountName,
-                    style: GoogleFonts.roboto(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-                // Custom design element in the top-right corner
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(0, 50, 0, 0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Optional Card Number or Placeholder
-                      if (widget.cardNumber != null && widget.cardNumber!.isNotEmpty)
-                        Padding(
-                          padding: EdgeInsets.only(top: 15),
-                          child: Text(
-                            '**** **** **** '+widget.cardNumber!,
-                            style: GoogleFonts.robotoMono(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                      RichText(
+                        text: TextSpan(
+                          children: [
+                            TextSpan(
+                              text: widget.accountName+' - ('+widget.currencyMap['code']+')',
+                              style: GoogleFonts.roboto(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
                             ),
-                          ),
-                        )
-                      else
-                        SizedBox(height: 24), // Placeholder
-                      SizedBox(height: 24),
-                      // Account name
-                      Text(
-                        widget.currencyMap['name'] as String,
-                        style: GoogleFonts.roboto(
-                          fontSize: 16,
-                          color: Colors.white70,
+                          ],
                         ),
                       ),
-                      SizedBox(height: 16),
-                      // Balance, Income, and Expense
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          infoColumn("Balance", _animatedNumberString(_numberAnimation.value, widget.totalBalance, widget.currencyMap), Colors.white),
-                          infoColumn("Income", _animatedNumberString(_numberAnimation.value, widget.income, widget.currencyMap), Colors.green),
-                          infoColumn("Expense", _animatedNumberString(_numberAnimation.value, widget.expense, widget.currencyMap), Colors.red),
-                        ],
+                      Icon(
+                        widget.iconData,
+                        color: Colors.white,
+                        size: 32,
                       ),
-                    ],
+                    ]),
+                SizedBox(height: 16),
+                // Card Number (Optional)
+                Text(
+                  widget.cardNumber != null && widget.cardNumber!.isNotEmpty
+                      ? '**** **** **** ' + widget.cardNumber!
+                      : ' ',  // Replace with a placeholder if you want
+                  style: GoogleFonts.robotoMono(
+                    fontSize: 16,
+                    color: Colors.white70,
                   ),
+                ),
+                SizedBox(height: 16),
+                // Balance
+                Text(
+                  "Balance: " +
+                      animatedNumberString(_numberAnimation.value,
+                          widget.totalBalance, widget.currencyMap),
+                  style: GoogleFonts.roboto(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                SizedBox(height: 12),
+                // Income and Expense
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    infoColumn(
+                        "Income",
+                        animatedNumberString(_numberAnimation.value,
+                            widget.income, widget.currencyMap),
+                        Colors.green,
+                        Icons.arrow_upward),
+                    infoColumn(
+                        "Expense",
+                        animatedNumberString(_numberAnimation.value,
+                            widget.expense, widget.currencyMap),
+                        Colors.red,
+                        Icons.arrow_downward),
+                  ],
                 ),
               ],
             ),
@@ -182,24 +163,31 @@ class _ModernAccountCardState extends State<ModernAccountCard> with SingleTicker
     );
   }
 
-  Column infoColumn(String title, String value, Color textColor) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget infoColumn(
+      String title, String value, Color textColor, IconData icon) {
+    return Row(
       children: [
-        Text(
-          title,
-          style: GoogleFonts.roboto(
-            fontSize: 14,
-            color: Colors.white70,
-          ),
-        ),
-        Text(
-          value,
-          style: GoogleFonts.roboto(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: textColor,
-          ),
+        Icon(icon, color: textColor, size: 18),
+        SizedBox(width: 4),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: GoogleFonts.roboto(
+                fontSize: 14,
+                color: Colors.white70,
+              ),
+            ),
+            Text(
+              value,
+              style: GoogleFonts.roboto(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: textColor,
+              ),
+            ),
+          ],
         ),
       ],
     );

@@ -1,3 +1,4 @@
+import 'package:expnz/models/TransactionsModel.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../database/CategoriesDB.dart';
@@ -134,7 +135,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> with SingleTickerPr
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text("Delete Category"),
-          content: Text("Are you sure you want to delete this category?"),
+          content: Text("Are you sure you want to delete this category?\n\n"
+              "This will remove this category from all transactions with more than 1 category and Uncategorize any transactions with this category only."),
           actions: [
             TextButton(
               child: Text("Cancel"),
@@ -145,8 +147,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> with SingleTickerPr
             TextButton(
               child: Text("Delete"),
               onPressed: () async {
-                await Provider.of<CategoriesModel>(context, listen: false)
-                    .deleteCategory(categoryId);
+                await Provider.of<TransactionsModel>(context, listen: false).deleteTransactionsByCategoryName(categoryId, null, context);
+                await Provider.of<CategoriesModel>(context, listen: false).deleteCategory(categoryId);
                 Navigator.of(context).pop();
               },
             ),

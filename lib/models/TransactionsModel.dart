@@ -1,7 +1,10 @@
+import 'dart:convert';
+
 import 'package:expnz/models/AccountsModel.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../database/CategoriesDB.dart';
 import '../database/TransactionsDB.dart';
 
 class TransactionsModel extends ChangeNotifier {
@@ -12,6 +15,63 @@ class TransactionsModel extends ChangeNotifier {
   Future<void> fetchTransactions() async {
     transactions = await db.getAllTransaction();
     notifyListeners();
+  }
+
+  Future<void> deleteTransactionsByCategoryName(int categoryId, String? searchText, BuildContext context) async {
+    final db = TransactionsDB();
+    final categoriesDb = CategoriesDB();
+
+    Future<String> getCategoryNameById(int id) async {
+      Map<String, dynamic>? category = await categoriesDb.getSelectedCategory(id);
+      return category != null ? category[CategoriesDB.columnName] : '';
+    }
+
+    final String categoryName = await getCategoryNameById(categoryId);  // Get category name based on its ID
+
+
+    // Iterate through transactions to find those with the specified category
+    for (var transaction in transactions) {
+      final List<dynamic> categories = jsonDecode(transaction[TransactionsDB.columnCategories] ?? '[]');
+
+      // Check if the transaction has the specified category
+      bool hasCategory = categories.any((category) => category['name'] == categoryName);
+
+      if (hasCategory) {
+        int transactionId = transaction[TransactionsDB.columnId]; // Assuming the column for id is named 'id'
+
+        // If the transaction has more than one category, just remove this one
+        if (categories.length > 1) {
+          categories.removeWhere((category) => category['name'] == categoryName);
+        }
+        // If the transaction only has this category, set it to "Unassigned"
+        else {
+          // Create a new map from the existing map
+          Map<String, dynamic> newCategory = Map.from(categories[0]);
+          newCategory['name'] = 'Unassigned';
+          newCategory['icon'] = Icons.help_outline.codePoint;
+
+          // Replace the original map with the modified map
+          categories[0] = newCategory;
+        }
+
+        // Create a mutable copy of the transaction
+        Map<String, dynamic> mutableTransaction = Map<String, dynamic>.from(transaction);
+
+        // Update the mutable copy of the transaction
+        mutableTransaction[TransactionsDB.columnCategories] = jsonEncode(categories);
+
+        // Use the mutable copy in the updateTransaction method
+        await db.updateTransaction(transactionId, mutableTransaction);
+      }
+    }
+
+    await fetchTransactions();
+
+    if (searchText != null) {
+      filterTransactions(context, searchText);
+    }
+
+    notifyListeners();  // Notify the UI to rebuild
   }
 
   Future<void> deleteTransactionsByAccountId(int accountId, String? searchText, BuildContext context) async {

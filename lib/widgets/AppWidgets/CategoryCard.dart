@@ -3,11 +3,12 @@ import 'dart:convert';
 import 'package:expnz/screens/AddCategory.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../../database/AccountsDB.dart';
 import '../../models/AccountsModel.dart';
 import '../../models/TransactionsModel.dart';
+import '../../utils/animation_utils.dart';
 
 class CategoryCard extends StatefulWidget {
   final Key? key;
@@ -98,27 +99,8 @@ class _CategoryCardState extends State<CategoryCard>
     super.dispose();
   }
 
-  String _animatedNumberString(double animationValue, String targetValue) {
-    int value = (double.parse(targetValue.replaceAll(RegExp(r'[\$,]'), '')) *
-            animationValue)
-        .toInt();
-    final formatter = NumberFormat("#,###");
-    return '\$' + formatter.format(value);
-  }
-
   @override
   Widget build(BuildContext context) {
-    final accountsModel = Provider.of<AccountsModel>(context, listen: false);
-
-    // Fetch account names for display
-    Future<void> fetchAccountNames() async {
-      for (int accountId in accountIncome.keys) {
-        String accountName = await accountsModel.getAccountNameById(accountId);
-        // Use accountName along with accountIncome[accountId] and accountExpense[accountId] for display
-      }
-    }
-    fetchAccountNames();
-
     return AnimatedBuilder(
       animation: _deleteController,
       builder: (context, child) {
@@ -192,6 +174,7 @@ class _CategoryCardState extends State<CategoryCard>
                               onPressed: () {
                                 setState(() {
                                   showMoreInfo = false;
+                                  _numberController.reverse();
                                 });
                               },
                             ),
@@ -204,6 +187,8 @@ class _CategoryCardState extends State<CategoryCard>
                               onPressed: () {
                                 setState(() {
                                   showMoreInfo = true;
+                                  _numberController.reset();
+                                  _numberController.forward();
                                 });
                               },
                             ),
@@ -252,6 +237,7 @@ class _CategoryCardState extends State<CategoryCard>
                                 String accountName = account['name'];
                                 double income = accountIncome[accountId] ?? 0.0;
                                 double expense = accountExpense[accountId] ?? 0.0;
+                                Map<String, dynamic> currencyMap = jsonDecode(account[AccountsDB.accountCurrency]);
 
                                 // If both income and expense are zero, don't show this account
                                 if (income == 0.0 && expense == 0.0) {
@@ -259,7 +245,7 @@ class _CategoryCardState extends State<CategoryCard>
                                 }
 
                                 accountWidgets.add(
-                                  accountInfoRow(accountName, "\$${income.toStringAsFixed(2)}", "\$${expense.toStringAsFixed(2)}"),
+                                  accountInfoRow(accountName, "${income.toStringAsFixed(2)}", "${expense.toStringAsFixed(2)}", currencyMap),
                                 );
                               }
 
@@ -311,51 +297,59 @@ class _CategoryCardState extends State<CategoryCard>
     );
   }
 
-  Widget accountInfoRow(String accountName, String expense, String income) {
-    return Container(
-      margin: EdgeInsets.symmetric(vertical: 4),
-      padding: EdgeInsets.symmetric(horizontal: 8),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            accountName,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
+  Widget accountInfoRow(String accountName, String income, String expense, Map<String, dynamic> currencyMap) {
+    return AnimatedBuilder(
+      animation: _numberController,
+      builder: (context, child) {
+        String animatedIncome = animatedNumberString(_numberAnimation.value, income, currencyMap);
+        String animatedExpense = animatedNumberString(_numberAnimation.value, expense, currencyMap);
+
+        return Container(
+          margin: EdgeInsets.symmetric(vertical: 4),
+          padding: EdgeInsets.symmetric(horizontal: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
           ),
-          Row(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(Icons.arrow_upward, color: Colors.green, size: 16),
-              SizedBox(width: 4),
               Text(
-                income,
+                accountName,
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.green,
+                  color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              SizedBox(width: 16),
-              Icon(Icons.arrow_downward, color: Colors.red, size: 16),
-              SizedBox(width: 4),
-              Text(
-                expense,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.red,
-                  fontWeight: FontWeight.bold,
-                ),
+              Row(
+                children: [
+                  Icon(Icons.arrow_upward, color: Colors.green, size: 16),
+                  SizedBox(width: 4),
+                  Text(
+                    animatedIncome,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.green,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(width: 16),
+                  Icon(Icons.arrow_downward, color: Colors.red, size: 16),
+                  SizedBox(width: 4),
+                  Text(
+                    animatedExpense,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.red,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

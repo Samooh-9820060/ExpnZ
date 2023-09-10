@@ -1,10 +1,5 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
-import '../database/AccountsDB.dart';
-import '../models/AccountsModel.dart';
 import '../models/TransactionsModel.dart';
 import '../widgets/AppWidgets/SearchTransactionCard.dart';
 import 'AddTransaction.dart';
@@ -96,6 +91,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       _searchController.text.isNotEmpty
                   ? transactionsModel.filteredTransactions
                   : transactionsModel.transactions;
+          print(transactionsToShow);
           return Container(
             color: Colors.blueGrey[900],
             child: _searchController
