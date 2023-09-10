@@ -124,6 +124,21 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
       existingTransaction = widget.transaction;
     }
 
+    // Check if the selected categories list contains "Unassigned"
+    bool hasUnassignedCategory = selectedCategoriesList.any((category) => category['name'] == 'Unassigned');
+
+    if (hasUnassignedCategory) {
+      await showModernSnackBar(
+        context: context,
+        message: "Please remove the 'Unassigned' category",
+        backgroundColor: Colors.redAccent,
+      );
+      setState(() {
+        isProcessing = false;
+      });
+      return;
+    }
+
     // Validate input fields
     String name = _nameController.text.trim();
     String description = _descriptionController.text.trim();
@@ -620,9 +635,12 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                             } else {
                                               List<Map<String, dynamic>> sortedData = List.from(categoriesModel.categories);
                                               sortedData = sortedData.where((category) {
+                                                String categoryName = category[CategoriesDB.columnName];
+                                                bool isAlreadySelected = selectedCategoriesList.any((selectedCategory) => selectedCategory['name'] == categoryName);
+
                                                 return category[CategoriesDB.columnName]
                                                     .toLowerCase()
-                                                    .contains(_categorySearchController.text.toLowerCase());
+                                                    .contains(_categorySearchController.text.toLowerCase()) && !isAlreadySelected;
                                               }).toList();
                                               sortedData.sort((a, b) => a[CategoriesDB.columnName].compareTo(b[CategoriesDB.columnName]));
 
