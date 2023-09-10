@@ -28,7 +28,7 @@ class _SearchScreenState extends State<SearchScreen> {
   void _filterTransactions() {
     String searchText = _searchController.text.toLowerCase();
     Provider.of<TransactionsModel>(context, listen: false)
-        .filterTransactions(searchText);
+        .filterTransactions(context, searchText);
   }
 
   @override
@@ -120,7 +120,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                   Provider.of<TransactionsModel>(context,
                                           listen: false)
                                       .deleteTransactions(transaction['_id'],
-                                          _searchController.text.toLowerCase());
+                                          _searchController.text.toLowerCase(), context);
                                   Provider.of<TransactionsModel>(context,
                                           listen: false)
                                       .fetchTransactions();
@@ -143,7 +143,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                         .fetchTransactions();
                                     Provider.of<TransactionsModel>(context,
                                             listen: false)
-                                        .filterTransactions(_searchController
+                                        .filterTransactions(context, _searchController
                                             .text
                                             .toLowerCase());
                                   }

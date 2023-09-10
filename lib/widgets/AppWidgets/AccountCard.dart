@@ -1,7 +1,10 @@
+import 'package:currency_picker/currency_picker.dart';
 import 'package:expnz/screens/AddAccount.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+
+import '../../utils/currency_utils.dart';
 
 class ModernAccountCard extends StatefulWidget {
   final int accountId;
@@ -49,10 +52,25 @@ class _ModernAccountCardState extends State<ModernAccountCard> with SingleTicker
     super.dispose();
   }
 
-  String _animatedNumberString(double animationValue, String targetValue) {
-    int value = (double.parse(targetValue.replaceAll(RegExp(r'[\$,]'), '')) * animationValue).toInt();
-    final formatter = NumberFormat("#,###");
-    return '\$' + formatter.format(value);
+  String _animatedNumberString(double animationValue, String targetValue, Map<String, dynamic> currencyMap) {
+    String currencySymbol = currencyMap['symbol'] ?? '\$';
+    String formattedSymbol = formatCurrencySymbol(
+        currencyMap['symbol'] ?? 'Unknown',
+        currencyMap['spaceBetweenAmountAndSymbol'] ?? false,
+        currencyMap['symbolOnLeft'] ?? true
+    );
+
+    double value = (double.parse(targetValue.replaceAll(RegExp(r'[\$,]'), '')) * animationValue).toDouble();
+    String formattedAmount = formatAmountWithSeparator(
+        value,
+        currencyMap['thousandsSeparator'] ?? ',',
+        currencyMap['decimalDigits'] ?? 2
+    );
+
+    //final formatter = NumberFormat("#,###");
+    return currencyMap['symbolOnLeft']
+        ? '$formattedSymbol$formattedAmount'
+        : '$formattedAmount$formattedSymbol';
   }
 
   @override
@@ -151,9 +169,9 @@ class _ModernAccountCardState extends State<ModernAccountCard> with SingleTicker
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          infoColumn("Balance", _animatedNumberString(_numberAnimation.value, widget.totalBalance), Colors.white),
-                          infoColumn("Income", _animatedNumberString(_numberAnimation.value, widget.income), Colors.green),
-                          infoColumn("Expense", _animatedNumberString(_numberAnimation.value, widget.expense), Colors.red),
+                          infoColumn("Balance", _animatedNumberString(_numberAnimation.value, widget.totalBalance, widget.currencyMap), Colors.white),
+                          infoColumn("Income", _animatedNumberString(_numberAnimation.value, widget.income, widget.currencyMap), Colors.green),
+                          infoColumn("Expense", _animatedNumberString(_numberAnimation.value, widget.expense, widget.currencyMap), Colors.red),
                         ],
                       ),
                     ],

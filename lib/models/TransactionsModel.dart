@@ -1,4 +1,6 @@
+import 'package:expnz/models/AccountsModel.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../database/TransactionsDB.dart';
 
@@ -12,20 +14,38 @@ class TransactionsModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> deleteTransactions(int transactionId, String? searchText) async {
+  Future<void> deleteTransactions(int transactionId, String? searchText, BuildContext context) async {
     await db.deleteTransaction(transactionId);
     await fetchTransactions();  // Refresh the categories
     if (searchText != null) {
-      filterTransactions(searchText!);
+      filterTransactions(context, searchText);
     }
     notifyListeners();  // Notify the UI to rebuild
   }
 
-  void filterTransactions(String searchText) {
+  Future<void> filterTransactions(BuildContext context, String searchText) async {
     if (searchText.isNotEmpty) {
       List<Map<String, dynamic>> tempTransactions = [];
       for (var transaction in transactions) {
+        bool shouldInclude = transaction.values.any((element) => element.toString().toLowerCase().contains(searchText));
+
+        if (transaction.containsKey(TransactionsDB.columnAccountId)) {
+          int accountId = transaction[TransactionsDB.columnAccountId];
+
+          // Access the account name through the other Provider model
+          String accountName = await Provider.of<AccountsModel>(context, listen: false).getAccountNameById(accountId);
+
+          if (accountName.toLowerCase().contains(searchText)) {
+            shouldInclude = true;
+          }
+        }
+
         if (transaction.values.any((element) => element.toString().toLowerCase().contains(searchText))) {
+          shouldInclude = true;
+        }
+
+        print(transaction);
+        if (shouldInclude) {
           tempTransactions.add(transaction);
         }
       }
