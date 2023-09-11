@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../database/CategoriesDB.dart';
 import '../database/TransactionsDB.dart';
+import 'CategoriesModel.dart';
 
 class TransactionsModel extends ChangeNotifier {
   final db = TransactionsDB();
@@ -107,21 +108,37 @@ class TransactionsModel extends ChangeNotifier {
     if (searchText.isNotEmpty) {
       List<Map<String, dynamic>> tempTransactions = [];
       for (var transaction in transactions) {
-        bool shouldInclude = transaction.values.any((element) => element.toString().toLowerCase().contains(searchText));
+        bool shouldInclude = false;
+
+        if (transaction.containsKey('categories')) {
+
+          final List<int> categoryIds = List<int>.from(
+              (transaction['categories'] as String)
+                  .split(',')
+                  .map((e) => int.tryParse(e.trim()) ?? 0)
+          );
+
+          for (int categoryId in categoryIds) {
+            var category = await Provider.of<CategoriesModel>(context, listen: false).getCategoryById(categoryId);
+            if (category != null && (category[CategoriesDB.columnName] as String).toLowerCase().contains(searchText)) {
+              shouldInclude = true;
+              break;
+            }
+          }
+        }
+
+        if (!shouldInclude && transaction.values.any((element) => element.toString().toLowerCase().contains(searchText))) {
+          shouldInclude = true;
+        }
 
         if (transaction.containsKey(TransactionsDB.columnAccountId)) {
           int accountId = transaction[TransactionsDB.columnAccountId];
-
           // Access the account name through the other Provider model
           String accountName = await Provider.of<AccountsModel>(context, listen: false).getAccountNameById(accountId);
 
           if (accountName.toLowerCase().contains(searchText)) {
             shouldInclude = true;
           }
-        }
-
-        if (transaction.values.any((element) => element.toString().toLowerCase().contains(searchText))) {
-          shouldInclude = true;
         }
 
         if (shouldInclude) {

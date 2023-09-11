@@ -91,7 +91,6 @@ class _SearchScreenState extends State<SearchScreen> {
                       _searchController.text.isNotEmpty
                   ? transactionsModel.filteredTransactions
                   : transactionsModel.transactions;
-          print(transactionsToShow);
           return Container(
             color: Colors.blueGrey[900],
             child: _searchController
