@@ -137,12 +137,6 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
       AccountsDB.accountCardNumber: _cardNumberController.text.trim(),
     };
 
-    print(selectedIcon.codePoint);
-    print(selectedIcon.fontFamily);
-    print(selectedIcon.fontPackage);
-    print(selectedIcon.matchTextDirection);
-
-
     final int? id;
     if (isModifyMode) {
       id = await AccountsDB().updateAccount(widget.accountId!, row);

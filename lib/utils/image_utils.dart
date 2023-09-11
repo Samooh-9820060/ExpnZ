@@ -26,6 +26,7 @@ Widget getCategoryWidget(Map<String, dynamic>? category, {double? radius = 12.0}
         IconData(
           category[CategoriesDB.columnIconCodePoint],
           fontFamily: category[CategoriesDB.columnIconFontFamily],
+          fontPackage: category[CategoriesDB.columnIconFontPackage],
         ),
         size: radius,
       );

@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../database/AccountsDB.dart';
-import '../../database/CategoriesDB.dart';
 import '../../models/AccountsModel.dart';
 import '../../models/CategoriesModel.dart';
 import '../../utils/currency_utils.dart';
@@ -19,13 +18,6 @@ class TransactionCard extends StatelessWidget {
     required this.onDelete,
     required this.onUpdate,
   });
-
-  IconData getCategoryIcon(int iconCode) {
-    return IconData(
-      iconCode,
-      fontFamily: 'MaterialIcons',
-    );
-  }
 
   void showDeleteDialog(BuildContext context) {
     showDialog(

@@ -126,7 +126,14 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
 
   //modify or insert transactions
   void _addUpdateTransaction({bool isUpdate = false, Map<String, dynamic>? existingTransaction}) async {
-    if (isProcessing) return;
+    if (isProcessing) {
+      await showModernSnackBar(
+        context: context,
+        message: "Please wait. Another transaction is processing",
+        backgroundColor: Colors.redAccent,
+      );
+      return;
+    }
     setState(() {
       isProcessing = true;
     });
@@ -188,6 +195,18 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
         await showModernSnackBar(
           context: context,
           message: "Please select the from and to accounts",
+          backgroundColor: Colors.red,
+        );
+        setState(() {
+          isProcessing = false;
+        });
+        return;
+      }
+
+      if (selectedFromAccountIndex == selectedToAccountIndex) {
+        await showModernSnackBar(
+          context: context,
+          message: "Please select different cards to transfer between.",
           backgroundColor: Colors.red,
         );
         setState(() {
@@ -267,6 +286,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
         });
       }
 
+      setState(() {
+        isProcessing = false;
+      });
       return;
     }
     else {
@@ -449,8 +471,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                         buildTypeButton(TransactionType.income, 'Income'),
                         SizedBox(width: 16),
                         buildTypeButton(TransactionType.expense, 'Expense'),
-                        SizedBox(width: 16),
+                        if (!updateMode)
+                          SizedBox(width: 16),
+                        if (!updateMode)
                         buildTypeButton(TransactionType.transfer, 'Transfer'),
+
                       ],
                     ),
 
@@ -651,93 +676,13 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                         width: MediaQuery.of(context).size.width, // Adjust as needed
                                         child: Consumer<CategoriesModel>(
                                           builder: (context, categoriesModel, child) {
-                                            if (categoriesModel.categories.isEmpty) {
-                                              return Center(
-                                                child: Text('No categories available.'),
-                                              );
-                                            } else {
-                                              List<Map<String, dynamic>> sortedData = List.from(categoriesModel.categories);
-                                              sortedData = sortedData.where((category) {
-                                                int categoryId = category[CategoriesDB.columnId];
-                                                bool isAlreadySelected = selectedCategoriesList.any((selectedCategory) => int.parse(selectedCategory['id'].toString()) == categoryId);
-
-                                                return category[CategoriesDB.columnName]
-                                                    .toLowerCase()
-                                                    .contains(_categorySearchController.text.toLowerCase()) && !isAlreadySelected;
-                                              }).toList();
-                                              sortedData.sort((a, b) => a[CategoriesDB.columnName].compareTo(b[CategoriesDB.columnName]));
-
-                                              double itemHeight = 55.0; // Approximate height of one ListTile
-                                              double maxHeight = 200.0; // Maximum height you'd like to allow for dropdown
-
-                                              double calculatedHeight = sortedData.length * itemHeight;
-                                              calculatedHeight = calculatedHeight > maxHeight ? maxHeight : calculatedHeight;
-
-                                              return Container(
-                                                height: calculatedHeight,
-                                                child: ListView.builder(
-                                                  padding: EdgeInsets.zero,
-                                                  itemCount: sortedData.length,
-                                                  itemBuilder: (context, index) {
-                                                    final category = sortedData[index];
-                                                    IconData categoryIcon = IconData(
-                                                      category[CategoriesDB.columnIconCodePoint],
-                                                      fontFamily: category[CategoriesDB.columnIconFontFamily],
-                                                      fontPackage: category[CategoriesDB.columnIconFontPackage],
-                                                    );
-                                                    String categoryId = category[CategoriesDB.columnId].toString();
-                                                    String categoryName = category[CategoriesDB.columnName];
-
-                                                    BorderRadius borderRadius;
-
-                                                    // Top item
-                                                    if (index == 0) {
-                                                      borderRadius = BorderRadius.only(
-                                                        topLeft: Radius.circular(30),
-                                                        topRight: Radius.circular(30),
-                                                      );
-                                                    }
-                                                    // Bottom item
-                                                    else if (index == sortedData.length - 1) {
-                                                      borderRadius = BorderRadius.only(
-                                                        bottomLeft: Radius.circular(30),
-                                                        bottomRight: Radius.circular(30),
-                                                      );
-                                                    }
-                                                    // Middle items
-                                                    else {
-                                                      borderRadius = BorderRadius.zero;
-                                                    }
-
-                                                    return Material(
-                                                      type: MaterialType.transparency, // To make it transparent
-                                                      child: InkWell(
-                                                        onTap: () {
-                                                          setState(() {
-                                                            selectedCategoriesList.add({
-                                                              'id': categoryId,
-                                                            });
-                                                            _showDropdown = false;
-                                                          });
-                                                        },
-                                                        borderRadius: borderRadius, // Use the dynamic border radius
-                                                        splashColor: Colors.blue,
-                                                        highlightColor: Colors.blue.withOpacity(0.5),
-                                                        child: ListTile(
-                                                          title: Text(categoryName),
-                                                          leading: category['imageFile'] == null
-                                                              ? Icon(categoryIcon)
-                                                              : CircleAvatar(
-                                                            backgroundImage: FileImage(category['imageFile']),
-                                                            radius: 12,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    );
-                                                  },
-                                                )
-                                              );
-                                            }
+                                            return buildCategoriesDropdown(
+                                              categoriesModel,
+                                              selectedCategoriesList,
+                                              _categorySearchController.text,
+                                              setState, // Assuming this is within a StatefulWidget and you have access to setState
+                                              _showDropdown,
+                                            );
                                           },
                                         ),
                                       ),
@@ -751,8 +696,20 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                     selectedCategoriesList.length,
                                         (int index) {
                                       final category = selectedCategoriesList[index];
+                                      dynamic categoryIdRaw = category['id']; // assuming category['id'] could be int or String
+                                      int categoryId = 0;
+
+                                      if (categoryIdRaw is String) {
+                                        categoryId = int.parse(categoryIdRaw);
+                                      } else if (categoryIdRaw is int) {
+                                        categoryId = categoryIdRaw;
+                                      } else {
+                                        // Handle error: unknown type
+                                        print('Unknown type for category ID');
+                                      }
+
                                       return CategoryChip(
-                                        categoryId: int.parse(category['id']),
+                                        categoryId: categoryId,
                                         onTap: () {
                                           setState(() {
                                             selectedCategoriesList.removeAt(index);
@@ -1032,85 +989,13 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                         width: MediaQuery.of(context).size.width, // Adjust as needed
                                         child: Consumer<CategoriesModel>(
                                           builder: (context, categoriesModel, child) {
-                                            if (categoriesModel.categories.isEmpty) {
-                                              return Center(
-                                                child: Text('No categories available.'),
-                                              );
-                                            } else {
-                                              List<Map<String, dynamic>> sortedData = List.from(categoriesModel.categories);
-                                              sortedData = sortedData.where((category) {
-                                                return category[CategoriesDB.columnName]
-                                                    .toLowerCase()
-                                                    .contains(_categorySearchController.text.toLowerCase());
-                                              }).toList();
-                                              sortedData.sort((a, b) => a[CategoriesDB.columnName].compareTo(b[CategoriesDB.columnName]));
-
-                                              double itemHeight = 55.0; // Approximate height of one ListTile
-                                              double maxHeight = 200.0; // Maximum height you'd like to allow for dropdown
-
-                                              double calculatedHeight = sortedData.length * itemHeight;
-                                              calculatedHeight = calculatedHeight > maxHeight ? maxHeight : calculatedHeight;
-
-                                              return Container(
-                                                  height: calculatedHeight,
-                                                  child: ListView.builder(
-                                                    padding: EdgeInsets.zero,
-                                                    itemCount: sortedData.length,
-                                                    itemBuilder: (context, index) {
-                                                      final category = sortedData[index];
-                                                      IconData categoryIcon = IconData(
-                                                        category[CategoriesDB.columnIconCodePoint],
-                                                        fontFamily: category[CategoriesDB.columnIconFontFamily],
-                                                        fontPackage: category[CategoriesDB.columnIconFontPackage],
-                                                      );
-                                                      String categoryId = category[CategoriesDB.columnId];
-                                                      String categoryName = category[CategoriesDB.columnName];
-
-                                                      BorderRadius borderRadius;
-
-                                                      // Top item
-                                                      if (index == 0) {
-                                                        borderRadius = BorderRadius.only(
-                                                          topLeft: Radius.circular(30),
-                                                          topRight: Radius.circular(30),
-                                                        );
-                                                      }
-                                                      // Bottom item
-                                                      else if (index == sortedData.length - 1) {
-                                                        borderRadius = BorderRadius.only(
-                                                          bottomLeft: Radius.circular(30),
-                                                          bottomRight: Radius.circular(30),
-                                                        );
-                                                      }
-                                                      // Middle items
-                                                      else {
-                                                        borderRadius = BorderRadius.zero;
-                                                      }
-
-                                                      return Material(
-                                                        type: MaterialType.transparency, // To make it transparent
-                                                        child: InkWell(
-                                                          onTap: () {
-                                                            setState(() {
-                                                              selectedCategoriesList.add({
-                                                                'id': categoryId,
-                                                              });
-                                                              _showDropdown = false;
-                                                            });
-                                                          },
-                                                          borderRadius: borderRadius, // Use the dynamic border radius
-                                                          splashColor: Colors.blue,
-                                                          highlightColor: Colors.blue.withOpacity(0.5),
-                                                          child: ListTile(
-                                                            title: Text(categoryName),
-                                                            leading: Icon(categoryIcon),
-                                                          ),
-                                                        ),
-                                                      );
-                                                    },
-                                                  )
-                                              );
-                                            }
+                                            return buildCategoriesDropdown(
+                                              categoriesModel,
+                                              selectedCategoriesList,
+                                              _categorySearchController.text,
+                                              setState, // Assuming this is within a StatefulWidget and you have access to setState
+                                              _showDropdown,
+                                            );
                                           },
                                         ),
                                       ),
@@ -1124,8 +1009,20 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                     selectedCategoriesList.length,
                                         (int index) {
                                       final category = selectedCategoriesList[index];
+                                      dynamic categoryIdRaw = category['id']; // assuming category['id'] could be int or String
+                                      int categoryId = 0;
+
+                                      if (categoryIdRaw is String) {
+                                        categoryId = int.parse(categoryIdRaw);
+                                      } else if (categoryIdRaw is int) {
+                                        categoryId = categoryIdRaw;
+                                      } else {
+                                        // Handle error: unknown type
+                                        print('Unknown type for category ID');
+                                      }
+
                                       return CategoryChip(
-                                        categoryId: category['id'],
+                                        categoryId: categoryId,
                                         onTap: () {
                                           setState(() {
                                             selectedCategoriesList.removeAt(index);
@@ -1141,11 +1038,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                         ),
                         SizedBox(height: 20),
                         ExpnZButton(
-                          label: "Add",
+                          label: updateMode ? "Update" : "Add",
                           onPressed: _addUpdateTransaction,
-                          primaryColor: Colors.blueAccent,
-                          textColor: Colors.white,
-                          fontSize: 18.0,
+                          primaryColor: Colors.blueAccent,  // Optional
+                          textColor: Colors.white,  // Optional
+                          fontSize: 18.0,  // Optional
                         ),
                       ],
                   ],
@@ -1158,3 +1055,111 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
     );
   }
 }
+
+Widget buildCategoriesDropdown(
+    CategoriesModel categoriesModel,
+    List<Map<String, dynamic>> selectedCategoriesList,
+    String searchText,
+    Function setStateCallback, // Add this
+    bool showDropdown,
+    )
+{
+
+  if (categoriesModel.categories.isEmpty) {
+    return Center(
+      child: Text('No categories available.'),
+    );
+  } else {
+    List<Map<String, dynamic>> sortedData = List.from(categoriesModel.categories);
+    sortedData = sortedData.where((category) {
+      int categoryId = category[CategoriesDB.columnId];
+      bool isAlreadySelected = selectedCategoriesList.any((selectedCategory) => int.parse(selectedCategory['id'].toString()) == categoryId);
+
+      return category[CategoriesDB.columnName]
+          .toLowerCase()
+          .contains(searchText.toLowerCase()) && !isAlreadySelected;
+    }).toList();
+    sortedData.sort((a, b) => a[CategoriesDB.columnName].compareTo(b[CategoriesDB.columnName]));
+
+    double itemHeight = 55.0; // Approximate height of one ListTile
+    double maxHeight = 200.0; // Maximum height you'd like to allow for dropdown
+
+    double calculatedHeight = sortedData.length * itemHeight;
+    calculatedHeight = calculatedHeight > maxHeight ? maxHeight : calculatedHeight;
+
+    return Container(
+      height: calculatedHeight,
+      child: ListView.builder(
+        padding: EdgeInsets.zero,
+        itemCount: sortedData.length,
+        itemBuilder: (context, index) {
+          return Container(
+              height: calculatedHeight,
+              child: ListView.builder(
+                padding: EdgeInsets.zero,
+                itemCount: sortedData.length,
+                itemBuilder: (context, index) {
+                  final category = sortedData[index];
+                  IconData categoryIcon = IconData(
+                    category[CategoriesDB.columnIconCodePoint],
+                    fontFamily: category[CategoriesDB.columnIconFontFamily],
+                    fontPackage: category[CategoriesDB.columnIconFontPackage],
+                  );
+                  String categoryId = category[CategoriesDB.columnId].toString();
+                  String categoryName = category[CategoriesDB.columnName];
+
+                  BorderRadius borderRadius;
+
+                  // Top item
+                  if (index == 0) {
+                    borderRadius = BorderRadius.only(
+                      topLeft: Radius.circular(30),
+                      topRight: Radius.circular(30),
+                    );
+                  }
+                  // Bottom item
+                  else if (index == sortedData.length - 1) {
+                    borderRadius = BorderRadius.only(
+                      bottomLeft: Radius.circular(30),
+                      bottomRight: Radius.circular(30),
+                    );
+                  }
+                  // Middle items
+                  else {
+                    borderRadius = BorderRadius.zero;
+                  }
+
+                  return Material(
+                    type: MaterialType.transparency, // To make it transparent
+                    child: InkWell(
+                      onTap: () {
+                        setStateCallback(() { // Use the passed setStateCallback
+                          selectedCategoriesList.add({
+                            'id': categoryId,
+                          });
+                          showDropdown = false; // Use the passed showDropdown
+                        });
+                      },
+                      borderRadius: borderRadius, // Use the dynamic border radius
+                      splashColor: Colors.blue,
+                      highlightColor: Colors.blue.withOpacity(0.5),
+                      child: ListTile(
+                        title: Text(categoryName),
+                        leading: category['imageFile'] == null
+                            ? Icon(categoryIcon)
+                            : CircleAvatar(
+                          backgroundImage: FileImage(category['imageFile']),
+                          radius: 12,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              )
+          );
+          },
+      ),
+    );
+  }
+}
+

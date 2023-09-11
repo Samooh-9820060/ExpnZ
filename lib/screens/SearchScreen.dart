@@ -44,15 +44,14 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'To Account',
+                        'Select Accounts',
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      SizedBox(height: 10),
                       Container(
-                        height: 150,  // set the height
+                        height: 150, // set the height
                         child: Consumer<AccountsModel>(
                           builder: (context, accountsModel, child) {
                             if (accountsModel.accounts.isEmpty) {
@@ -71,18 +70,22 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
 
                                   return GestureDetector(
                                     onTap: () {
-                                      // Handle onTap here. If you want to change the state, you might need a StatefulBuilder.
+                                      // Handle onTap here
                                       // ...
                                     },
-                                    child: AccountCard(
-                                      accountId: account[AccountsDB.accountId],  // I assume 'accountId' is the correct key
-                                      icon: IconData(
-                                        account[AccountsDB.accountIconCodePoint],
-                                        fontFamily: AccountsDB.accountIconFontFamily,
+                                    child: Transform.scale(
+                                      scale: 0.8, // Adjust this scale factor to your need
+                                      child: AccountCard(
+                                        accountId: account[AccountsDB.accountId],
+                                        icon: IconData(
+                                          account[AccountsDB.accountIconCodePoint],
+                                          fontFamily: account[AccountsDB.accountIconFontFamily],
+                                          fontPackage: account[AccountsDB.accountIconFontPackage],
+                                        ),
+                                        currency: currencyCode,
+                                        accountName: account[AccountsDB.accountName],
+                                        //isSelected: index == selectedToAccountIndex,  // I assume 'selectedToAccountIndex' is declared and maintained in your code
                                       ),
-                                      currency: currencyCode,
-                                      accountName: account[AccountsDB.accountName],
-                                      //isSelected: index == selectedToAccountIndex,  // I assume 'selectedToAccountIndex' is declared and maintained in your code
                                     ),
                                   );
                                 },
@@ -90,11 +93,9 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                             }
                           },
                         ),
-                      ),
+                      )
                     ],
                   ),
-
-                  SizedBox(height: 20),
                   Text("Select Categories:"),
                   // Your ListView.builder code for selecting categories will go here
                   SizedBox(height: 20),

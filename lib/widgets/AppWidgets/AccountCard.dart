@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../database/AccountsDB.dart';
 import '../../models/AccountsModel.dart';
+import '../../models/TransactionsModel.dart';
 import '../../utils/animation_utils.dart';
 
 class ModernAccountCard extends StatefulWidget {
@@ -51,7 +52,11 @@ class _ModernAccountCardState extends State<ModernAccountCard>
   @override
   Widget build(BuildContext context) {
     final accountsModel = Provider.of<AccountsModel>(context, listen: false);
+    final transactionsModel = Provider.of<TransactionsModel>(context, listen: false);
 
+    String totalBalance = transactionsModel.getBalanceForAccount(widget.accountId).toStringAsFixed(2);
+    String totalIncome = transactionsModel.getTotalIncomeForAccount(widget.accountId).toStringAsFixed(2);
+    String totalExpense = transactionsModel.getTotalExpenseForAccount(widget.accountId).toStringAsFixed(2);
 
 
     return FutureBuilder(
@@ -65,8 +70,8 @@ class _ModernAccountCardState extends State<ModernAccountCard>
           final Map<String, dynamic> account = snapshot.data as Map<String, dynamic>;
           IconData iconData = IconData(
             account[AccountsDB.accountIconCodePoint],
-            fontFamily: account[AccountsDB.accountIconFontFamily] ?? 'MaterialIcons',
-            fontPackage: account[AccountsDB.accountIconFontPackage] ?? 'font_awesome_flutter',
+            fontFamily: account[AccountsDB.accountIconFontFamily],
+            fontPackage: account[AccountsDB.accountIconFontPackage],
           );
 
 
@@ -146,7 +151,7 @@ class _ModernAccountCardState extends State<ModernAccountCard>
                       Text(
                         "Balance: " +
                             animatedNumberString(_numberAnimation.value,
-                                account['card_number'], widget.currencyMap),
+                                totalBalance, widget.currencyMap),
                         style: GoogleFonts.roboto(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -161,13 +166,13 @@ class _ModernAccountCardState extends State<ModernAccountCard>
                           infoColumn(
                               "Income",
                               animatedNumberString(_numberAnimation.value,
-                                  widget.income, widget.currencyMap),
+                                  totalIncome, widget.currencyMap),
                               Colors.green,
                               Icons.arrow_upward),
                           infoColumn(
                               "Expense",
                               animatedNumberString(_numberAnimation.value,
-                                  widget.expense, widget.currencyMap),
+                                  totalExpense, widget.currencyMap),
                               Colors.red,
                               Icons.arrow_downward),
                         ],
