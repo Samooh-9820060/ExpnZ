@@ -68,10 +68,9 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
           thousandsSeparator: currencyMap['thousandsSeparator'] as String,
         );
         selectedIcon = IconData(
-            account[AccountsDB.accountIcon] is String ?
-            int.parse(account[AccountsDB.accountIcon] as String) :
-            account[AccountsDB.accountIcon] as int,
-            fontFamily: 'MaterialIcons'
+            account[AccountsDB.accountIconCodePoint],
+            fontFamily: account[AccountsDB.accountIconFontFamily],
+            fontPackage: account[AccountsDB.accountIconFontPackage],
         );
       });
     } else {
@@ -132,9 +131,16 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
         'symbolOnLeft': selectedCurrency!.symbolOnLeft,
         'thousandsSeparator': selectedCurrency!.thousandsSeparator,
       }),
-      AccountsDB.accountIcon: selectedIcon.codePoint,
+      AccountsDB.accountIconCodePoint: selectedIcon.codePoint,
+      AccountsDB.accountIconFontFamily: selectedIcon.fontFamily,
+      AccountsDB.accountIconFontPackage: selectedIcon.fontPackage,
       AccountsDB.accountCardNumber: _cardNumberController.text.trim(),
     };
+
+    print(selectedIcon.codePoint);
+    print(selectedIcon.fontFamily);
+    print(selectedIcon.fontPackage);
+    print(selectedIcon.matchTextDirection);
 
 
     final int? id;
@@ -183,8 +189,9 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
         iconPackModes: [
           IconPack.material,
           IconPack.cupertino,
-          IconPack.fontAwesomeIcons
-        ]);
+          IconPack.fontAwesomeIcons,
+        ],
+    );
     if (icon != null) {
       setState(() {
         selectedIcon = icon;

@@ -86,13 +86,7 @@ class _AccountsScreenState extends State<AccountsScreen> with TickerProviderStat
 
                 return buildAnimatedAccountCard(
                   accountId: account[AccountsDB.accountId],
-                  accountName: account[AccountsDB.accountName],
                   currencyMap: currencyMap,
-                  cardNumber: account[AccountsDB.accountCardNumber].toString(),
-                  iconData: IconData(
-                    int.tryParse(account[AccountsDB.accountIcon]) ?? Icons.error.codePoint,
-                    fontFamily: 'MaterialIcons',
-                  ),
                   totalBalance: totalBalance,
                   income: totalIncome,
                   expense: totalExpense,
@@ -107,10 +101,7 @@ class _AccountsScreenState extends State<AccountsScreen> with TickerProviderStat
 
   Widget buildAnimatedAccountCard({
     required int accountId,
-    required String accountName,
     required Map<String, dynamic> currencyMap,
-    required IconData iconData,
-    required String cardNumber,
     required String totalBalance,
     required String income,
     required String expense,
@@ -128,14 +119,10 @@ class _AccountsScreenState extends State<AccountsScreen> with TickerProviderStat
               scale: _animation.value,
               child: ModernAccountCard(
                 accountId: accountId,
-                accountName: accountName,
                 currencyMap: currencyMap,
-                iconData: iconData,
-                // fill in other properties as per your requirement
                 totalBalance: totalBalance,
                 income: income,
                 expense: expense,
-                cardNumber: cardNumber,
               ),
             ),
           );

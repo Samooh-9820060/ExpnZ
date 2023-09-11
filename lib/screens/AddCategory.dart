@@ -73,6 +73,7 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
         newSelectedIcon = IconData(
           category[CategoriesDB.columnIconCodePoint] as int,
           fontFamily: category[CategoriesDB.columnIconFontFamily] as String,
+          fontPackage: category[CategoriesDB.columnIconFontPackage] as String,
         );
       } else {
         newSelectedIcon = Icons.search;
@@ -277,6 +278,7 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
       'color': selectedColor.value,
       'iconCodePoint': selectedIcon.codePoint,
       'iconFontFamily': selectedIcon.fontFamily,
+      'iconFontPackage': selectedIcon.fontPackage,
       'selectedImageBlob': imageBytes == null ? null : imageBytes,
     };
 

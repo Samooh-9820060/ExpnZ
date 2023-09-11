@@ -5,7 +5,9 @@ class AccountsDB {
   static final accountId = '_id';
   static final accountName = 'name';
   static final accountCurrency = 'currency';
-  static final accountIcon = 'icon';
+  static final accountIconCodePoint = 'iconCodePoint';
+  static final accountIconFontFamily = 'iconFontFamily';
+  static final accountIconFontPackage = 'iconFontPackage';
   static final accountCardNumber = 'card_number';
 
   Future<int> insertAccount(Map<String, dynamic> row) async {

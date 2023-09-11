@@ -1,26 +1,23 @@
 import 'package:expnz/screens/AddAccount.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import '../../database/AccountsDB.dart';
+import '../../models/AccountsModel.dart';
 import '../../utils/animation_utils.dart';
 
 class ModernAccountCard extends StatefulWidget {
   final int accountId;
-  final String accountName;
   final String totalBalance;
   final String income;
   final String expense;
-  final String? cardNumber;
   final Map<String, dynamic> currencyMap;
-  final IconData iconData;
 
   ModernAccountCard({
     required this.accountId,
-    required this.accountName,
     required this.totalBalance,
     required this.income,
     required this.expense,
-    this.cardNumber,
-    required this.iconData,
     required this.currencyMap,
   });
 
@@ -53,112 +50,135 @@ class _ModernAccountCardState extends State<ModernAccountCard>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _numberController,
-      builder: (context, child) {
-        return InkWell(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) =>
-                    AddAccountScreen(accountId: this.widget.accountId),
-              ),
-            ).then((value) {
-              setState(() {});
-            });
-          },
-          child: Container(
-            width: double.infinity,
-            margin: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Colors.black, Colors.grey[850]!],
-              ),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.5),
-                  offset: Offset(0, 4),
-                  blurRadius: 10.0,
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    final accountsModel = Provider.of<AccountsModel>(context, listen: false);
+
+
+
+    return FutureBuilder(
+      future: accountsModel.getAccountDetailsById(widget.accountId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return CircularProgressIndicator();
+        } else if (snapshot.hasError || snapshot.data == 'Unknown') {
+          return Text('Error fetching account details');
+        } else {
+          final Map<String, dynamic> account = snapshot.data as Map<String, dynamic>;
+          IconData iconData = IconData(
+            account[AccountsDB.accountIconCodePoint],
+            fontFamily: account[AccountsDB.accountIconFontFamily] ?? 'MaterialIcons',
+            fontPackage: account[AccountsDB.accountIconFontPackage] ?? 'font_awesome_flutter',
+          );
+
+
+          return AnimatedBuilder(
+            animation: _numberController,
+            builder: (context, child) {
+              return InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          AddAccountScreen(accountId: this.widget.accountId),
+                    ),
+                  ).then((value) {
+                    setState(() {});
+                  });
+                },
+                child: Container(
+                  width: double.infinity,
+                  margin: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Colors.black, Colors.grey[850]!],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.5),
+                        offset: Offset(0, 4),
+                        blurRadius: 10.0,
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      RichText(
-                        text: TextSpan(
+                      Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            TextSpan(
-                              text: widget.accountName+' - ('+widget.currencyMap['code']+')',
-                              style: GoogleFonts.roboto(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                            RichText(
+                              text: TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: account['name']+' - ('+widget.currencyMap['code']+')',
+                                    style: GoogleFonts.roboto(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
+                            Icon(
+                              iconData,
+                              color: Colors.white,
+                              size: 32,
+                            ),
+                          ]),
+                      SizedBox(height: 16),
+                      // Card Number (Optional)
+                      Text(
+                        account['card_number'] != null && account['card_number']!.isNotEmpty
+                            ? '**** **** **** ' + account['card_number']!
+                            : ' ',  // Replace with a placeholder if you want
+                        style: GoogleFonts.robotoMono(
+                          fontSize: 16,
+                          color: Colors.white70,
                         ),
                       ),
-                      Icon(
-                        widget.iconData,
-                        color: Colors.white,
-                        size: 32,
+                      SizedBox(height: 16),
+                      // Balance
+                      Text(
+                        "Balance: " +
+                            animatedNumberString(_numberAnimation.value,
+                                account['card_number'], widget.currencyMap),
+                        style: GoogleFonts.roboto(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
-                    ]),
-                SizedBox(height: 16),
-                // Card Number (Optional)
-                Text(
-                  widget.cardNumber != null && widget.cardNumber!.isNotEmpty
-                      ? '**** **** **** ' + widget.cardNumber!
-                      : ' ',  // Replace with a placeholder if you want
-                  style: GoogleFonts.robotoMono(
-                    fontSize: 16,
-                    color: Colors.white70,
+                      SizedBox(height: 12),
+                      // Income and Expense
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          infoColumn(
+                              "Income",
+                              animatedNumberString(_numberAnimation.value,
+                                  widget.income, widget.currencyMap),
+                              Colors.green,
+                              Icons.arrow_upward),
+                          infoColumn(
+                              "Expense",
+                              animatedNumberString(_numberAnimation.value,
+                                  widget.expense, widget.currencyMap),
+                              Colors.red,
+                              Icons.arrow_downward),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-                SizedBox(height: 16),
-                // Balance
-                Text(
-                  "Balance: " +
-                      animatedNumberString(_numberAnimation.value,
-                          widget.totalBalance, widget.currencyMap),
-                  style: GoogleFonts.roboto(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                SizedBox(height: 12),
-                // Income and Expense
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    infoColumn(
-                        "Income",
-                        animatedNumberString(_numberAnimation.value,
-                            widget.income, widget.currencyMap),
-                        Colors.green,
-                        Icons.arrow_upward),
-                    infoColumn(
-                        "Expense",
-                        animatedNumberString(_numberAnimation.value,
-                            widget.expense, widget.currencyMap),
-                        Colors.red,
-                        Icons.arrow_downward),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
+              );
+            },
+          );
+        }
       },
     );
   }

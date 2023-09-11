@@ -577,8 +577,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                           child: AccountCard(
                                             accountId: account[AccountsDB.accountId],
                                             icon: IconData(
-                                              int.tryParse(account[AccountsDB.accountIcon]) ?? Icons.error.codePoint,
-                                              fontFamily: 'MaterialIcons',
+                                              account[AccountsDB.accountIconCodePoint],
+                                              fontFamily: account[AccountsDB.accountIconFontFamily],
+                                              fontPackage: account[AccountsDB.accountIconFontPackage],
                                             ),
                                             currency: currencyCode,
                                             accountName: account[AccountsDB.accountName],
@@ -682,6 +683,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                                     IconData categoryIcon = IconData(
                                                       category[CategoriesDB.columnIconCodePoint],
                                                       fontFamily: category[CategoriesDB.columnIconFontFamily],
+                                                      fontPackage: category[CategoriesDB.columnIconFontPackage],
                                                     );
                                                     String categoryId = category[CategoriesDB.columnId].toString();
                                                     String categoryName = category[CategoriesDB.columnName];
@@ -750,7 +752,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                         (int index) {
                                       final category = selectedCategoriesList[index];
                                       return CategoryChip(
-                                        categoryId: category['id'],
+                                        categoryId: int.parse(category['id']),
                                         onTap: () {
                                           setState(() {
                                             selectedCategoriesList.removeAt(index);
@@ -898,8 +900,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                           child: AccountCard(
                                             accountId: account[AccountsDB.accountId],
                                             icon: IconData(
-                                              int.tryParse(account[AccountsDB.accountIcon]) ?? Icons.error.codePoint,
-                                              fontFamily: 'MaterialIcons',
+                                              account[AccountsDB.accountIconCodePoint],
+                                              fontFamily: account[AccountsDB.accountIconFontFamily],
+                                              fontPackage: account[AccountsDB.accountIconFontPackage],
                                             ),
                                             currency: currencyCode,
                                             accountName: account[AccountsDB.accountName],
@@ -955,8 +958,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                           child: AccountCard(
                                             accountId: account[AccountsDB.accountId],
                                             icon: IconData(
-                                              int.tryParse(account[AccountsDB.accountIcon]) ?? Icons.error.codePoint,
-                                              fontFamily: 'MaterialIcons',
+                                              account[AccountsDB.accountIconCodePoint],
+                                              fontFamily: account[AccountsDB.accountIconFontFamily],
+                                              fontPackage: account[AccountsDB.accountIconFontPackage],
                                             ),
                                             currency: currencyCode,
                                             accountName: account[AccountsDB.accountName],
@@ -1057,6 +1061,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                                       IconData categoryIcon = IconData(
                                                         category[CategoriesDB.columnIconCodePoint],
                                                         fontFamily: category[CategoriesDB.columnIconFontFamily],
+                                                        fontPackage: category[CategoriesDB.columnIconFontPackage],
                                                       );
                                                       String categoryId = category[CategoriesDB.columnId];
                                                       String categoryName = category[CategoriesDB.columnName];

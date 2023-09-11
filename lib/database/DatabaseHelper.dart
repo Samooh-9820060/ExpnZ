@@ -40,7 +40,9 @@ class DatabaseHelper {
             ${AccountsDB.accountId} INTEGER PRIMARY KEY,
             ${AccountsDB.accountName} TEXT NOT NULL,
             ${AccountsDB.accountCurrency} TEXT NOT NULL,
-            ${AccountsDB.accountIcon} TEXT NOT NULL,
+            ${AccountsDB.accountIconCodePoint} INTEGER,
+            ${AccountsDB.accountIconFontFamily} TEXT,
+            ${AccountsDB.accountIconFontPackage} TEXT,
             ${AccountsDB.accountCardNumber} TEXT NULL
           )
     ''');
@@ -55,6 +57,7 @@ class DatabaseHelper {
             ${CategoriesDB.columnColor} INTEGER NOT NULL,
             ${CategoriesDB.columnIconCodePoint} INTEGER,
             ${CategoriesDB.columnIconFontFamily} TEXT,
+            ${CategoriesDB.columnIconFontPackage} TEXT,
             ${CategoriesDB.columnSelectedImageBlob} BLOB
           )
     ''');

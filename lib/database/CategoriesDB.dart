@@ -8,6 +8,7 @@ class CategoriesDB {
   static final columnColor = 'color';
   static final columnIconCodePoint = 'iconCodePoint';
   static final columnIconFontFamily = 'iconFontFamily';
+  static final columnIconFontPackage = 'iconFontPackage';
   static final columnSelectedImageBlob = 'selectedImageBlob';
 
   Future<int> insertCategory(Map<String, dynamic> row) async {

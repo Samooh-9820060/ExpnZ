@@ -1,7 +1,12 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../database/AccountsDB.dart';
+import '../models/AccountsModel.dart';
 import '../models/TransactionsModel.dart';
 import '../widgets/AppWidgets/SearchTransactionCard.dart';
+import '../widgets/AppWidgets/SelectAccountCard.dart';
 import 'AddTransaction.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -9,9 +14,103 @@ class SearchScreen extends StatefulWidget {
   _SearchScreenState createState() => _SearchScreenState();
 }
 
-class _SearchScreenState extends State<SearchScreen> {
+class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
   List<Map<String, dynamic>> filteredTransactions = [];
+
+  void _showFilterDialog(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return FractionallySizedBox(
+          heightFactor: 0.6,  // covers 60% of screen height
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(20.0),
+                topRight: Radius.circular(20.0),
+              ),
+            ),
+            padding: EdgeInsets.all(20.0),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text("Filter Options", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  SizedBox(height: 20),
+
+                  // Account selection
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'To Account',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 10),
+                      Container(
+                        height: 150,  // set the height
+                        child: Consumer<AccountsModel>(
+                          builder: (context, accountsModel, child) {
+                            if (accountsModel.accounts.isEmpty) {
+                              return Center(
+                                child: Text('No accounts available.'),
+                              );
+                            } else {
+                              return ListView.builder(
+                                padding: EdgeInsets.zero,
+                                scrollDirection: Axis.horizontal,
+                                itemCount: accountsModel.accounts.length,
+                                itemBuilder: (context, index) {
+                                  final account = accountsModel.accounts[index];
+                                  Map<String, dynamic> currencyMap = jsonDecode(account[AccountsDB.accountCurrency]);
+                                  String currencyCode = currencyMap['code'] as String;
+
+                                  return GestureDetector(
+                                    onTap: () {
+                                      // Handle onTap here. If you want to change the state, you might need a StatefulBuilder.
+                                      // ...
+                                    },
+                                    child: AccountCard(
+                                      accountId: account[AccountsDB.accountId],  // I assume 'accountId' is the correct key
+                                      icon: IconData(
+                                        account[AccountsDB.accountIconCodePoint],
+                                        fontFamily: AccountsDB.accountIconFontFamily,
+                                      ),
+                                      currency: currencyCode,
+                                      accountName: account[AccountsDB.accountName],
+                                      //isSelected: index == selectedToAccountIndex,  // I assume 'selectedToAccountIndex' is declared and maintained in your code
+                                    ),
+                                  );
+                                },
+                              );
+                            }
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  SizedBox(height: 20),
+                  Text("Select Categories:"),
+                  // Your ListView.builder code for selecting categories will go here
+                  SizedBox(height: 20),
+                  Text("Select From Date:"),
+                  // Your DatePicker code will go here
+                  SizedBox(height: 20),
+                  Text("Select To Date:"),
+                  // Your DatePicker code will go here
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   @override
   void initState() {
@@ -74,7 +173,8 @@ class _SearchScreenState extends State<SearchScreen> {
                           Icon(Icons.filter_alt, color: Colors.white, size: 20),
                       // Reduced icon size
                       onPressed: () {
-                        // Add filter logic here
+                        _showFilterDialog(
+                            context); // <-- Call the filter dialog here
                       },
                     )
                   ],
@@ -114,8 +214,10 @@ class _SearchScreenState extends State<SearchScreen> {
                                 onDelete: () {
                                   Provider.of<TransactionsModel>(context,
                                           listen: false)
-                                      .deleteTransactions(transaction['_id'],
-                                          _searchController.text.toLowerCase(), context);
+                                      .deleteTransactions(
+                                          transaction['_id'],
+                                          _searchController.text.toLowerCase(),
+                                          context);
                                   Provider.of<TransactionsModel>(context,
                                           listen: false)
                                       .fetchTransactions();
@@ -138,9 +240,10 @@ class _SearchScreenState extends State<SearchScreen> {
                                         .fetchTransactions();
                                     Provider.of<TransactionsModel>(context,
                                             listen: false)
-                                        .filterTransactions(context, _searchController
-                                            .text
-                                            .toLowerCase());
+                                        .filterTransactions(
+                                            context,
+                                            _searchController.text
+                                                .toLowerCase());
                                   }
                                 },
                               )

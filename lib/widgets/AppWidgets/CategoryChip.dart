@@ -64,6 +64,7 @@ class _CategoryChipState extends State<CategoryChip>
     var iconData = IconData(
       categoryDetails['iconCodePoint'],
       fontFamily: categoryDetails['iconFontFamily'],
+      fontPackage: categoryDetails['iconFontPackage'],
     );
     var label = categoryDetails['name'];
     File? imageFile = categoryDetails['imageFile'];

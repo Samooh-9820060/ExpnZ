@@ -110,6 +110,7 @@ class _CategoryCardState extends State<CategoryCard>
       iconData = IconData(
         categoryDetails[CategoriesDB.columnIconCodePoint],
         fontFamily: categoryDetails[CategoriesDB.columnIconFontFamily],
+        fontPackage: categoryDetails[CategoriesDB.columnIconFontPackage],
       );
     }
 
