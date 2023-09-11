@@ -1,10 +1,16 @@
 import 'dart:convert';
 
+import 'package:expnz/widgets/SimpleWidgets/ExpnZButton.dart';
+import 'package:expnz/widgets/SimpleWidgets/ModernSnackBar.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../database/AccountsDB.dart';
 import '../models/AccountsModel.dart';
+import '../models/CategoriesModel.dart';
 import '../models/TransactionsModel.dart';
+import '../widgets/AppWidgets/BuildCategoriesDropdown.dart';
+import '../widgets/AppWidgets/CategoryChip.dart';
 import '../widgets/AppWidgets/SearchTransactionCard.dart';
 import '../widgets/AppWidgets/SelectAccountCard.dart';
 import 'AddTransaction.dart';
@@ -16,98 +22,452 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
+  final ValueNotifier<List<int>> selectedAccountsNotifier = ValueNotifier<List<int>>([]);
   List<Map<String, dynamic>> filteredTransactions = [];
+  List<int> selectedAccounts = [];
+
+  final TextEditingController _categoryIncludeSearchController = TextEditingController();
+  final TextEditingController _categoryExcludeSearchController = TextEditingController();
+
+  bool _showIncludeDropdown = false;
+  List<Map<String, dynamic>> selectedIncludeCategoriesList = [];
+  bool _showExcludeDropdown = false;
+  List<Map<String, dynamic>> selectedExcludeCategoriesList = [];
+
+  DateTime selectedFromDate = DateTime(2000, 1, 1);
+  DateTime selectedToDate = DateTime(2101, 01, 01);
+  void updateFromDate(DateTime newDate) {
+    setState(() {
+      selectedFromDate = newDate;
+    });
+  }
+  void updateToDate(DateTime newDate) {
+    setState(() {
+      selectedToDate = newDate;
+    });
+  }
+
+  void update(){
+    showModernSnackBar(context: context, message: 'test', backgroundColor: Colors.redAccent);
+  }
 
   void _showFilterDialog(BuildContext context) {
     showModalBottomSheet(
+      isScrollControlled: true,
+      barrierColor: Colors.transparent,
+      backgroundColor: Colors.transparent,
       context: context,
       builder: (BuildContext context) {
-        return FractionallySizedBox(
-          heightFactor: 0.6,  // covers 60% of screen height
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(20.0),
-                topRight: Radius.circular(20.0),
+
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter modalSetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+                top: MediaQuery.of(context).viewInsets.top,
               ),
-            ),
-            padding: EdgeInsets.all(20.0),
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text("Filter Options", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  SizedBox(height: 20),
-
-                  // Account selection
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Select Accounts',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Container(
-                        height: 150, // set the height
-                        child: Consumer<AccountsModel>(
-                          builder: (context, accountsModel, child) {
-                            if (accountsModel.accounts.isEmpty) {
-                              return Center(
-                                child: Text('No accounts available.'),
-                              );
-                            } else {
-                              return ListView.builder(
-                                padding: EdgeInsets.zero,
-                                scrollDirection: Axis.horizontal,
-                                itemCount: accountsModel.accounts.length,
-                                itemBuilder: (context, index) {
-                                  final account = accountsModel.accounts[index];
-                                  Map<String, dynamic> currencyMap = jsonDecode(account[AccountsDB.accountCurrency]);
-                                  String currencyCode = currencyMap['code'] as String;
-
-                                  return GestureDetector(
-                                    onTap: () {
-                                      // Handle onTap here
-                                      // ...
-                                    },
-                                    child: Transform.scale(
-                                      scale: 0.8, // Adjust this scale factor to your need
-                                      child: AccountCard(
-                                        accountId: account[AccountsDB.accountId],
-                                        icon: IconData(
-                                          account[AccountsDB.accountIconCodePoint],
-                                          fontFamily: account[AccountsDB.accountIconFontFamily],
-                                          fontPackage: account[AccountsDB.accountIconFontPackage],
-                                        ),
-                                        currency: currencyCode,
-                                        accountName: account[AccountsDB.accountName],
-                                        //isSelected: index == selectedToAccountIndex,  // I assume 'selectedToAccountIndex' is declared and maintained in your code
-                                      ),
-                                    ),
+              child: Container(
+                height: MediaQuery.of(context).size.height * 0.7,
+                margin: EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.blueGrey,
+                  borderRadius: BorderRadius.circular(40),
+                ),
+                child: Padding(
+                  padding: EdgeInsets.all(20.0),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(height: 20),
+                        Center(child: Text("Filter Conditions", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold))),
+                        SizedBox(height: 40),
+                        Text("Select Date Range", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        SizedBox(height: 20),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              // From Date Button
+                              InkWell(
+                                onTap: () async {
+                                  DateTime? newDate = await showDatePicker(
+                                    context: context,
+                                    initialDate: selectedFromDate,
+                                    firstDate: DateTime(2000),
+                                    lastDate: DateTime(2101),
                                   );
+                                  if (newDate != null && newDate != selectedFromDate) {
+                                    modalSetState(() { // <-- Use the local modalSetState
+                                      selectedFromDate = newDate;
+                                    });
+                                  }
                                 },
-                              );
-                            }
+                                borderRadius: BorderRadius.circular(50),
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blueGrey[700],
+                                    borderRadius: BorderRadius.circular(50),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black12,
+                                        blurRadius: 10,
+                                        offset: Offset(0, 5),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.calendar_today, color: Colors.white),
+                                      SizedBox(width: 5),
+                                      Text(
+                                        DateFormat('yyyy-MM-dd').format(selectedFromDate),  // Replace 'selectedFromDate' with your variable
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+
+                              // To Date Button
+                              InkWell(
+                                onTap: () async {
+                                  DateTime? newDate = await showDatePicker(
+                                    context: context,
+                                    initialDate: selectedToDate,
+                                    firstDate: DateTime(2000),
+                                    lastDate: DateTime(2101),
+                                  );
+                                  if (newDate != null && newDate != selectedToDate) {
+                                    modalSetState(() { // <-- Use the local modalSetState
+                                      selectedToDate = newDate;
+                                    });
+                                  }
+                                },                            borderRadius: BorderRadius.circular(50),
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blueGrey[700],
+                                    borderRadius: BorderRadius.circular(50),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black12,
+                                        blurRadius: 10,
+                                        offset: Offset(0, 5),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.calendar_today, color: Colors.white),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        DateFormat('yyyy-MM-dd').format(selectedToDate),  // Replace 'selectedToDate' with your variable
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Account selection
+                        SizedBox(height: 20),
+                        ValueListenableBuilder<List<int>>(
+                          valueListenable: selectedAccountsNotifier,
+                          builder: (context, selectedAccounts, _) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Select Accounts To Include In Search',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Container(
+                                  height: 150, // set the height
+                                  child: Consumer<AccountsModel>(
+                                    builder: (context, accountsModel, child) {
+                                      if (accountsModel.accounts.isEmpty) {
+                                        return Center(
+                                          child: Text('No accounts available.'),
+                                        );
+                                      } else {
+                                        return ListView.builder(
+                                          padding: EdgeInsets.zero,
+                                          scrollDirection: Axis.horizontal,
+                                          itemCount: accountsModel.accounts.length,
+                                          itemBuilder: (context, index) {
+                                            final account = accountsModel.accounts[index];
+                                            Map<String, dynamic> currencyMap = jsonDecode(account[AccountsDB.accountCurrency]);
+                                            String currencyCode = currencyMap['code'] as String;
+
+                                            return GestureDetector(
+                                              onTap: () {
+                                                int currentAccountId = account[AccountsDB.accountId];
+                                                if (selectedAccounts.contains(currentAccountId)) {
+                                                  selectedAccounts.remove(currentAccountId);
+                                                } else {
+                                                  selectedAccounts.add(currentAccountId);
+                                                }
+                                                selectedAccountsNotifier.value = [...selectedAccounts]; // trigger update
+                                              },
+                                              child: Transform.scale(
+                                                scale: 0.8, // Adjust this scale factor to your need
+                                                child: AccountCard(
+                                                  accountId: account[AccountsDB.accountId],
+                                                  icon: IconData(
+                                                    account[AccountsDB.accountIconCodePoint],
+                                                    fontFamily: account[AccountsDB.accountIconFontFamily],
+                                                    fontPackage: account[AccountsDB.accountIconFontPackage],
+                                                  ),
+                                                  currency: currencyCode,
+                                                  accountName: account[AccountsDB.accountName],
+                                                  horizontalMargin: 0,
+                                                  verticalMargin: 0,
+                                                  isSelected: selectedAccounts.contains(account[AccountsDB.accountId]),
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        );
+                                      }
+                                    },
+                                  ),
+                                )
+                              ],
+                            );
                           },
                         ),
-                      )
-                    ],
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Your existing code for date selectors goes here
+
+                            SizedBox(height: 20),
+
+                            // Text headers for category selection
+                            Text(
+                              'Select Categories To Include In Search',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+
+                            SizedBox(height: 20),
+                            TextField(
+                              controller: _categoryIncludeSearchController,
+                              decoration: InputDecoration(
+                                hintText: 'Search Category',
+                                fillColor: Colors.blueGrey[700],
+                                filled: true,
+                                prefixIcon: Icon(Icons.search),
+                                border: OutlineInputBorder(
+                                  borderSide: BorderSide.none,  // Removes the underline border
+                                  borderRadius: BorderRadius.circular(50.0),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(color: Colors.blue, width: 1),
+                                  borderRadius: BorderRadius.circular(50.0),
+                                ),
+                              ),
+                              onChanged: (value) {
+                                modalSetState(() {
+                                  _showIncludeDropdown = value.isNotEmpty;
+                                });
+                              },
+                            ),
+                            SizedBox(height: 10),
+                            if (_showIncludeDropdown)
+                              GestureDetector(
+                                onTap: () {
+                                  // Do nothing to stop event propagation
+                                  return;
+                                },
+                                child: Material(
+                                  elevation: 4.0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(25),
+                                  ),
+                                  color: Colors.blueGrey[700],
+                                  child: Container(
+                                    width: MediaQuery.of(context).size.width, // Adjust as needed
+                                    child: Consumer<CategoriesModel>(
+                                      builder: (context, categoriesModel, child) {
+                                        return buildCategoriesDropdown(
+                                          categoriesModel,
+                                          selectedIncludeCategoriesList,
+                                          _categoryIncludeSearchController.text,
+                                          modalSetState, // Assuming this is within a StatefulWidget and you have access to setState
+                                          _showIncludeDropdown,
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            SizedBox(height: 10),
+                            Wrap(
+                              spacing: 8.0,
+                              runSpacing: 8.0,
+                              children: List<Widget>.generate(
+                                selectedIncludeCategoriesList.length,
+                                    (int index) {
+                                  final category = selectedIncludeCategoriesList[index];
+                                  dynamic categoryIdRaw = category['id'];
+                                  int categoryId = 0;
+
+                                  if (categoryIdRaw is String) {
+                                    categoryId = int.parse(categoryIdRaw);
+                                  } else if (categoryIdRaw is int) {
+                                    categoryId = categoryIdRaw;
+                                  } else {
+                                    // Handle error: unknown type
+                                    print('Unknown type for category ID');
+                                  }
+
+                                  return CategoryChip(
+                                    categoryId: categoryId,
+                                    onTap: () {
+                                      modalSetState(() {
+                                        selectedIncludeCategoriesList.removeAt(index);
+                                      });
+                                    },
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 20),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Your existing code for date selectors goes here
+
+                            SizedBox(height: 20),
+
+                            // Text headers for category selection
+                            Text(
+                              'Select Categories To Exclude From Search',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+
+                            SizedBox(height: 20),
+                            TextField(
+                              controller: _categoryExcludeSearchController,
+                              decoration: InputDecoration(
+                                hintText: 'Search Category',
+                                fillColor: Colors.blueGrey[700],
+                                filled: true,
+                                prefixIcon: Icon(Icons.search),
+                                border: OutlineInputBorder(
+                                  borderSide: BorderSide.none,  // Removes the underline border
+                                  borderRadius: BorderRadius.circular(50.0),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(color: Colors.blue, width: 1),
+                                  borderRadius: BorderRadius.circular(50.0),
+                                ),
+                              ),
+                              onChanged: (value) {
+                                modalSetState(() {
+                                  _showExcludeDropdown = value.isNotEmpty;
+                                });
+                              },
+                            ),
+                            SizedBox(height: 10),
+                            if (_showExcludeDropdown)
+                              GestureDetector(
+                                onTap: () {
+                                  // Do nothing to stop event propagation
+                                  return;
+                                },
+                                child: Material(
+                                  elevation: 4.0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(25),
+                                  ),
+                                  color: Colors.blueGrey[700],
+                                  child: Container(
+                                    width: MediaQuery.of(context).size.width, // Adjust as needed
+                                    child: Consumer<CategoriesModel>(
+                                      builder: (context, categoriesModel, child) {
+                                        return buildCategoriesDropdown(
+                                          categoriesModel,
+                                          selectedExcludeCategoriesList,
+                                          _categoryExcludeSearchController.text,
+                                          modalSetState, // Assuming this is within a StatefulWidget and you have access to setState
+                                          _showExcludeDropdown,
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            SizedBox(height: 10),
+                            Wrap(
+                              spacing: 8.0,
+                              runSpacing: 8.0,
+                              children: List<Widget>.generate(
+                                selectedExcludeCategoriesList.length,
+                                    (int index) {
+                                  final category = selectedExcludeCategoriesList[index];
+                                  dynamic categoryIdRaw = category['id'];
+                                  int categoryId = 0;
+
+                                  if (categoryIdRaw is String) {
+                                    categoryId = int.parse(categoryIdRaw);
+                                  } else if (categoryIdRaw is int) {
+                                    categoryId = categoryIdRaw;
+                                  } else {
+                                    // Handle error: unknown type
+                                    print('Unknown type for category ID');
+                                  }
+
+                                  return CategoryChip(
+                                    categoryId: categoryId,
+                                    onTap: () {
+                                      modalSetState(() {
+                                        selectedExcludeCategoriesList.removeAt(index);
+                                      });
+                                    },
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 20),
+                        Row(
+                          children: [
+                            Expanded(
+                                child: ExpnZButton(label: 'Filter', onPressed: update)
+                            ),
+                          ],
+                        )
+                      ],
+                    ),
                   ),
-                  Text("Select Categories:"),
-                  // Your ListView.builder code for selecting categories will go here
-                  SizedBox(height: 20),
-                  Text("Select From Date:"),
-                  // Your DatePicker code will go here
-                  SizedBox(height: 20),
-                  Text("Select To Date:"),
-                  // Your DatePicker code will go here
-                ],
+                ),
               ),
-            ),
-          ),
+            );
+          }
         );
       },
     );
@@ -118,6 +478,18 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     super.initState();
     _searchController.addListener(_filterTransactions);
     Provider.of<TransactionsModel>(context, listen: false).fetchTransactions();
+    // Fetch accounts and populate selectedAccounts
+    Provider.of<AccountsModel>(context, listen: false).fetchAccounts().then((_) {
+      final accountsModel = Provider.of<AccountsModel>(context, listen: false);
+      if (accountsModel.accounts.isNotEmpty) {
+        selectedAccounts = accountsModel.accounts
+            .map((account) => account[AccountsDB.accountId] as int)
+            .toList();
+
+        // Update the ValueNotifier
+        selectedAccountsNotifier.value = selectedAccounts;
+      }
+    });
   }
 
   void _filterTransactions() {
@@ -128,6 +500,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
 
   @override
   void dispose() {
+    _categoryIncludeSearchController.dispose();
     _searchController.dispose();
     super.dispose();
   }

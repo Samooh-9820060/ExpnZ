@@ -6,6 +6,8 @@ class AccountCard extends StatelessWidget {
   final String accountName;
   final bool isSelected;
   final int accountId;
+  double? verticalMargin;
+  double? horizontalMargin;
 
   AccountCard({
     required this.icon,
@@ -13,13 +15,15 @@ class AccountCard extends StatelessWidget {
     required this.accountName,
     this.isSelected = false,
     required this.accountId,
+    this.horizontalMargin = 8,
+    this.verticalMargin = 8,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: 200,
-      margin: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+      margin: EdgeInsets.symmetric(vertical: verticalMargin!, horizontal: horizontalMargin!),
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(

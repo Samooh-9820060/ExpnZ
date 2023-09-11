@@ -5,10 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../database/AccountsDB.dart';
-import '../database/CategoriesDB.dart';
 import '../database/TransactionsDB.dart';
 import '../models/CategoriesModel.dart';
 import '../models/TransactionsModel.dart';
+import '../widgets/AppWidgets/BuildCategoriesDropdown.dart';
 import '../widgets/AppWidgets/CategoryChip.dart';
 import '../widgets/AppWidgets/SelectAccountCard.dart';
 import '../widgets/SimpleWidgets/ExpnZButton.dart';
@@ -402,7 +402,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
       ),
     );
   }
-// Method to select Date
+  // Method to select Date
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? pickedDate = await showDatePicker(
       context: context,
@@ -474,8 +474,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                         if (!updateMode)
                           SizedBox(width: 16),
                         if (!updateMode)
-                        buildTypeButton(TransactionType.transfer, 'Transfer'),
-
+                          buildTypeButton(TransactionType.transfer, 'Transfer'),
                       ],
                     ),
 
@@ -696,7 +695,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                     selectedCategoriesList.length,
                                         (int index) {
                                       final category = selectedCategoriesList[index];
-                                      dynamic categoryIdRaw = category['id']; // assuming category['id'] could be int or String
+                                      dynamic categoryIdRaw = category['id'];
                                       int categoryId = 0;
 
                                       if (categoryIdRaw is String) {
@@ -1051,113 +1050,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-Widget buildCategoriesDropdown(
-    CategoriesModel categoriesModel,
-    List<Map<String, dynamic>> selectedCategoriesList,
-    String searchText,
-    Function setStateCallback, // Add this
-    bool showDropdown,
-    )
-{
-
-  if (categoriesModel.categories.isEmpty) {
-    return Center(
-      child: Text('No categories available.'),
-    );
-  } else {
-    List<Map<String, dynamic>> sortedData = List.from(categoriesModel.categories);
-    sortedData = sortedData.where((category) {
-      int categoryId = category[CategoriesDB.columnId];
-      bool isAlreadySelected = selectedCategoriesList.any((selectedCategory) => int.parse(selectedCategory['id'].toString()) == categoryId);
-
-      return category[CategoriesDB.columnName]
-          .toLowerCase()
-          .contains(searchText.toLowerCase()) && !isAlreadySelected;
-    }).toList();
-    sortedData.sort((a, b) => a[CategoriesDB.columnName].compareTo(b[CategoriesDB.columnName]));
-
-    double itemHeight = 55.0; // Approximate height of one ListTile
-    double maxHeight = 200.0; // Maximum height you'd like to allow for dropdown
-
-    double calculatedHeight = sortedData.length * itemHeight;
-    calculatedHeight = calculatedHeight > maxHeight ? maxHeight : calculatedHeight;
-
-    return Container(
-      height: calculatedHeight,
-      child: ListView.builder(
-        padding: EdgeInsets.zero,
-        itemCount: sortedData.length,
-        itemBuilder: (context, index) {
-          return Container(
-              height: calculatedHeight,
-              child: ListView.builder(
-                padding: EdgeInsets.zero,
-                itemCount: sortedData.length,
-                itemBuilder: (context, index) {
-                  final category = sortedData[index];
-                  IconData categoryIcon = IconData(
-                    category[CategoriesDB.columnIconCodePoint],
-                    fontFamily: category[CategoriesDB.columnIconFontFamily],
-                    fontPackage: category[CategoriesDB.columnIconFontPackage],
-                  );
-                  String categoryId = category[CategoriesDB.columnId].toString();
-                  String categoryName = category[CategoriesDB.columnName];
-
-                  BorderRadius borderRadius;
-
-                  // Top item
-                  if (index == 0) {
-                    borderRadius = BorderRadius.only(
-                      topLeft: Radius.circular(30),
-                      topRight: Radius.circular(30),
-                    );
-                  }
-                  // Bottom item
-                  else if (index == sortedData.length - 1) {
-                    borderRadius = BorderRadius.only(
-                      bottomLeft: Radius.circular(30),
-                      bottomRight: Radius.circular(30),
-                    );
-                  }
-                  // Middle items
-                  else {
-                    borderRadius = BorderRadius.zero;
-                  }
-
-                  return Material(
-                    type: MaterialType.transparency, // To make it transparent
-                    child: InkWell(
-                      onTap: () {
-                        setStateCallback(() { // Use the passed setStateCallback
-                          selectedCategoriesList.add({
-                            'id': categoryId,
-                          });
-                          showDropdown = false; // Use the passed showDropdown
-                        });
-                      },
-                      borderRadius: borderRadius, // Use the dynamic border radius
-                      splashColor: Colors.blue,
-                      highlightColor: Colors.blue.withOpacity(0.5),
-                      child: ListTile(
-                        title: Text(categoryName),
-                        leading: category['imageFile'] == null
-                            ? Icon(categoryIcon)
-                            : CircleAvatar(
-                          backgroundImage: FileImage(category['imageFile']),
-                          radius: 12,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              )
-          );
-          },
       ),
     );
   }

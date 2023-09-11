@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 
 class ModernSnackBar extends StatelessWidget {
@@ -16,15 +15,18 @@ class ModernSnackBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Positioned(
-      top: 30,
-      left: 16,
-      right: 16,
+      top: 50,
+      left: 20,
+      right: 20,
       child: Material(
-        borderRadius: BorderRadius.circular(30),  // Ultra-rounded corners
+        borderRadius: BorderRadius.circular(30), // Changed to affect all corners
         elevation: 12,
         child: Container(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width, // Full screen width
+          ),
           decoration: BoxDecoration(
-            gradient: LinearGradient( // Smooth gradient
+            gradient: LinearGradient(
               begin: Alignment.topRight,
               end: Alignment.bottomLeft,
               colors: [
@@ -32,8 +34,8 @@ class ModernSnackBar extends StatelessWidget {
                 backgroundColor.withOpacity(0.8),
               ],
             ),
-            borderRadius: BorderRadius.circular(30),  // Ultra-rounded corners
-            boxShadow: [ // Subtle boxShadow
+            borderRadius: BorderRadius.circular(30), // Changed to affect all corners
+            boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.6),
                 blurRadius: 15,
@@ -41,25 +43,17 @@ class ModernSnackBar extends StatelessWidget {
               ),
             ],
           ),
-          child: ListTile(
-            contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            title: Text(
-              message,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,  // Reduced font size
-                fontWeight: FontWeight.w600,  // Semi-bold
-              ),
-            ),
-            trailing: ElevatedButton(
-              onPressed: onClose,
-              style: ElevatedButton.styleFrom(
-                primary: Colors.white.withOpacity(0.5),
-                shape: RoundedRectangleBorder(  // Rounded button
-                  borderRadius: BorderRadius.circular(50),
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Center(
+              child: Text(
+                message,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-              child: Icon(Icons.close, color: Colors.white),
             ),
           ),
         ),
