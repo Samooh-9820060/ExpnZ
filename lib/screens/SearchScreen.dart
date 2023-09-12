@@ -23,8 +23,8 @@ class SearchScreen extends StatefulWidget {
 class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
   final ValueNotifier<List<int>> selectedAccountsNotifier = ValueNotifier<List<int>>([]);
-  List<Map<String, dynamic>> filteredTransactions = [];
   List<int> selectedAccounts = [];
+  List<Map<String, dynamic>> filteredConditionalTransactions = [];
 
   final TextEditingController _categoryIncludeSearchController = TextEditingController();
   final TextEditingController _categoryExcludeSearchController = TextEditingController();
@@ -36,6 +36,50 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
 
   DateTime selectedFromDate = DateTime(DateTime.now().year, 1, 1);
   DateTime selectedToDate = DateTime(DateTime.now().year, 12, 31);
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(_filterTransactions);
+    Provider.of<TransactionsModel>(context, listen: false).fetchTransactions();
+    // Fetch accounts and populate selectedAccounts
+    Provider.of<AccountsModel>(context, listen: false).fetchAccounts().then((_) {
+      final accountsModel = Provider.of<AccountsModel>(context, listen: false);
+      if (accountsModel.accounts.isNotEmpty) {
+        selectedAccounts = accountsModel.accounts
+            .map((account) => account[AccountsDB.accountId] as int)
+            .toList();
+
+        // Update the ValueNotifier
+        selectedAccountsNotifier.value = selectedAccounts;
+      }
+    });
+    selectedAccountsNotifier.addListener(() {
+      setState(() {
+        selectedAccounts = selectedAccountsNotifier.value;
+      });
+    });
+  }
+
+  void _filterTransactions() {
+    String searchText = _searchController.text.toLowerCase();
+
+    if (filteredConditionalTransactions == null || filteredConditionalTransactions.isEmpty){
+      Provider.of<TransactionsModel>(context, listen: false)
+          .filterTransactions(context, searchText);
+    } else {
+      Provider.of<TransactionsModel>(context, listen: false)
+          .filterTransactions(context, searchText, filteredConditionalTransactions);
+    }
+  }
+
+  @override
+  void dispose() {
+    _categoryIncludeSearchController.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
+
   void updateFromDate(DateTime newDate) {
     setState(() {
       selectedFromDate = newDate;
@@ -47,10 +91,6 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     });
   }
 
-  void update(){
-    showModernSnackBar(context: context, message: 'test', backgroundColor: Colors.redAccent);
-  }
-
   Future<void> clearFilter() async {
     selectedFromDate = DateTime(DateTime.now().year, 1, 1);
     selectedToDate = DateTime(DateTime.now().year, 12, 31);
@@ -60,6 +100,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     _categoryExcludeSearchController.text = '';
     _showExcludeDropdown = false;
     _showIncludeDropdown = false;
+    filteredConditionalTransactions = [];
 
     // Fetch all accounts and populate selectedAccounts with their IDs
     AccountsModel accountsModel = Provider.of<AccountsModel>(context, listen: false);
@@ -75,9 +116,8 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     }
 
     Navigator.pop(context, true);
-    showModernSnackBar(context: context, message: 'Filters cleared', backgroundColor: Colors.redAccent);
+    showModernSnackBar(context: context, message: 'Filters cleared', backgroundColor: Colors.green);
   }
-
 
   void _showFilterDialog(BuildContext context) {
     showModalBottomSheet(
@@ -211,9 +251,8 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                         ),
                         // Account selection
                         SizedBox(height: 20),
-                        ValueListenableBuilder<List<int>>(
-                          valueListenable: selectedAccountsNotifier,
-                          builder: (context, selectedAccounts, _) {
+                        Builder(
+                          builder: (context) {
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -245,12 +284,13 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                                             return GestureDetector(
                                               onTap: () {
                                                 int currentAccountId = account[AccountsDB.accountId];
-                                                if (selectedAccounts.contains(currentAccountId)) {
-                                                  selectedAccounts.remove(currentAccountId);
-                                                } else {
-                                                  selectedAccounts.add(currentAccountId);
-                                                }
-                                                selectedAccountsNotifier.value = [...selectedAccounts]; // trigger update
+                                                modalSetState(() {
+                                                  if (selectedAccounts.contains(currentAccountId)) {
+                                                    selectedAccounts.remove(currentAccountId);
+                                                  } else {
+                                                    selectedAccounts.add(currentAccountId);
+                                                  }
+                                                });
                                               },
                                               child: Transform.scale(
                                                 scale: 0.8, // Adjust this scale factor to your need
@@ -490,7 +530,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                             ),
                             SizedBox(width: 10),
                             Expanded(
-                                child: ExpnZButton(label: 'Filter', onPressed: update)
+                                child: ExpnZButton(label: 'Filter', onPressed: FilterTransactions)
                             ),
                           ],
                         )
@@ -506,37 +546,6 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     );
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _searchController.addListener(_filterTransactions);
-    Provider.of<TransactionsModel>(context, listen: false).fetchTransactions();
-    // Fetch accounts and populate selectedAccounts
-    Provider.of<AccountsModel>(context, listen: false).fetchAccounts().then((_) {
-      final accountsModel = Provider.of<AccountsModel>(context, listen: false);
-      if (accountsModel.accounts.isNotEmpty) {
-        selectedAccounts = accountsModel.accounts
-            .map((account) => account[AccountsDB.accountId] as int)
-            .toList();
-
-        // Update the ValueNotifier
-        selectedAccountsNotifier.value = selectedAccounts;
-      }
-    });
-  }
-
-  void _filterTransactions() {
-    String searchText = _searchController.text.toLowerCase();
-    Provider.of<TransactionsModel>(context, listen: false)
-        .filterTransactions(context, searchText);
-  }
-
-  @override
-  void dispose() {
-    _categoryIncludeSearchController.dispose();
-    _searchController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -575,14 +584,21 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                         style: TextStyle(color: Colors.white),
                       ),
                     ),
-                    IconButton(
-                      icon:
-                          Icon(Icons.filter_alt, color: Colors.white, size: 20),
-                      // Reduced icon size
-                      onPressed: () {
-                        _showFilterDialog(
-                            context); // <-- Call the filter dialog here
+                    InkWell(
+                      onTap: () {
+                        _showFilterDialog(context); // <-- Call the filter dialog here
                       },
+                      borderRadius: BorderRadius.circular(30), // Tune this for your case
+                      splashColor: Colors.blue.withOpacity(0.5),
+                      radius: 20.0, // Adjust the radius to control the splash size
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Icon(
+                          Icons.filter_alt,
+                          color: filteredConditionalTransactions.isNotEmpty ? Colors.blue : Colors.white,
+                          size: 20,
+                        ),
+                      ),
                     )
                   ],
                 ),
@@ -594,108 +610,136 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
       body: Consumer<TransactionsModel>(
         builder: (context, transactionsModel, child) {
           var transactionsToShow =
-              transactionsModel.filteredTransactions.isNotEmpty ||
-                      _searchController.text.isNotEmpty
-                  ? transactionsModel.filteredTransactions
-                  : transactionsModel.transactions;
+          _searchController.text.isNotEmpty
+              ? transactionsModel.filteredTransactions
+              : (filteredConditionalTransactions.isNotEmpty
+              ? filteredConditionalTransactions
+              : filteredConditionalTransactions);
+
+          Widget childWidget;
+
+          if (_searchController.text.isNotEmpty || filteredConditionalTransactions.isNotEmpty) {
+            if (transactionsToShow.isNotEmpty) {
+              childWidget = SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Text(
+                        'Result',
+                        style: TextStyle(
+                            fontSize: 18, color: Colors.white),
+                      ),
+                    ),
+                    for (var transaction in transactionsToShow)
+                      TransactionCard(
+                        transaction: transaction,
+                        onDelete: () {
+                          Provider.of<TransactionsModel>(context,
+                              listen: false)
+                              .deleteTransactions(
+                              transaction['_id'],
+                              _searchController.text.toLowerCase(),
+                              context);
+                          Provider.of<TransactionsModel>(context,
+                              listen: false)
+                              .fetchTransactions();
+                        },
+                        onUpdate: () async {
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  AddTransactionScreen(
+                                    transaction: transaction,
+                                  ),
+                            ),
+                          );
+
+                          if (result != null && result == true) {
+                            await Provider.of<TransactionsModel>(
+                                context,
+                                listen: false)
+                                .fetchTransactions();
+                            Provider.of<TransactionsModel>(context,
+                                listen: false)
+                                .filterTransactions(
+                                context,
+                                _searchController.text
+                                    .toLowerCase());
+                          }
+                        },
+                      )
+                  ],
+                ),
+              );
+            } else {
+              childWidget = Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.sentiment_dissatisfied,
+                      size: 50,
+                      color: Colors.white,
+                    ),
+                    SizedBox(height: 10),
+                    Text(
+                      'No transactions available',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ],
+                ),
+              );
+            }
+          } else {
+            childWidget = Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.sentiment_very_satisfied,
+                    size: 50,
+                    color: Colors.white,
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    'Enter something to search or use the filter button',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ],
+              ),
+            );
+          }
           return Container(
             color: Colors.blueGrey[900],
-            child: _searchController
-                    .text.isNotEmpty // <-- Check if text is entered
-                ? (transactionsToShow.isNotEmpty
-                    ? SingleChildScrollView(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Text(
-                                'Result',
-                                style: TextStyle(
-                                    fontSize: 18, color: Colors.white),
-                              ),
-                            ),
-                            for (var transaction in transactionsToShow)
-                              TransactionCard(
-                                transaction: transaction,
-                                onDelete: () {
-                                  Provider.of<TransactionsModel>(context,
-                                          listen: false)
-                                      .deleteTransactions(
-                                          transaction['_id'],
-                                          _searchController.text.toLowerCase(),
-                                          context);
-                                  Provider.of<TransactionsModel>(context,
-                                          listen: false)
-                                      .fetchTransactions();
-                                },
-                                onUpdate: () async {
-                                  final result = await Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          AddTransactionScreen(
-                                        transaction: transaction,
-                                      ),
-                                    ),
-                                  );
-
-                                  if (result != null && result == true) {
-                                    await Provider.of<TransactionsModel>(
-                                            context,
-                                            listen: false)
-                                        .fetchTransactions();
-                                    Provider.of<TransactionsModel>(context,
-                                            listen: false)
-                                        .filterTransactions(
-                                            context,
-                                            _searchController.text
-                                                .toLowerCase());
-                                  }
-                                },
-                              )
-                          ],
-                        ),
-                      )
-                    : Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.sentiment_dissatisfied,
-                              size: 50,
-                              color: Colors.white,
-                            ),
-                            SizedBox(height: 10),
-                            Text(
-                              'Sorry, nothing found',
-                              style: TextStyle(color: Colors.white),
-                            ),
-                          ],
-                        ),
-                      ))
-                : Center(
-                    // <-- This will be displayed when the search box is empty
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.sentiment_very_satisfied,
-                          size: 50,
-                          color: Colors.white,
-                        ),
-                        SizedBox(height: 10),
-                        Text(
-                          'Please enter something to search',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ],
-                    ),
-                  ),
+            child: childWidget,
           );
         },
       ),
     );
+  }
+
+  void FilterTransactions(){
+    Provider.of<TransactionsModel>(context, listen: false)
+        .filterTransactions(
+        context,
+        null,  // Search text
+        null,  // Transactions to filter
+        selectedFromDate,
+        selectedToDate,
+        selectedIncludeCategoriesList.map((category) => int.parse(category['id'])).toList(),
+        selectedExcludeCategoriesList.map((category) => int.parse(category['id'])).toList(),
+        selectedAccounts,
+    );
+    showModernSnackBar(context: context, message: 'Filters Applied', backgroundColor: Colors.green);
+    setState(() {
+      filteredConditionalTransactions = Provider.of<TransactionsModel>(context, listen: false).filteredTransactions;
+      print('filted conditional transactions');
+      print(filteredConditionalTransactions);
+    });
+    Navigator.pop(context, true);
   }
 }
 

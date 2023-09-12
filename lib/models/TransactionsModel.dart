@@ -104,17 +104,92 @@ class TransactionsModel extends ChangeNotifier {
     notifyListeners();  // Notify the UI to rebuild
   }
 
-  Future<void> filterTransactions(BuildContext context, String searchText, [List<Map<String, dynamic>>? transactionsToFilter]) async {
+  Future<void> filterTransactions(
+      BuildContext context,
+      [String? searchText,
+      List<Map<String, dynamic>>? transactionsToFilter,
+      DateTime? fromDate,
+      DateTime? toDate,
+      List<int>? includeCategories,
+      List<int>? excludeCategories,
+      List<int>? includeAccounts]
+      ) async {
+
     // Use transactionsToFilter if provided, otherwise use the existing transactions list
     final transList = transactionsToFilter ?? transactions;
 
-    if (searchText.isNotEmpty) {
-      List<Map<String, dynamic>> tempTransactions = [];
-      for (var transaction in transList) {
-        bool shouldInclude = false;
+    List<Map<String, dynamic>> tempTransactions = [];
+    print('all transactions');
+    print(transList);
 
+    for (var transaction in transList) {
+      bool shouldInclude = true;
+
+
+      print(transaction);
+
+      print('checking dates');
+      // Date-based filtering
+      if ((fromDate != null && toDate != null) && shouldInclude == true) {
+        DateTime transactionDate = DateTime.parse(transaction['date']);
+        if ((transactionDate.isAfter(fromDate) && transactionDate.isBefore(toDate))|| transactionDate == fromDate || transactionDate == toDate) {
+          shouldInclude = true;
+        } else {
+          print('ex' + transactionDate.toString());
+          shouldInclude = false;
+        }
+      }
+      print(shouldInclude);
+
+      print('checking include categories');
+      // Category-based filtering
+      if (includeCategories != null && shouldInclude == true) {
         if (transaction.containsKey('categories')) {
+          final List<int> categoryIds = List<int>.from(
+              (transaction['categories'] as String)
+                  .split(',')
+                  .map((e) => int.tryParse(e.trim()) ?? 0)
+          );
 
+          for (int categoryId in categoryIds) {
+            if (includeCategories.contains(categoryId)) {
+              shouldInclude = true;
+            }
+          }
+        }
+      }
+      print(shouldInclude);
+
+      print('checking exclude categories');
+      if (excludeCategories != null && shouldInclude == true) {
+        if (transaction.containsKey('categories')) {
+          final List<int> categoryIds = List<int>.from(
+              (transaction['categories'] as String)
+                  .split(',')
+                  .map((e) => int.tryParse(e.trim()) ?? 0)
+          );
+
+          for (int categoryId in categoryIds) {
+            if (excludeCategories.contains(categoryId)) {
+              shouldInclude = false;  // Exclude this transaction
+            }
+          }
+        }
+      }
+      print(shouldInclude);
+
+      print('checking accounts');
+      // Account-based filtering
+      if (includeAccounts != null && includeAccounts.contains(transaction[TransactionsDB.columnAccountId]) && shouldInclude == true) {
+        shouldInclude = true;
+      } else {
+        shouldInclude = false;
+      }
+      print(shouldInclude);
+
+      // Text-based filtering
+      if (searchText != null && searchText.isNotEmpty) {
+        if (transaction.containsKey('categories')) {
           final List<int> categoryIds = List<int>.from(
               (transaction['categories'] as String)
                   .split(',')
@@ -125,7 +200,6 @@ class TransactionsModel extends ChangeNotifier {
             var category = await Provider.of<CategoriesModel>(context, listen: false).getCategoryById(categoryId);
             if (category != null && (category[CategoriesDB.columnName] as String).toLowerCase().contains(searchText)) {
               shouldInclude = true;
-              break;
             }
           }
         }
@@ -143,15 +217,16 @@ class TransactionsModel extends ChangeNotifier {
             shouldInclude = true;
           }
         }
-
-        if (shouldInclude) {
-          tempTransactions.add(transaction);
-        }
       }
-      filteredTransactions = tempTransactions;
-    } else {
-      filteredTransactions = [];
+
+      if (shouldInclude) {
+        tempTransactions.add(transaction);
+      }
     }
+
+    filteredTransactions = tempTransactions;
+    print('filtered transactions');
+    print(filteredTransactions);
     notifyListeners();  // Important to notify listeners
   }
 
