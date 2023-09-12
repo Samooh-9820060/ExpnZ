@@ -34,8 +34,8 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   bool _showExcludeDropdown = false;
   List<Map<String, dynamic>> selectedExcludeCategoriesList = [];
 
-  DateTime selectedFromDate = DateTime(2000, 1, 1);
-  DateTime selectedToDate = DateTime(2101, 01, 01);
+  DateTime selectedFromDate = DateTime(DateTime.now().year, 1, 1);
+  DateTime selectedToDate = DateTime(DateTime.now().year, 12, 31);
   void updateFromDate(DateTime newDate) {
     setState(() {
       selectedFromDate = newDate;
@@ -50,6 +50,34 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   void update(){
     showModernSnackBar(context: context, message: 'test', backgroundColor: Colors.redAccent);
   }
+
+  Future<void> clearFilter() async {
+    selectedFromDate = DateTime(DateTime.now().year, 1, 1);
+    selectedToDate = DateTime(DateTime.now().year, 12, 31);
+    selectedIncludeCategoriesList = [];
+    selectedExcludeCategoriesList = [];
+    _categoryIncludeSearchController.text = '';
+    _categoryExcludeSearchController.text = '';
+    _showExcludeDropdown = false;
+    _showIncludeDropdown = false;
+
+    // Fetch all accounts and populate selectedAccounts with their IDs
+    AccountsModel accountsModel = Provider.of<AccountsModel>(context, listen: false);
+    if (accountsModel.accounts.isNotEmpty) {
+      selectedAccounts = accountsModel.accounts.map<int>((account) {
+        return account[AccountsDB.accountId] as int;
+      }).toList();
+
+      // Update the ValueNotifier
+      selectedAccountsNotifier.value = selectedAccounts;
+    } else {
+      selectedAccounts = [];
+    }
+
+    Navigator.pop(context, true);
+    showModernSnackBar(context: context, message: 'Filters cleared', backgroundColor: Colors.redAccent);
+  }
+
 
   void _showFilterDialog(BuildContext context) {
     showModalBottomSheet(
@@ -148,7 +176,8 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                                       selectedToDate = newDate;
                                     });
                                   }
-                                },                            borderRadius: BorderRadius.circular(50),
+                                },
+                                borderRadius: BorderRadius.circular(50),
                                 child: Container(
                                   padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                                   decoration: BoxDecoration(
@@ -456,6 +485,10 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                         SizedBox(height: 20),
                         Row(
                           children: [
+                            Expanded(
+                                child: ExpnZButton(label: 'Clear', onPressed: clearFilter, primaryColor: Colors.grey,)
+                            ),
+                            SizedBox(width: 10),
                             Expanded(
                                 child: ExpnZButton(label: 'Filter', onPressed: update)
                             ),

@@ -104,10 +104,13 @@ class TransactionsModel extends ChangeNotifier {
     notifyListeners();  // Notify the UI to rebuild
   }
 
-  Future<void> filterTransactions(BuildContext context, String searchText) async {
+  Future<void> filterTransactions(BuildContext context, String searchText, [List<Map<String, dynamic>>? transactionsToFilter]) async {
+    // Use transactionsToFilter if provided, otherwise use the existing transactions list
+    final transList = transactionsToFilter ?? transactions;
+
     if (searchText.isNotEmpty) {
       List<Map<String, dynamic>> tempTransactions = [];
-      for (var transaction in transactions) {
+      for (var transaction in transList) {
         bool shouldInclude = false;
 
         if (transaction.containsKey('categories')) {
