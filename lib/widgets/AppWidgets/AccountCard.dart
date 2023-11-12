@@ -9,16 +9,10 @@ import '../../utils/animation_utils.dart';
 
 class ModernAccountCard extends StatefulWidget {
   final int accountId;
-  final String totalBalance;
-  final String income;
-  final String expense;
   final Map<String, dynamic> currencyMap;
 
   ModernAccountCard({
     required this.accountId,
-    required this.totalBalance,
-    required this.income,
-    required this.expense,
     required this.currencyMap,
   });
 
@@ -30,6 +24,7 @@ class _ModernAccountCardState extends State<ModernAccountCard>
     with SingleTickerProviderStateMixin {
   late AnimationController _numberController;
   late Animation<double> _numberAnimation;
+  bool isGlobalLoadingShown = false;
 
   @override
   void initState() {
@@ -63,7 +58,19 @@ class _ModernAccountCardState extends State<ModernAccountCard>
       future: accountsModel.getAccountDetailsById(widget.accountId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return CircularProgressIndicator();
+          if (!isGlobalLoadingShown) {
+            isGlobalLoadingShown = true;
+            return Center(
+              child: SizedBox(
+                width: 50, // Define a fixed width
+                height: 50, // Define a fixed height
+                child: CircularProgressIndicator(),
+              ),
+            );
+          } else {
+            return Container();
+          }
+
         } else if (snapshot.hasError || snapshot.data == 'Unknown') {
           return Text('Error fetching account details');
         } else {

@@ -87,9 +87,6 @@ class _AccountsScreenState extends State<AccountsScreen> with TickerProviderStat
                 return buildAnimatedAccountCard(
                   accountId: account[AccountsDB.accountId],
                   currencyMap: currencyMap,
-                  totalBalance: totalBalance,
-                  income: totalIncome,
-                  expense: totalExpense,
                 );
               },
             );
@@ -102,9 +99,6 @@ class _AccountsScreenState extends State<AccountsScreen> with TickerProviderStat
   Widget buildAnimatedAccountCard({
     required int accountId,
     required Map<String, dynamic> currencyMap,
-    required String totalBalance,
-    required String income,
-    required String expense,
   }) {
     return GestureDetector(
       onLongPress: () {
@@ -120,9 +114,6 @@ class _AccountsScreenState extends State<AccountsScreen> with TickerProviderStat
               child: ModernAccountCard(
                 accountId: accountId,
                 currencyMap: currencyMap,
-                totalBalance: totalBalance,
-                income: income,
-                expense: expense,
               ),
             ),
           );
