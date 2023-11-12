@@ -1,5 +1,11 @@
-import 'package:flutter/material.dart';
+import 'dart:convert';
 
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../database/AccountsDB.dart';
+import '../models/AccountsModel.dart';
+import '../models/TransactionsModel.dart';
 import '../widgets/AppWidgets/FinanceCard.dart';
 import '../widgets/AppWidgets/NotificationsCard.dart';
 import '../widgets/AppWidgets/SummaryMonthCardWidget.dart';
@@ -15,7 +21,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late AnimationController _incomeCardController;
   late AnimationController _expenseCardController;
   late AnimationController _notificationCardController;
-
 
   @override
   void initState() {
@@ -69,6 +74,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     double cardWidth = MediaQuery.of(context).size.width / 2.25;  // About half of the screen width, adjust the divisor as needed
+    final accountsModel = Provider.of<AccountsModel>(context, listen: false);
 
     return Container(
       color: Colors.blueGrey[900],
@@ -116,13 +122,43 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
             // Animated Balance Card
-            FinanceCard(
-              cardController: _cardController,
-              totalBalance: "\$5,000",
-              income: "+\$3,000",
-              expense: "-\$3,000",
-              optionalIcon: Icons.credit_card,
+            FutureBuilder(
+              future: accountsModel.fetchAccounts(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.done) {
+                  if (accountsModel.accounts.isNotEmpty) {
+                    final account = accountsModel.accounts.first;
+                    Map<String, dynamic> currencyMap = jsonDecode(account[AccountsDB.accountCurrency]);
+
+                    return FutureBuilder<Map<String, double>>(
+                      future: fetchFinancialData(currencyMap['code'], accountsModel),
+                      builder: (context, financialSnapshot) {
+                        if (financialSnapshot.connectionState == ConnectionState.done && financialSnapshot.hasData) {
+                          final financialData = financialSnapshot.data!;
+                          return FinanceCard(
+                            cardController: _cardController,
+                            totalBalance: financialData['balance'].toString(),
+                            income: financialData['income'].toString(),
+                            expense: financialData['expense'].toString(),
+                            optionalIcon: Icons.credit_card,
+                            currencyMap: currencyMap,
+                          );
+                        } else if (financialSnapshot.hasError) {
+                          return Text('Error: ${financialSnapshot.error}');
+                        } else {
+                          return CircularProgressIndicator();
+                        }
+                      },
+                    );
+                  } else {
+                    return Text('No accounts available.');
+                  }
+                } else {
+                  return CircularProgressIndicator();
+                }
+              },
             ),
+
             SizedBox(height: 10), // Add some space below the card
 
             AnimatedBuilder(
@@ -261,5 +297,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ),
       ),
     );
+  }
+  Future<Map<String, double>> fetchFinancialData(String currencyCode, AccountsModel accountsModel) async {
+    final transactionsModel = Provider.of<TransactionsModel>(context, listen: false);
+    double totalIncome = await transactionsModel.getTotalIncomeForCurrency(currencyCode);
+    double totalExpense = await transactionsModel.getTotalExpenseForCurrency(currencyCode);
+    double balance = totalIncome - totalExpense;
+    return {'income': totalIncome, 'expense': totalExpense, 'balance': balance};
   }
 }

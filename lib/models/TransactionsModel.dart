@@ -4,6 +4,7 @@ import 'package:expnz/models/AccountsModel.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../database/AccountsDB.dart';
 import '../database/CategoriesDB.dart';
 import '../database/TransactionsDB.dart';
 import 'CategoriesModel.dart';
@@ -246,6 +247,46 @@ class TransactionsModel extends ChangeNotifier {
 
   double getBalanceForAccount(int accountId) {
     return getTotalIncomeForAccount(accountId) - getTotalExpenseForAccount(accountId);
+  }
+
+  Future<List<int>> _getAccountIdsForCurrency(String currencyCode) async {
+    final accounts = await AccountsDB().getAllAccounts();
+    return accounts
+        .where((account) {
+      final currencyData = jsonDecode(account[AccountsDB.accountCurrency]);
+      return currencyData['code'] == currencyCode;
+    })
+        .map((account) => account[AccountsDB.accountId] as int)
+        .toList();
+  }
+
+
+  Future<double> getTotalIncomeForCurrency(String currencyCode) async {
+    List<int> accountIds = await _getAccountIdsForCurrency(currencyCode);
+    double totalIncome = 0.0;
+
+    for (int accountId in accountIds) {
+      totalIncome += getTotalIncomeForAccount(accountId);
+    }
+
+    return totalIncome;
+  }
+
+  Future<double> getTotalExpenseForCurrency(String currencyCode) async {
+    List<int> accountIds = await _getAccountIdsForCurrency(currencyCode);
+    double totalExpense = 0.0;
+
+    for (int accountId in accountIds) {
+      totalExpense += getTotalExpenseForAccount(accountId);
+    }
+
+    return totalExpense;
+  }
+
+  Future<double> getBalanceForCurrency(String currencyCode) async {
+    double totalIncome = await getTotalIncomeForCurrency(currencyCode);
+    double totalExpense = await getTotalExpenseForCurrency(currencyCode);
+    return totalIncome - totalExpense;
   }
 }
 

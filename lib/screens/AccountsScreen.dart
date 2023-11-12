@@ -80,10 +80,6 @@ class _AccountsScreenState extends State<AccountsScreen> with TickerProviderStat
 
                 Map<String, dynamic> currencyMap = jsonDecode(account[AccountsDB.accountCurrency]);
 
-                String totalBalance = transactionsModel.getBalanceForAccount(account[AccountsDB.accountId]).toStringAsFixed(currencyMap['decimalDigits'] ?? 2);
-                String totalIncome = transactionsModel.getTotalIncomeForAccount(account[AccountsDB.accountId]).toStringAsFixed(currencyMap['decimalDigits'] ?? 2);
-                String totalExpense = transactionsModel.getTotalExpenseForAccount(account[AccountsDB.accountId]).toStringAsFixed(currencyMap['decimalDigits'] ?? 2);
-
                 return buildAnimatedAccountCard(
                   accountId: account[AccountsDB.accountId],
                   currencyMap: currencyMap,

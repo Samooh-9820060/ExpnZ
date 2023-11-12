@@ -2,7 +2,9 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../../models/TransactionsModel.dart';
+import '../../utils/animation_utils.dart';
 import 'FinanceInfoCard.dart';
 
 class FinanceCard extends StatefulWidget {
@@ -11,12 +13,14 @@ class FinanceCard extends StatefulWidget {
   final String income;
   final String expense;
   final IconData? optionalIcon;
+  final Map<String, dynamic> currencyMap;
 
   FinanceCard({
     required this.cardController,
     required this.totalBalance,
     required this.income,
     required this.expense,
+    required this.currencyMap,
     this.optionalIcon,
   });
 
@@ -24,8 +28,7 @@ class FinanceCard extends StatefulWidget {
   _FinanceCardState createState() => _FinanceCardState();
 }
 
-class _FinanceCardState extends State<FinanceCard>
-    with SingleTickerProviderStateMixin {
+class _FinanceCardState extends State<FinanceCard> with SingleTickerProviderStateMixin {
   late AnimationController _numberController;
   late Animation<double> _numberAnimation;
 
@@ -56,13 +59,6 @@ class _FinanceCardState extends State<FinanceCard>
     super.dispose();
   }
 
-  String _animatedNumberString(double animationValue, String targetValue) {
-    int value = (double.parse(targetValue.replaceAll(RegExp(r'[\$,]'), '')) *
-            animationValue)
-        .toInt();
-    final formatter = NumberFormat("#,###");
-    return '\$' + formatter.format(value);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -141,9 +137,8 @@ class _FinanceCardState extends State<FinanceCard>
                                     SizedBox(height: 10),
                                     // Total Balance
                                     Text(
-                                      _animatedNumberString(
-                                          _numberAnimation.value,
-                                          widget.totalBalance),
+                                      animatedNumberString(_numberAnimation.value,
+                                           widget.totalBalance, widget.currencyMap),
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontSize: 32,
@@ -163,17 +158,15 @@ class _FinanceCardState extends State<FinanceCard>
                                       children: [
                                         FinanceInfoCard(
                                           title: 'Income',
-                                          amount: _animatedNumberString(
-                                              _numberAnimation.value,
-                                              widget.income),
+                                          amount: animatedNumberString(_numberAnimation.value,
+                                              widget.income, widget.currencyMap),
                                           color: Colors.green[400]!,
                                           icon: Icons.arrow_upward,
                                         ),
                                         FinanceInfoCard(
                                           title: 'Expense',
-                                          amount: _animatedNumberString(
-                                              _numberAnimation.value,
-                                              widget.expense),
+                                          amount: animatedNumberString(_numberAnimation.value,
+                                              widget.expense, widget.currencyMap),
                                           color: Colors.red[400]!,
                                           icon: Icons.arrow_downward,
                                         ),
