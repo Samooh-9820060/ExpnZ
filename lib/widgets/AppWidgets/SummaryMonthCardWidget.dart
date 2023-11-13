@@ -1,3 +1,4 @@
+import 'package:expnz/utils/animation_utils.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -5,6 +6,7 @@ import 'package:intl/intl.dart';
 class SummaryMonthCardWidget extends StatefulWidget {
   final List<double> data;
   final Color graphLineColor;
+  final Map<String, dynamic> currencyMap;
   final IconData iconData;
   final String title;
   final String total;
@@ -13,6 +15,7 @@ class SummaryMonthCardWidget extends StatefulWidget {
   SummaryMonthCardWidget({
     required this.data,
     required this.graphLineColor,
+    required this.currencyMap,
     required this.iconData,
     required this.title,
     required this.total,
@@ -42,12 +45,6 @@ class _SummaryMonthCardWidgetState extends State<SummaryMonthCardWidget> with Si
   void dispose() {
     _numberController.dispose();
     super.dispose();
-  }
-
-  String _animatedNumberString(double animationValue, String targetValue) {
-    int value = (double.parse(targetValue.replaceAll(RegExp(r'[\$,]'), '')) * animationValue).toInt();
-    final formatter = NumberFormat("#,###");
-    return '\$' + formatter.format(value);
   }
 
   @override
@@ -103,7 +100,7 @@ class _SummaryMonthCardWidgetState extends State<SummaryMonthCardWidget> with Si
                               ),
                               SizedBox(height: 4),
                               Text(
-                                _animatedNumberString(_numberAnimation.value, widget.total),
+                                animatedNumberString(_numberAnimation.value, widget.total, widget.currencyMap),
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 14,

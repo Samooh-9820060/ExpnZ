@@ -24,7 +24,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late AnimationController _notificationCardController;
   late String selectedCurrencyCode;
   static final CurrencyService currencyService = CurrencyService();
-  Map<String, double>? financialData;
+  Map<String, dynamic>? financialData;
   late Map<String, dynamic> currencyMap;
 
   @override
@@ -56,7 +56,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       vsync: this,
     );
 
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       _nameController.forward();
       _cardController.forward();
       _incomeCardController.forward();
@@ -166,37 +166,47 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       jsonDecode(account[AccountsDB.accountCurrency]);
                     }
 
-                    return FutureBuilder<Map<String, double>>(
+                    return FutureBuilder<Map<String, dynamic>>(
                         future: fetchFinancialData(currencyMap['code'], accountsModel),
                         builder: (context, financialSnapshot) {
-                          if (financialSnapshot.connectionState == ConnectionState.done && financialSnapshot.hasData) {
-                            if (financialData == null) {
-                              financialData = financialSnapshot.data!;
+                          if (financialSnapshot.connectionState == ConnectionState.done) {
+                            if (financialSnapshot.hasData) {
+                              if (financialData == null) {
+                                financialData = financialSnapshot.data!;
+                              }
+                            } else {
+                              return Center(child: CircularProgressIndicator());
                             }
                           }
                           return FutureBuilder<Set<String>>(
                             future: accountsModel.getUniqueCurrencyCodes(),
                             builder: (context, currencySnapshot) {
-                              if (currencySnapshot.connectionState ==
-                                      ConnectionState.done &&
-                                  currencySnapshot.hasData) {
-                                var currencyCodes = currencySnapshot.data!;
+                              if (currencySnapshot.connectionState == ConnectionState.done) {
+                                if (currencySnapshot.hasData) {
+                                  var currencyCodes = currencySnapshot.data!;
 
-                                return FinanceCard(
-                                  cardController: _cardController,
-                                  totalBalance: financialData!['balance'].toString(),
-                                  income: financialData!['income'].toString(),
-                                  expense: financialData!['expense'].toString(),
-                                  optionalIcon: Icons.credit_card,
-                                  currencyMap: currencyMap,
-                                  currencyCodes: currencyCodes,
-                                  onCurrencyChange: (selectedCurrency) {
-                                    updateFinancialData(
-                                        selectedCurrency, accountsModel);
-                                  },
-                                );
+                                  // Ensure financialData is not null before using it
+                                  if (financialData != null) {
+                                    return FinanceCard(
+                                      cardController: _cardController,
+                                      totalBalance: financialData!['balance'].toString(),
+                                      income: financialData!['income'].toString(),
+                                      expense: financialData!['expense'].toString(),
+                                      optionalIcon: Icons.credit_card,
+                                      currencyMap: currencyMap,
+                                      currencyCodes: currencyCodes,
+                                      onCurrencyChange: (selectedCurrency) {
+                                        updateFinancialData(selectedCurrency, accountsModel);
+                                      },
+                                    );
+                                  } else {
+                                    return CircularProgressIndicator();
+                                  }
+                                } else {
+                                  return CircularProgressIndicator();
+                                }
                               } else {
-                                return Container();
+                                return CircularProgressIndicator();
                               }
                             });
                       }
@@ -236,58 +246,107 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  // Income Card
-                  AnimatedBuilder(
-                    animation: _incomeCardController,
-                    builder: (context, child) {
-                      return Transform.translate(
-                        offset:
-                            Offset(-300 * (1 - _incomeCardController.value), 0),
-                        child: Opacity(
-                          opacity: _incomeCardController.value,
-                          child: child,
-                        ),
-                      );
-                    },
-                    child: SummaryMonthCardWidget(
-                      width: cardWidth,
-                      title: 'Income',
-                      total: '\$10,000',
-                      data: [0.0, 3.0, 1.0, 4.2, 3.2, 1.0],
-                      graphLineColor: Colors.green,
-                      iconData: Icons.arrow_downward,
-                    ),
-                  ),
+            FutureBuilder(
+                future: accountsModel.fetchAccounts(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.done) {
+                    if (accountsModel.accounts.isNotEmpty) {
+                      final account = accountsModel.accounts.first;
+                      if (financialData == null) {
+                        currencyMap =
+                            jsonDecode(account[AccountsDB.accountCurrency]);
+                      }
 
-                  // Expense Card
-                  AnimatedBuilder(
-                    animation: _expenseCardController,
-                    builder: (context, child) {
-                      return Transform.translate(
-                        offset:
-                            Offset(300 * (1 - _expenseCardController.value), 0),
-                        child: Opacity(
-                          opacity: _expenseCardController.value,
-                          child: child,
-                        ),
+                      return FutureBuilder<Map<String, dynamic>>(
+                        future: fetchFinancialData(currencyMap['code'], accountsModel),
+                        builder: (context, financialSnapshot) {
+                          if (financialSnapshot.connectionState == ConnectionState.done) {
+                            if (financialSnapshot.hasData) {
+                              if (financialData == null) {
+                                financialData = financialSnapshot.data!;
+                              }
+                            } else {
+                              return Center(child: CircularProgressIndicator());
+                            }
+                            print(financialData);
+                            return Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment
+                                    .spaceEvenly,
+                                children: [
+                                  // Income Card
+                                  AnimatedBuilder(
+                                    animation: _incomeCardController,
+                                    builder: (context, child) {
+                                      return Transform.translate(
+                                        offset:
+                                        Offset(
+                                            -300 * (1 -
+                                                _incomeCardController.value),
+                                            0),
+                                        child: Opacity(
+                                          opacity: _incomeCardController.value,
+                                          child: child,
+                                        ),
+                                      );
+                                    },
+                                    child: SummaryMonthCardWidget(
+                                      width: cardWidth,
+                                      title: 'Income',
+                                      total: financialData!['periodIncome']
+                                          .toString(),
+                                      currencyMap: currencyMap,
+                                      data: financialData!['graphDataIncome'],
+                                      graphLineColor: Colors.green,
+                                      iconData: Icons.arrow_upward,
+                                    ),
+                                  ),
+
+                                  // Expense Card
+                                  AnimatedBuilder(
+                                    animation: _expenseCardController,
+                                    builder: (context, child) {
+                                      return Transform.translate(
+                                        offset:
+                                        Offset(
+                                            300 * (1 -
+                                                _expenseCardController.value),
+                                            0),
+                                        child: Opacity(
+                                          opacity: _expenseCardController.value,
+                                          child: child,
+                                        ),
+                                      );
+                                    },
+                                    child: SummaryMonthCardWidget(
+                                      width: cardWidth,
+                                      title: 'Expense',
+                                      total: financialData!['periodExpense']
+                                          .toString(),
+                                      currencyMap: currencyMap,
+                                      data: financialData!['graphDataExpense'],
+                                      graphLineColor: Colors.red,
+                                      iconData: Icons.arrow_downward,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          } else {
+                            return Container();
+                          }
+                        }
                       );
-                    },
-                    child: SummaryMonthCardWidget(
-                      width: cardWidth,
-                      title: 'Expense',
-                      total: '\$5,000',
-                      data: [0.0, 1.1, 3.4, 5.3, 0.2, 4.0],
-                      graphLineColor: Colors.red,
-                      iconData: Icons.arrow_upward,
-                    ),
-                  ),
-                ],
-              ),
+                    }
+                    else {
+                      return Container();
+                    }
+                  }
+                  else {
+                    return Container();
+                  }
+              }
             ),
             SizedBox(height: 10),
             AnimatedBuilder(
@@ -363,15 +422,52 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return currencyCodes;
   }
 
-  Future<Map<String, double>> fetchFinancialData(
-      String currencyCode, AccountsModel accountsModel) async {
-    final transactionsModel =
-        Provider.of<TransactionsModel>(context, listen: false);
-    double totalIncome =
-        await transactionsModel.getTotalIncomeForCurrency(currencyCode);
-    double totalExpense =
-        await transactionsModel.getTotalExpenseForCurrency(currencyCode);
+  Future<Map<String, dynamic>> fetchFinancialData(
+      String currencyCode,
+      AccountsModel accountsModel, {
+        DateTime? startDate,
+        DateTime? endDate,
+      }) async {
+    final transactionsModel = Provider.of<TransactionsModel>(context, listen: false);
+
+    //populate start date and end date if they are not given
+    DateTime now = DateTime.now();
+    startDate ??= DateTime(now.year, now.month, 1);
+    DateTime firstDayNextMonth = DateTime(now.year, now.month + 1, 1);
+    endDate ??= firstDayNextMonth.subtract(Duration(days: 1));
+
+    double totalIncome = await transactionsModel.getTotalIncomeForCurrency(currencyCode);
+    double totalExpense = await transactionsModel.getTotalExpenseForCurrency(currencyCode);
     double balance = totalIncome - totalExpense;
-    return {'income': totalIncome, 'expense': totalExpense, 'balance': balance};
+
+    double periodIncome = await transactionsModel.getTotalIncomeForCurrency(currencyCode, startDate: startDate, endDate: endDate);
+    double periodExpense = await transactionsModel.getTotalExpenseForCurrency(currencyCode, startDate: startDate, endDate: endDate);
+
+    // Graph data generation
+    int totalDays = endDate.difference(startDate).inDays + 1;
+    int intervals = totalDays > 15 ? 15 : totalDays; // Max 15 intervals
+    List<double> graphDataExpense = List.generate(intervals, (_) => 0.0);
+    List<double> graphDataIncome = List.generate(intervals, (_) => 0.0);
+
+    for (int i = 0; i < intervals; i++) {
+      DateTime intervalStart = startDate.add(Duration(days: (totalDays / intervals * i).round()));
+      DateTime intervalEnd = i == intervals - 1 ? endDate : startDate.add(Duration(days: (totalDays / intervals * (i + 1)).round() - 1));
+
+      double intervalExpense = await transactionsModel.getTotalExpenseForCurrency(currencyCode, startDate: intervalStart, endDate: intervalEnd) ?? 0.0;
+      graphDataExpense[i] = intervalExpense / (intervalEnd.difference(intervalStart).inDays + 1);
+
+      double intervalIncome = await transactionsModel.getTotalIncomeForCurrency(currencyCode, startDate: intervalStart, endDate: intervalEnd) ?? 0.0;
+      graphDataIncome[i] = intervalIncome / (intervalEnd.difference(intervalStart).inDays + 1);
+    }
+
+    return {
+      'income': totalIncome,
+      'expense': totalExpense,
+      'balance': balance,
+      'periodIncome': periodIncome,
+      'periodExpense': periodExpense,
+      'graphDataIncome': graphDataIncome,
+      'graphDataExpense': graphDataExpense,
+    };
   }
 }

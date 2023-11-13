@@ -120,29 +120,22 @@ class TransactionsModel extends ChangeNotifier {
     final transList = transactionsToFilter ?? transactions;
 
     List<Map<String, dynamic>> tempTransactions = [];
-    print('all transactions');
-    print(transList);
 
     for (var transaction in transList) {
       bool shouldInclude = true;
 
 
-      print(transaction);
 
-      print('checking dates');
       // Date-based filtering
       if ((fromDate != null && toDate != null) && shouldInclude == true) {
         DateTime transactionDate = DateTime.parse(transaction['date']);
         if ((transactionDate.isAfter(fromDate) && transactionDate.isBefore(toDate))|| transactionDate == fromDate || transactionDate == toDate) {
           shouldInclude = true;
         } else {
-          print('ex' + transactionDate.toString());
           shouldInclude = false;
         }
       }
-      print(shouldInclude);
 
-      print('checking include categories');
       // Category-based filtering
       if (includeCategories != null && shouldInclude == true) {
         if (transaction.containsKey('categories')) {
@@ -159,9 +152,7 @@ class TransactionsModel extends ChangeNotifier {
           }
         }
       }
-      print(shouldInclude);
 
-      print('checking exclude categories');
       if (excludeCategories != null && shouldInclude == true) {
         if (transaction.containsKey('categories')) {
           final List<int> categoryIds = List<int>.from(
@@ -177,16 +168,13 @@ class TransactionsModel extends ChangeNotifier {
           }
         }
       }
-      print(shouldInclude);
 
-      print('checking accounts');
       // Account-based filtering
       if (includeAccounts != null && includeAccounts.contains(transaction[TransactionsDB.columnAccountId]) && shouldInclude == true) {
         shouldInclude = true;
       } else {
         shouldInclude = false;
       }
-      print(shouldInclude);
 
       // Text-based filtering
       if (searchText != null && searchText.isNotEmpty) {
@@ -226,28 +214,48 @@ class TransactionsModel extends ChangeNotifier {
     }
 
     filteredTransactions = tempTransactions;
-    print('filtered transactions');
-    print(filteredTransactions);
     notifyListeners();  // Important to notify listeners
   }
 
-  double getTotalIncomeForAccount(int accountId) {
+  double getTotalIncomeForAccount(int accountId, {DateTime? startDate, DateTime? endDate}) {
     return transactions
-        .where((t) => t[TransactionsDB.columnAccountId] == accountId && t[TransactionsDB.columnType] == 'income')
+        .where((t) {
+      // Convert the date string to a DateTime object
+      DateTime transactionDate = DateTime.parse(t[TransactionsDB.columnDate]);
+
+      // Check if the transaction date falls within the specified range
+      bool isAfterStartDate = startDate == null || transactionDate.isAfter(startDate) || transactionDate.isAtSameMomentAs(startDate);
+      bool isBeforeEndDate = endDate == null || transactionDate.isBefore(endDate) || transactionDate.isAtSameMomentAs(endDate);
+
+      return t[TransactionsDB.columnAccountId] == accountId &&
+          t[TransactionsDB.columnType] == 'income' &&
+          isAfterStartDate &&
+          isBeforeEndDate;
+    })
         .map((t) => t[TransactionsDB.columnAmount] as double)
         .fold(0.0, (prev, amount) => prev + amount);
   }
 
-  double getTotalExpenseForAccount(int accountId) {
+
+  double getTotalExpenseForAccount(int accountId, {DateTime? startDate, DateTime? endDate}) {
     return transactions
-        .where((t) => t[TransactionsDB.columnAccountId] == accountId && t[TransactionsDB.columnType] == 'expense')
+        .where((t) {
+      // Convert the date string to a DateTime object
+      DateTime transactionDate = DateTime.parse(t[TransactionsDB.columnDate]);
+
+      // Check if the transaction date falls within the specified range
+      bool isAfterStartDate = startDate == null || transactionDate.isAfter(startDate) || transactionDate.isAtSameMomentAs(startDate);
+      bool isBeforeEndDate = endDate == null || transactionDate.isBefore(endDate) || transactionDate.isAtSameMomentAs(endDate);
+
+      return t[TransactionsDB.columnAccountId] == accountId &&
+          t[TransactionsDB.columnType] == 'expense' &&
+          isAfterStartDate &&
+          isBeforeEndDate;
+    })
         .map((t) => t[TransactionsDB.columnAmount] as double)
         .fold(0.0, (prev, amount) => prev + amount);
   }
 
-  double getBalanceForAccount(int accountId) {
-    return getTotalIncomeForAccount(accountId) - getTotalExpenseForAccount(accountId);
-  }
 
   Future<List<int>> _getAccountIdsForCurrency(String currencyCode) async {
     final accounts = await AccountsDB().getAllAccounts();
@@ -260,33 +268,26 @@ class TransactionsModel extends ChangeNotifier {
         .toList();
   }
 
-
-  Future<double> getTotalIncomeForCurrency(String currencyCode) async {
+  Future<double> getTotalIncomeForCurrency(String currencyCode, {DateTime? startDate, DateTime? endDate}) async {
     List<int> accountIds = await _getAccountIdsForCurrency(currencyCode);
     double totalIncome = 0.0;
 
     for (int accountId in accountIds) {
-      totalIncome += getTotalIncomeForAccount(accountId);
+      totalIncome += getTotalIncomeForAccount(accountId, startDate: startDate, endDate: endDate);
     }
 
     return totalIncome;
   }
 
-  Future<double> getTotalExpenseForCurrency(String currencyCode) async {
+  Future<double> getTotalExpenseForCurrency(String currencyCode, {DateTime? startDate, DateTime? endDate}) async {
     List<int> accountIds = await _getAccountIdsForCurrency(currencyCode);
     double totalExpense = 0.0;
 
     for (int accountId in accountIds) {
-      totalExpense += getTotalExpenseForAccount(accountId);
+      totalExpense += getTotalExpenseForAccount(accountId, startDate: startDate, endDate: endDate);
     }
 
     return totalExpense;
-  }
-
-  Future<double> getBalanceForCurrency(String currencyCode) async {
-    double totalIncome = await getTotalIncomeForCurrency(currencyCode);
-    double totalExpense = await getTotalExpenseForCurrency(currencyCode);
-    return totalIncome - totalExpense;
   }
 }
 

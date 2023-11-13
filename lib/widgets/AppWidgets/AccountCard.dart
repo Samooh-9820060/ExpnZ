@@ -49,10 +49,9 @@ class _ModernAccountCardState extends State<ModernAccountCard>
     final accountsModel = Provider.of<AccountsModel>(context, listen: false);
     final transactionsModel = Provider.of<TransactionsModel>(context, listen: false);
 
-    String totalBalance = transactionsModel.getBalanceForAccount(widget.accountId).toStringAsFixed(2);
     String totalIncome = transactionsModel.getTotalIncomeForAccount(widget.accountId).toStringAsFixed(2);
     String totalExpense = transactionsModel.getTotalExpenseForAccount(widget.accountId).toStringAsFixed(2);
-
+    String totalBalance = (int.parse(totalIncome) - int.parse(totalExpense)).toStringAsFixed(2);
 
     return FutureBuilder(
       future: accountsModel.getAccountDetailsById(widget.accountId),
