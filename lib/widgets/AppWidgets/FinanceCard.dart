@@ -14,6 +14,9 @@ class FinanceCard extends StatefulWidget {
   final String expense;
   final IconData? optionalIcon;
   final Map<String, dynamic> currencyMap;
+  final Set<String> currencyCodes;
+  final Function(String) onCurrencyChange;
+
 
   FinanceCard({
     required this.cardController,
@@ -22,6 +25,8 @@ class FinanceCard extends StatefulWidget {
     required this.expense,
     required this.currencyMap,
     this.optionalIcon,
+    required this.currencyCodes,
+    required this.onCurrencyChange,
   });
 
   @override
@@ -31,6 +36,7 @@ class FinanceCard extends StatefulWidget {
 class _FinanceCardState extends State<FinanceCard> with SingleTickerProviderStateMixin {
   late AnimationController _numberController;
   late Animation<double> _numberAnimation;
+  String? selectedCurrencyCode;
 
   Future<Uint8List?> _loadImage(BuildContext context, String assetPath) async {
     try {
@@ -44,6 +50,7 @@ class _FinanceCardState extends State<FinanceCard> with SingleTickerProviderStat
   @override
   void initState() {
     super.initState();
+    selectedCurrencyCode = widget.currencyCodes.first;
     _numberController = AnimationController(
       duration: const Duration(milliseconds: 1000),
       vsync: this,
@@ -51,6 +58,13 @@ class _FinanceCardState extends State<FinanceCard> with SingleTickerProviderStat
     _numberAnimation =
         Tween<double>(begin: 0, end: 1).animate(_numberController);
     _numberController.forward();
+  }
+
+  void _handleCurrencyChange(String newCurrency) {
+    setState(() {
+      selectedCurrencyCode = newCurrency;
+    });
+    widget.onCurrencyChange(newCurrency);
   }
 
   @override
@@ -128,10 +142,32 @@ class _FinanceCardState extends State<FinanceCard> with SingleTickerProviderStat
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
-                                        widget.optionalIcon == null
+                                        /*widget.optionalIcon == null
                                             ? Container()
                                             : Icon(widget.optionalIcon,
-                                                color: Colors.white),
+                                            color: Colors.white),*/
+                                        DropdownButton<String>(
+                                          value: selectedCurrencyCode,
+                                          icon: const Icon(Icons.arrow_downward, color: Colors.white),
+                                          iconSize: 24,
+                                          elevation: 16,
+                                          style: const TextStyle(color: Colors.white),
+                                          underline: Container(
+                                            height: 2,
+                                            color: Colors.white,
+                                          ),
+                                          onChanged: (String? newValue) {
+                                            if (newValue != null) {
+                                              _handleCurrencyChange(newValue);
+                                            }
+                                          },
+                                          items: widget.currencyCodes.map<DropdownMenuItem<String>>((String value) {
+                                            return DropdownMenuItem<String>(
+                                              value: value,
+                                              child: Text(value),
+                                            );
+                                          }).toList(),
+                                        ),
                                       ],
                                     ),
                                     SizedBox(height: 10),
@@ -176,6 +212,7 @@ class _FinanceCardState extends State<FinanceCard> with SingleTickerProviderStat
                                 ),
                               ),
                             ),
+                            // Dropdown for currency selection
                           ],
                         ),
                       ),

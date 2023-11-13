@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:currency_picker/currency_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -21,6 +22,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late AnimationController _incomeCardController;
   late AnimationController _expenseCardController;
   late AnimationController _notificationCardController;
+  late String selectedCurrencyCode;
+  static final CurrencyService currencyService = CurrencyService();
+  Map<String, double>? financialData;
+  late Map<String, dynamic> currencyMap;
 
   @override
   void initState() {
@@ -60,6 +65,34 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     });
   }
 
+  Future<void> updateFinancialData(
+      String currencyCode, AccountsModel accountsModel) async {
+    var newFinancialData =
+        await fetchFinancialData(currencyCode, accountsModel);
+    setState(() {
+      selectedCurrencyCode = currencyCode;
+      financialData = newFinancialData;
+      Currency? currencyObj = currencyService.findByCode(currencyCode);
+      if (currencyObj != null) {
+        currencyMap = {
+          'code': currencyObj.code,
+          'name': currencyObj.name,
+          'symbol': currencyObj.symbol,
+          'flag': currencyObj.flag,
+          'decimalDigits': currencyObj.decimalDigits,
+          'decimalSeparator': currencyObj.decimalSeparator,
+          'namePlural': currencyObj.namePlural,
+          'number': currencyObj.number,
+          'spaceBetweenAmountAndSymbol': currencyObj.spaceBetweenAmountAndSymbol,
+          'symbolOnLeft': currencyObj.symbolOnLeft,
+          'thousandsSeparator': currencyObj.thousandsSeparator,
+        };
+      } else {
+        currencyMap = {}; // or some default values
+      }
+    });
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -70,10 +103,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     super.dispose();
   }
 
-
   @override
   Widget build(BuildContext context) {
-    double cardWidth = MediaQuery.of(context).size.width / 2.25;  // About half of the screen width, adjust the divisor as needed
+    double cardWidth = MediaQuery.of(context).size.width /
+        2.25; // About half of the screen width, adjust the divisor as needed
     final accountsModel = Provider.of<AccountsModel>(context, listen: false);
 
     return Container(
@@ -128,33 +161,53 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 if (snapshot.connectionState == ConnectionState.done) {
                   if (accountsModel.accounts.isNotEmpty) {
                     final account = accountsModel.accounts.first;
-                    Map<String, dynamic> currencyMap = jsonDecode(account[AccountsDB.accountCurrency]);
+                    if (financialData == null) {
+                      currencyMap =
+                      jsonDecode(account[AccountsDB.accountCurrency]);
+                    }
 
                     return FutureBuilder<Map<String, double>>(
-                      future: fetchFinancialData(currencyMap['code'], accountsModel),
-                      builder: (context, financialSnapshot) {
-                        if (financialSnapshot.connectionState == ConnectionState.done && financialSnapshot.hasData) {
-                          final financialData = financialSnapshot.data!;
-                          return FinanceCard(
-                            cardController: _cardController,
-                            totalBalance: financialData['balance'].toString(),
-                            income: financialData['income'].toString(),
-                            expense: financialData['expense'].toString(),
-                            optionalIcon: Icons.credit_card,
-                            currencyMap: currencyMap,
-                          );
-                        } else if (financialSnapshot.hasError) {
-                          return Text('Error: ${financialSnapshot.error}');
-                        } else {
-                          return CircularProgressIndicator();
-                        }
-                      },
+                        future: fetchFinancialData(currencyMap['code'], accountsModel),
+                        builder: (context, financialSnapshot) {
+                          if (financialSnapshot.connectionState == ConnectionState.done && financialSnapshot.hasData) {
+                            if (financialData == null) {
+                              financialData = financialSnapshot.data!;
+                            }
+                          }
+                          return FutureBuilder<Set<String>>(
+                            future: accountsModel.getUniqueCurrencyCodes(),
+                            builder: (context, currencySnapshot) {
+                              if (currencySnapshot.connectionState ==
+                                      ConnectionState.done &&
+                                  currencySnapshot.hasData) {
+                                var currencyCodes = currencySnapshot.data!;
+
+                                return FinanceCard(
+                                  cardController: _cardController,
+                                  totalBalance: financialData!['balance'].toString(),
+                                  income: financialData!['income'].toString(),
+                                  expense: financialData!['expense'].toString(),
+                                  optionalIcon: Icons.credit_card,
+                                  currencyMap: currencyMap,
+                                  currencyCodes: currencyCodes,
+                                  onCurrencyChange: (selectedCurrency) {
+                                    updateFinancialData(
+                                        selectedCurrency, accountsModel);
+                                  },
+                                );
+                              } else {
+                                return Container();
+                              }
+                            });
+                      }
                     );
                   } else {
-                    return Text('No accounts available.');
+                    return SizedBox(
+                      height: 20,
+                    );
                   }
                 } else {
-                  return CircularProgressIndicator();
+                  return Container();
                 }
               },
             ),
@@ -193,7 +246,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     animation: _incomeCardController,
                     builder: (context, child) {
                       return Transform.translate(
-                        offset: Offset(-300 * (1 - _incomeCardController.value), 0),
+                        offset:
+                            Offset(-300 * (1 - _incomeCardController.value), 0),
                         child: Opacity(
                           opacity: _incomeCardController.value,
                           child: child,
@@ -215,7 +269,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     animation: _expenseCardController,
                     builder: (context, child) {
                       return Transform.translate(
-                        offset: Offset(300 * (1 - _expenseCardController.value), 0),
+                        offset:
+                            Offset(300 * (1 - _expenseCardController.value), 0),
                         child: Opacity(
                           opacity: _expenseCardController.value,
                           child: child,
@@ -263,7 +318,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               animation: _notificationCardController,
               builder: (context, child) {
                 return Transform.translate(
-                  offset: Offset(0, 300 * (1 - _notificationCardController.value)),
+                  offset:
+                      Offset(0, 300 * (1 - _notificationCardController.value)),
                   child: Opacity(
                     opacity: _notificationCardController.value,
                     child: child,
@@ -271,7 +327,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 );
               },
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0), // Left and Right Padding
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                // Left and Right Padding
                 child: Column(
                   children: [
                     NotificationCard(
@@ -282,7 +339,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                     NotificationCard(
                       title: "Bill Due Soon",
-                      content: "Your electricity bill of \$120 is due in 3 days.",
+                      content:
+                          "Your electricity bill of \$120 is due in 3 days.",
                       icon: Icons.calendar_today_outlined,
                       color: Colors.blue,
                     ),
@@ -291,17 +349,28 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.only(bottom: 80.0),  // Add 60.0 or whatever value that suits you
+              padding: const EdgeInsets.only(
+                  bottom: 80.0), // Add 60.0 or whatever value that suits you
             ),
           ],
         ),
       ),
     );
   }
-  Future<Map<String, double>> fetchFinancialData(String currencyCode, AccountsModel accountsModel) async {
-    final transactionsModel = Provider.of<TransactionsModel>(context, listen: false);
-    double totalIncome = await transactionsModel.getTotalIncomeForCurrency(currencyCode);
-    double totalExpense = await transactionsModel.getTotalExpenseForCurrency(currencyCode);
+
+  Future<Set<String>> fetchCurrencyList(AccountsModel accountsModel) async {
+    Future<Set<String>> currencyCodes = accountsModel.getUniqueCurrencyCodes();
+    return currencyCodes;
+  }
+
+  Future<Map<String, double>> fetchFinancialData(
+      String currencyCode, AccountsModel accountsModel) async {
+    final transactionsModel =
+        Provider.of<TransactionsModel>(context, listen: false);
+    double totalIncome =
+        await transactionsModel.getTotalIncomeForCurrency(currencyCode);
+    double totalExpense =
+        await transactionsModel.getTotalExpenseForCurrency(currencyCode);
     double balance = totalIncome - totalExpense;
     return {'income': totalIncome, 'expense': totalExpense, 'balance': balance};
   }
