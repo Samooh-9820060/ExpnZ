@@ -1,4 +1,10 @@
+import 'dart:convert';
+
+import 'package:expnz/database/AccountsDB.dart';
+import 'package:expnz/models/AccountsModel.dart';
+import 'package:expnz/widgets/AppWidgets/SelectAccountCard.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class SettingsScreen extends StatefulWidget {
   @override
@@ -8,6 +14,8 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _showImportOptions = false;
   bool _showExportOptions = false;
+  int selectedAccoutIndex = -1;
+  int selectedAccoutId = -1;
 
   @override
   Widget build(BuildContext context) {
@@ -61,9 +69,62 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildImportOptions() {
     return Column(
       children: [
-        _buildButton('Import Accounts'),
-        _buildButton('Import Categories'),
-        _buildButton('Import Transactions'),
+        ListTile(
+          title: Text('Import Transactions (Select an account)', style: TextStyle(color: Colors.white70)),
+          leading: Icon(Icons.arrow_right, color: Colors.white70),
+          onTap: () {
+
+          },
+        ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              height: 150, // set the height
+              child: Consumer<AccountsModel>(
+                builder: (context, accountsModel, child) {
+                  if (accountsModel.accounts.isEmpty) {
+                    return Center(
+                      child: Text('No accounts available.'),
+                    );
+                  } else {
+                    return ListView.builder(
+                      padding: EdgeInsets.zero,
+                      scrollDirection: Axis.horizontal,
+                      itemCount: accountsModel.accounts.length,
+                      itemBuilder: (context, index) {
+                        final account = accountsModel.accounts[index];
+                        Map<String, dynamic> currencyMap = jsonDecode(account[AccountsDB.accountCurrency]);
+                        String currencyCode = currencyMap['code'] as String;
+
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              selectedAccoutIndex = index;
+                              selectedAccoutId = account[AccountsDB.accountId];
+                              _showImportTemplateDialog(account[AccountsDB.accountName], selectedAccoutId);
+                            });
+                          },
+                          child: AccountCard(
+                            accountId: account[AccountsDB.accountId],
+                            icon: IconData(
+                              account[AccountsDB.accountIconCodePoint],
+                              fontFamily: account[AccountsDB.accountIconFontFamily],
+                              fontPackage: account[AccountsDB.accountIconFontPackage],
+                            ),
+                            currency: currencyCode,
+                            accountName: account[AccountsDB.accountName],
+                            isSelected: index == selectedAccoutIndex,
+                          ),
+                        );
+                      },
+                    );
+                  }
+                }, // This is where the missing '}' should be placed.
+              ),
+            ),
+          ],
+        )
       ],
     );
   }
@@ -71,19 +132,52 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildExportOptions() {
     return Column(
       children: [
-        _buildButton('Export Accounts'),
-        _buildButton('Export Categories'),
-        _buildButton('Export Transactions'),
+        ListTile(
+          title: Text('Export Transactions', style: TextStyle(color: Colors.white70)),
+          leading: Icon(Icons.arrow_right, color: Colors.white70),
+          onTap: () {
+
+          },
+        )
       ],
     );
   }
 
-  Widget _buildButton(String title) {
-    return ListTile(
-      title: Text(title, style: TextStyle(color: Colors.white70)),
-      leading: Icon(Icons.arrow_right, color: Colors.white70),
-      onTap: () {
-        // Implement your logic for each button
+  void _showImportTemplateDialog(String selectedAccountName, int selectedAccountId) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Import Template for transactions"),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text('Expected Excel format:'),
+                Text('Column 1: Type (Income/Expense)'),
+                Text('Column 2: Name'),
+                Text('Column 3: Description'),
+                Text('Column 4: Amount'),
+                Text('Column 5: Date (YYYY-MM-DD)'),
+                Text('Column 6: Time (HH:MM)'),
+                Text('Column 7: Categories (comma-separated)'),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Close'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text('Choose File'),
+              onPressed: () {
+                // Implement file picker and validation logic
+              },
+            ),
+          ],
+        );
       },
     );
   }
