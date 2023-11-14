@@ -1,4 +1,5 @@
 import 'package:expnz/screens/HomeScreen.dart';
+import 'package:expnz/screens/SettingsScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
@@ -41,7 +42,7 @@ class _MenuDrawerState extends State<MenuDrawer> {
               menuItem(Icons.person, "My Profile", context, HomeScreen()),
             ]),
             menuGroup([
-              menuItem(Icons.settings, "Settings", context, HomeScreen()),
+              menuItem(Icons.settings, "Settings", context, SettingsScreen()),
               menuItem(Icons.help, "Help & Support", context, HomeScreen()),
               menuItem(Icons.notifications, "Notifications", context, HomeScreen()),
             ]),
