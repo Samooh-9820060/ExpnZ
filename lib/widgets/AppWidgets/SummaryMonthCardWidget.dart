@@ -124,11 +124,20 @@ class _SummaryMonthCardWidgetState extends State<SummaryMonthCardWidget> with Si
                             gridData: FlGridData(show: false),
                             titlesData: FlTitlesData(show: false),
                             borderData: FlBorderData(show: false),
-                            clipData: FlClipData.all(), // Set clip behavior
+                            clipData: FlClipData.none(), // Set clip behavior
                             minX: widget.data.asMap().keys.first.toDouble(), // Use your data for min and max X values
                             maxX: widget.data.asMap().keys.last.toDouble(),
                             minY: widget.data.reduce(min), // Use the minimum data value for minY
                             maxY: widget.data.reduce(max), // Use the maximum data value for maxY
+                            lineTouchData: LineTouchData(
+                              touchTooltipData: LineTouchTooltipData(
+                                tooltipBgColor: Colors.transparent,
+                                getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
+                                  // Return an empty list to prevent the tooltip from appearing
+                                  return [];
+                                },
+                              ),
+                            ),
                             lineBarsData: [
                               LineChartBarData(
                                 spots: widget.data

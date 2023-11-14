@@ -392,7 +392,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
       double intervalIncome = await transactionsModel.getTotalIncomeForCurrency(currencyCode, startDate: intervalStart, endDate: intervalEnd) ?? 0.0;
       graphDataIncome[i] = intervalIncome / (intervalEnd.difference(intervalStart).inDays + 1);
-      print('day $i : $intervalIncome');
     }
 
 
