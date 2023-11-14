@@ -24,7 +24,45 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late AnimationController _notificationCardController;
   late String selectedCurrencyCode;
   static final CurrencyService currencyService = CurrencyService();
-  Map<String, dynamic> financialData = {'balance': 0.0, 'income': 0.0, 'expense': 0.0};
+  Map<String, dynamic> financialData = {
+    'balance': 0.0,
+    'income': 0.0,
+    'expense': 0.0,
+    'graphDataIncome': [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    'graphDataExpense': [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+  };
   Map<String, dynamic> currencyMap = {};
   Set<String> currencyCodes = {};
 
@@ -74,7 +112,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       currencyMap = jsonDecode(account[AccountsDB.accountCurrency]);
 
       currencyCodes = await accountsModel.getUniqueCurrencyCodes();
-      financialData = await fetchFinancialData(currencyMap['code'], accountsModel);
+      financialData =
+          await fetchFinancialData(currencyMap['code'], accountsModel);
     }
 
     setState(() {
@@ -100,7 +139,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           'decimalSeparator': currencyObj.decimalSeparator,
           'namePlural': currencyObj.namePlural,
           'number': currencyObj.number,
-          'spaceBetweenAmountAndSymbol': currencyObj.spaceBetweenAmountAndSymbol,
+          'spaceBetweenAmountAndSymbol':
+              currencyObj.spaceBetweenAmountAndSymbol,
           'symbolOnLeft': currencyObj.symbolOnLeft,
           'thousandsSeparator': currencyObj.thousandsSeparator,
         };
@@ -122,12 +162,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-
     double cardWidth = MediaQuery.of(context).size.width /
         2.25; // About half of the screen width, adjust the divisor as needed
     final accountsModel = Provider.of<AccountsModel>(context, listen: false);
 
-    if (financialData.isNotEmpty && currencyMap.isNotEmpty && currencyCodes.isNotEmpty) {
+    if (financialData.isNotEmpty &&
+        currencyMap.isNotEmpty &&
+        currencyCodes.isNotEmpty) {
       // Build the UI with the loaded data
       return Container(
         color: Colors.blueGrey[900],
@@ -215,19 +256,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment
-                      .spaceEvenly,
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     // Income Card
                     AnimatedBuilder(
                       animation: _incomeCardController,
                       builder: (context, child) {
                         return Transform.translate(
-                          offset:
-                          Offset(
-                              -300 * (1 -
-                                  _incomeCardController.value),
-                              0),
+                          offset: Offset(
+                              -300 * (1 - _incomeCardController.value), 0),
                           child: Opacity(
                             opacity: _incomeCardController.value,
                             child: child,
@@ -237,8 +274,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       child: SummaryMonthCardWidget(
                         width: cardWidth,
                         title: 'Income',
-                        total: financialData!['periodIncome']
-                            .toString(),
+                        total: financialData!['periodIncome'].toString(),
                         currencyMap: currencyMap,
                         data: financialData!['graphDataIncome'],
                         graphLineColor: Colors.green,
@@ -251,11 +287,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       animation: _expenseCardController,
                       builder: (context, child) {
                         return Transform.translate(
-                          offset:
-                          Offset(
-                              300 * (1 -
-                                  _expenseCardController.value),
-                              0),
+                          offset: Offset(
+                              300 * (1 - _expenseCardController.value), 0),
                           child: Opacity(
                             opacity: _expenseCardController.value,
                             child: child,
@@ -265,8 +298,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       child: SummaryMonthCardWidget(
                         width: cardWidth,
                         title: 'Expense',
-                        total: financialData!['periodExpense']
-                            .toString(),
+                        total: financialData!['periodExpense'].toString(),
                         currencyMap: currencyMap,
                         data: financialData!['graphDataExpense'],
                         graphLineColor: Colors.red,
@@ -305,8 +337,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 animation: _notificationCardController,
                 builder: (context, child) {
                   return Transform.translate(
-                    offset:
-                    Offset(0, 300 * (1 - _notificationCardController.value)),
+                    offset: Offset(
+                        0, 300 * (1 - _notificationCardController.value)),
                     child: Opacity(
                       opacity: _notificationCardController.value,
                       child: child,
@@ -320,14 +352,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     children: [
                       NotificationCard(
                         title: "Large Transaction Alert",
-                        content: "A transaction of \$500 was made at ABC Store.",
+                        content:
+                            "A transaction of \$500 was made at ABC Store.",
                         icon: Icons.warning_amber_outlined,
                         color: Colors.orange,
                       ),
                       NotificationCard(
                         title: "Bill Due Soon",
                         content:
-                        "Your electricity bill of \$120 is due in 3 days.",
+                            "Your electricity bill of \$120 is due in 3 days.",
                         icon: Icons.calendar_today_outlined,
                         color: Colors.blue,
                       ),
@@ -343,12 +376,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
         ),
       );
-    }
-    else {
+    } else {
       // Show loading or empty state
       return Center(child: CircularProgressIndicator());
     }
-
   }
 
   Future<Set<String>> fetchCurrencyList(AccountsModel accountsModel) async {
@@ -357,12 +388,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Future<Map<String, dynamic>> fetchFinancialData(
-      String currencyCode,
-      AccountsModel accountsModel, {
-        DateTime? startDate,
-        DateTime? endDate,
-      }) async {
-    final transactionsModel = Provider.of<TransactionsModel>(context, listen: false);
+    String currencyCode,
+    AccountsModel accountsModel, {
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    final transactionsModel =
+        Provider.of<TransactionsModel>(context, listen: false);
 
     //populate start date and end date if they are not given
     DateTime now = DateTime.now();
@@ -370,12 +402,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     DateTime firstDayNextMonth = DateTime(now.year, now.month + 1, 1);
     endDate ??= firstDayNextMonth.subtract(Duration(days: 1));
 
-    double totalIncome = await transactionsModel.getTotalIncomeForCurrency(currencyCode);
-    double totalExpense = await transactionsModel.getTotalExpenseForCurrency(currencyCode);
+    double totalIncome =
+        await transactionsModel.getTotalIncomeForCurrency(currencyCode);
+    double totalExpense =
+        await transactionsModel.getTotalExpenseForCurrency(currencyCode);
     double balance = totalIncome - totalExpense;
 
-    double periodIncome = await transactionsModel.getTotalIncomeForCurrency(currencyCode, startDate: startDate, endDate: endDate);
-    double periodExpense = await transactionsModel.getTotalExpenseForCurrency(currencyCode, startDate: startDate, endDate: endDate);
+    double periodIncome = await transactionsModel.getTotalIncomeForCurrency(
+        currencyCode,
+        startDate: startDate,
+        endDate: endDate);
+    double periodExpense = await transactionsModel.getTotalExpenseForCurrency(
+        currencyCode,
+        startDate: startDate,
+        endDate: endDate);
 
     // Graph data generation
     int totalDays = endDate.difference(startDate).inDays + 1;
@@ -384,16 +424,28 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     List<double> graphDataIncome = List.generate(intervals, (_) => 0.0);
 
     for (int i = 0; i < intervals; i++) {
-      DateTime intervalStart = startDate.add(Duration(days: (totalDays / intervals * i).round()));
-      DateTime intervalEnd = i == intervals - 1 ? endDate : startDate.add(Duration(days: (totalDays / intervals * (i + 1)).round() - 1));
+      DateTime intervalStart =
+          startDate.add(Duration(days: (totalDays / intervals * i).round()));
+      DateTime intervalEnd = i == intervals - 1
+          ? endDate
+          : startDate.add(
+              Duration(days: (totalDays / intervals * (i + 1)).round() - 1));
 
-      double intervalExpense = await transactionsModel.getTotalExpenseForCurrency(currencyCode, startDate: intervalStart, endDate: intervalEnd) ?? 0.0;
-      graphDataExpense[i] = intervalExpense / (intervalEnd.difference(intervalStart).inDays + 1);
+      double intervalExpense =
+          await transactionsModel.getTotalExpenseForCurrency(currencyCode,
+                  startDate: intervalStart, endDate: intervalEnd) ??
+              0.0;
+      graphDataExpense[i] =
+          intervalExpense / (intervalEnd.difference(intervalStart).inDays + 1);
 
-      double intervalIncome = await transactionsModel.getTotalIncomeForCurrency(currencyCode, startDate: intervalStart, endDate: intervalEnd) ?? 0.0;
-      graphDataIncome[i] = intervalIncome / (intervalEnd.difference(intervalStart).inDays + 1);
+      double intervalIncome = await transactionsModel.getTotalIncomeForCurrency(
+              currencyCode,
+              startDate: intervalStart,
+              endDate: intervalEnd) ??
+          0.0;
+      graphDataIncome[i] =
+          intervalIncome / (intervalEnd.difference(intervalStart).inDays + 1);
     }
-
 
     return {
       'income': totalIncome,
