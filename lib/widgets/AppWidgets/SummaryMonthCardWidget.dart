@@ -2,6 +2,7 @@ import 'package:expnz/utils/animation_utils.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'dart:math';
 
 class SummaryMonthCardWidget extends StatefulWidget {
   final List<double> data;
@@ -124,10 +125,10 @@ class _SummaryMonthCardWidgetState extends State<SummaryMonthCardWidget> with Si
                             titlesData: FlTitlesData(show: false),
                             borderData: FlBorderData(show: false),
                             clipData: FlClipData.all(), // Set clip behavior
-                            minX: widget.data.asMap().keys.first.toDouble(), // Set min and max to cover your data
+                            minX: widget.data.asMap().keys.first.toDouble(), // Use your data for min and max X values
                             maxX: widget.data.asMap().keys.last.toDouble(),
-                            minY: 0,
-                            maxY: 6,
+                            minY: widget.data.reduce(min), // Use the minimum data value for minY
+                            maxY: widget.data.reduce(max), // Use the maximum data value for maxY
                             lineBarsData: [
                               LineChartBarData(
                                 spots: widget.data
@@ -135,9 +136,18 @@ class _SummaryMonthCardWidgetState extends State<SummaryMonthCardWidget> with Si
                                     .entries
                                     .map((e) => FlSpot(e.key.toDouble(), e.value))
                                     .toList(),
-                                isCurved: true,
+                                isCurved: true, // You can adjust the curve's smoothness
                                 dotData: FlDotData(show: false),
                                 belowBarData: BarAreaData(show: false),
+                                /*belowBarData: BarAreaData(
+                                  show: true,
+                                  colors: [
+                                    widget.graphLineColor.withOpacity(0.3),
+                                    widget.graphLineColor.withOpacity(0.0),
+                                  ],
+                                  gradientFrom: const Offset(0, 0),
+                                  gradientTo: const Offset(0, 1),
+                                ),*/
                                 color: widget.graphLineColor,
                               ),
                             ],

@@ -24,13 +24,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late AnimationController _notificationCardController;
   late String selectedCurrencyCode;
   static final CurrencyService currencyService = CurrencyService();
-  Map<String, dynamic>? financialData;
-  late Map<String, dynamic> currencyMap;
+  Map<String, dynamic> financialData = {'balance': 0.0, 'income': 0.0, 'expense': 0.0};
+  Map<String, dynamic> currencyMap = {};
+  Set<String> currencyCodes = {};
 
   @override
   void initState() {
     super.initState();
-
+    _fetchData();
     _nameController = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
@@ -62,6 +63,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       _incomeCardController.forward();
       _expenseCardController.forward();
       _notificationCardController.forward();
+    });
+  }
+
+  Future<void> _fetchData() async {
+    final accountsModel = Provider.of<AccountsModel>(context, listen: false);
+    await accountsModel.fetchAccounts();
+    if (accountsModel.accounts.isNotEmpty) {
+      final account = accountsModel.accounts.first;
+      currencyMap = jsonDecode(account[AccountsDB.accountCurrency]);
+
+      currencyCodes = await accountsModel.getUniqueCurrencyCodes();
+      financialData = await fetchFinancialData(currencyMap['code'], accountsModel);
+    }
+
+    setState(() {
+      // Update the state to trigger a rebuild
     });
   }
 
@@ -105,316 +122,233 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+
     double cardWidth = MediaQuery.of(context).size.width /
         2.25; // About half of the screen width, adjust the divisor as needed
     final accountsModel = Provider.of<AccountsModel>(context, listen: false);
 
-    return Container(
-      color: Colors.blueGrey[900],
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Animated "Name" and "Welcome Back!"
-            AnimatedBuilder(
-              animation: _nameController,
-              builder: (context, child) {
-                return Transform.translate(
-                  offset: Offset(-300 * (1 - _nameController.value), 0),
-                  child: Opacity(
-                    opacity: _nameController.value,
-                    child: child,
-                  ),
-                );
-              },
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(30.0, 10.0, 16.0, 0.0),
-                // Reduced top padding to 50
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Samooh Moosa',
-                      style: TextStyle(
-                          fontSize: 25, // Reduced font size
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white),
+    if (financialData.isNotEmpty && currencyMap.isNotEmpty && currencyCodes.isNotEmpty) {
+      // Build the UI with the loaded data
+      return Container(
+        color: Colors.blueGrey[900],
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Animated "Name" and "Welcome Back!"
+              AnimatedBuilder(
+                animation: _nameController,
+                builder: (context, child) {
+                  return Transform.translate(
+                    offset: Offset(-300 * (1 - _nameController.value), 0),
+                    child: Opacity(
+                      opacity: _nameController.value,
+                      child: child,
                     ),
-                    SizedBox(height: 10),
-                    Text(
-                      'Welcome Back!',
-                      style: TextStyle(
-                        fontSize: 15, // Reduced font size
-                        fontWeight: FontWeight.w400,
-                        color: Colors.grey[600],
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(30.0, 10.0, 16.0, 0.0),
+                  // Reduced top padding to 50
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Samooh Moosa',
+                        style: TextStyle(
+                            fontSize: 25, // Reduced font size
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white),
+                      ),
+                      SizedBox(height: 10),
+                      Text(
+                        'Welcome Back!',
+                        style: TextStyle(
+                          fontSize: 15, // Reduced font size
+                          fontWeight: FontWeight.w400,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              // Animated Balance Card
+              FinanceCard(
+                cardController: _cardController,
+                totalBalance: financialData!['balance'].toString(),
+                income: financialData!['income'].toString(),
+                expense: financialData!['expense'].toString(),
+                optionalIcon: Icons.credit_card,
+                currencyMap: currencyMap,
+                currencyCodes: currencyCodes,
+                onCurrencyChange: (selectedCurrency) {
+                  updateFinancialData(selectedCurrency, accountsModel);
+                },
+              ),
+
+              SizedBox(height: 10), // Add some space below the card
+
+              AnimatedBuilder(
+                animation: _nameController,
+                builder: (context, child) {
+                  return Transform.translate(
+                    offset: Offset(-300 * (1 - _nameController.value), 0),
+                    child: Opacity(
+                      opacity: _nameController.value,
+                      child: child,
+                    ),
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(30.0, 0.0, 0.0, 0.0),
+                  child: Text(
+                    'This Month',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment
+                      .spaceEvenly,
+                  children: [
+                    // Income Card
+                    AnimatedBuilder(
+                      animation: _incomeCardController,
+                      builder: (context, child) {
+                        return Transform.translate(
+                          offset:
+                          Offset(
+                              -300 * (1 -
+                                  _incomeCardController.value),
+                              0),
+                          child: Opacity(
+                            opacity: _incomeCardController.value,
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: SummaryMonthCardWidget(
+                        width: cardWidth,
+                        title: 'Income',
+                        total: financialData!['periodIncome']
+                            .toString(),
+                        currencyMap: currencyMap,
+                        data: financialData!['graphDataIncome'],
+                        graphLineColor: Colors.green,
+                        iconData: Icons.arrow_upward,
+                      ),
+                    ),
+
+                    // Expense Card
+                    AnimatedBuilder(
+                      animation: _expenseCardController,
+                      builder: (context, child) {
+                        return Transform.translate(
+                          offset:
+                          Offset(
+                              300 * (1 -
+                                  _expenseCardController.value),
+                              0),
+                          child: Opacity(
+                            opacity: _expenseCardController.value,
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: SummaryMonthCardWidget(
+                        width: cardWidth,
+                        title: 'Expense',
+                        total: financialData!['periodExpense']
+                            .toString(),
+                        currencyMap: currencyMap,
+                        data: financialData!['graphDataExpense'],
+                        graphLineColor: Colors.red,
+                        iconData: Icons.arrow_downward,
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
-            // Animated Balance Card
-            FutureBuilder(
-              future: accountsModel.fetchAccounts(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.done) {
-                  if (accountsModel.accounts.isNotEmpty) {
-                    final account = accountsModel.accounts.first;
-                    if (financialData == null) {
-                      currencyMap =
-                      jsonDecode(account[AccountsDB.accountCurrency]);
-                    }
-
-                    return FutureBuilder<Map<String, dynamic>>(
-                        future: fetchFinancialData(currencyMap['code'], accountsModel),
-                        builder: (context, financialSnapshot) {
-                          if (financialSnapshot.connectionState == ConnectionState.done) {
-                            if (financialSnapshot.hasData) {
-                              if (financialData == null) {
-                                financialData = financialSnapshot.data!;
-                              }
-                            } else {
-                              return Center(child: CircularProgressIndicator());
-                            }
-                          }
-                          return FutureBuilder<Set<String>>(
-                            future: accountsModel.getUniqueCurrencyCodes(),
-                            builder: (context, currencySnapshot) {
-                              if (currencySnapshot.connectionState == ConnectionState.done) {
-                                if (currencySnapshot.hasData) {
-                                  var currencyCodes = currencySnapshot.data!;
-
-                                  // Ensure financialData is not null before using it
-                                  if (financialData != null) {
-                                    return FinanceCard(
-                                      cardController: _cardController,
-                                      totalBalance: financialData!['balance'].toString(),
-                                      income: financialData!['income'].toString(),
-                                      expense: financialData!['expense'].toString(),
-                                      optionalIcon: Icons.credit_card,
-                                      currencyMap: currencyMap,
-                                      currencyCodes: currencyCodes,
-                                      onCurrencyChange: (selectedCurrency) {
-                                        updateFinancialData(selectedCurrency, accountsModel);
-                                      },
-                                    );
-                                  } else {
-                                    return CircularProgressIndicator();
-                                  }
-                                } else {
-                                  return CircularProgressIndicator();
-                                }
-                              } else {
-                                return CircularProgressIndicator();
-                              }
-                            });
-                      }
-                    );
-                  } else {
-                    return SizedBox(
-                      height: 20,
-                    );
-                  }
-                } else {
-                  return Container();
-                }
-              },
-            ),
-
-            SizedBox(height: 10), // Add some space below the card
-
-            AnimatedBuilder(
-              animation: _nameController,
-              builder: (context, child) {
-                return Transform.translate(
-                  offset: Offset(-300 * (1 - _nameController.value), 0),
-                  child: Opacity(
-                    opacity: _nameController.value,
-                    child: child,
-                  ),
-                );
-              },
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(30.0, 0.0, 0.0, 0.0),
-                child: Text(
-                  'This Month',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-            FutureBuilder(
-                future: accountsModel.fetchAccounts(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.done) {
-                    if (accountsModel.accounts.isNotEmpty) {
-                      final account = accountsModel.accounts.first;
-                      if (financialData == null) {
-                        currencyMap =
-                            jsonDecode(account[AccountsDB.accountCurrency]);
-                      }
-
-                      return FutureBuilder<Map<String, dynamic>>(
-                        future: fetchFinancialData(currencyMap['code'], accountsModel),
-                        builder: (context, financialSnapshot) {
-                          if (financialSnapshot.connectionState == ConnectionState.done) {
-                            if (financialSnapshot.hasData) {
-                              if (financialData == null) {
-                                financialData = financialSnapshot.data!;
-                              }
-                            } else {
-                              return Center(child: CircularProgressIndicator());
-                            }
-                            print(financialData);
-                            return Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment
-                                    .spaceEvenly,
-                                children: [
-                                  // Income Card
-                                  AnimatedBuilder(
-                                    animation: _incomeCardController,
-                                    builder: (context, child) {
-                                      return Transform.translate(
-                                        offset:
-                                        Offset(
-                                            -300 * (1 -
-                                                _incomeCardController.value),
-                                            0),
-                                        child: Opacity(
-                                          opacity: _incomeCardController.value,
-                                          child: child,
-                                        ),
-                                      );
-                                    },
-                                    child: SummaryMonthCardWidget(
-                                      width: cardWidth,
-                                      title: 'Income',
-                                      total: financialData!['periodIncome']
-                                          .toString(),
-                                      currencyMap: currencyMap,
-                                      data: financialData!['graphDataIncome'],
-                                      graphLineColor: Colors.green,
-                                      iconData: Icons.arrow_upward,
-                                    ),
-                                  ),
-
-                                  // Expense Card
-                                  AnimatedBuilder(
-                                    animation: _expenseCardController,
-                                    builder: (context, child) {
-                                      return Transform.translate(
-                                        offset:
-                                        Offset(
-                                            300 * (1 -
-                                                _expenseCardController.value),
-                                            0),
-                                        child: Opacity(
-                                          opacity: _expenseCardController.value,
-                                          child: child,
-                                        ),
-                                      );
-                                    },
-                                    child: SummaryMonthCardWidget(
-                                      width: cardWidth,
-                                      title: 'Expense',
-                                      total: financialData!['periodExpense']
-                                          .toString(),
-                                      currencyMap: currencyMap,
-                                      data: financialData!['graphDataExpense'],
-                                      graphLineColor: Colors.red,
-                                      iconData: Icons.arrow_downward,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          } else {
-                            return Container();
-                          }
-                        }
-                      );
-                    }
-                    else {
-                      return Container();
-                    }
-                  }
-                  else {
-                    return Container();
-                  }
-              }
-            ),
-            SizedBox(height: 10),
-            AnimatedBuilder(
-              animation: _nameController,
-              builder: (context, child) {
-                return Transform.translate(
-                  offset: Offset(-300 * (1 - _nameController.value), 0),
-                  child: Opacity(
-                    opacity: _nameController.value,
-                    child: child,
-                  ),
-                );
-              },
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(30.0, 0.0, 0.0, 0.0),
-                child: Text(
-                  'Notifications',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-            SizedBox(height: 10),
-            // Animated Notifications Section
-            AnimatedBuilder(
-              animation: _notificationCardController,
-              builder: (context, child) {
-                return Transform.translate(
-                  offset:
-                      Offset(0, 300 * (1 - _notificationCardController.value)),
-                  child: Opacity(
-                    opacity: _notificationCardController.value,
-                    child: child,
-                  ),
-                );
-              },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                // Left and Right Padding
-                child: Column(
-                  children: [
-                    NotificationCard(
-                      title: "Large Transaction Alert",
-                      content: "A transaction of \$500 was made at ABC Store.",
-                      icon: Icons.warning_amber_outlined,
-                      color: Colors.orange,
+              SizedBox(height: 10),
+              AnimatedBuilder(
+                animation: _nameController,
+                builder: (context, child) {
+                  return Transform.translate(
+                    offset: Offset(-300 * (1 - _nameController.value), 0),
+                    child: Opacity(
+                      opacity: _nameController.value,
+                      child: child,
                     ),
-                    NotificationCard(
-                      title: "Bill Due Soon",
-                      content:
-                          "Your electricity bill of \$120 is due in 3 days.",
-                      icon: Icons.calendar_today_outlined,
-                      color: Colors.blue,
-                    ),
-                  ],
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(30.0, 0.0, 0.0, 0.0),
+                  child: Text(
+                    'Notifications',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(
-                  bottom: 80.0), // Add 60.0 or whatever value that suits you
-            ),
-          ],
+              SizedBox(height: 10),
+              // Animated Notifications Section
+              AnimatedBuilder(
+                animation: _notificationCardController,
+                builder: (context, child) {
+                  return Transform.translate(
+                    offset:
+                    Offset(0, 300 * (1 - _notificationCardController.value)),
+                    child: Opacity(
+                      opacity: _notificationCardController.value,
+                      child: child,
+                    ),
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  // Left and Right Padding
+                  child: Column(
+                    children: [
+                      NotificationCard(
+                        title: "Large Transaction Alert",
+                        content: "A transaction of \$500 was made at ABC Store.",
+                        icon: Icons.warning_amber_outlined,
+                        color: Colors.orange,
+                      ),
+                      NotificationCard(
+                        title: "Bill Due Soon",
+                        content:
+                        "Your electricity bill of \$120 is due in 3 days.",
+                        icon: Icons.calendar_today_outlined,
+                        color: Colors.blue,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(
+                    bottom: 80.0), // Add 60.0 or whatever value that suits you
+              ),
+            ],
+          ),
         ),
-      ),
-    );
+      );
+    }
+    else {
+      // Show loading or empty state
+      return Center(child: CircularProgressIndicator());
+    }
+
   }
 
   Future<Set<String>> fetchCurrencyList(AccountsModel accountsModel) async {
@@ -458,7 +392,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
       double intervalIncome = await transactionsModel.getTotalIncomeForCurrency(currencyCode, startDate: intervalStart, endDate: intervalEnd) ?? 0.0;
       graphDataIncome[i] = intervalIncome / (intervalEnd.difference(intervalStart).inDays + 1);
+      print('day $i : $intervalIncome');
     }
+
 
     return {
       'income': totalIncome,
