@@ -1,8 +1,10 @@
 import 'dart:convert';
-
+import 'dart:io';
+import 'package:excel/excel.dart';
 import 'package:expnz/database/AccountsDB.dart';
 import 'package:expnz/models/AccountsModel.dart';
 import 'package:expnz/widgets/AppWidgets/SelectAccountCard.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -172,8 +174,68 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             TextButton(
               child: Text('Choose File'),
+              onPressed: () async {
+                FilePickerResult? result = await FilePicker.platform.pickFiles(
+                  type: FileType.custom,
+                  allowedExtensions: ['xlsx'],
+                );
+
+                if (result != null) {
+                  File file = File(result.files.single.path!);
+                  _validateExcelFile(file, context);
+                } else {
+                  // User canceled the picker
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+  void _validateExcelFile(File file, BuildContext context) async {
+    var bytes = File(file.path).readAsBytesSync();
+    var excel = Excel.decodeBytes(bytes);
+
+    if (excel.tables.isNotEmpty) {
+      var table = excel.tables.keys.first;
+      List<List<dynamic>> rows = excel.tables[table]?.rows ?? [];
+      print('rows $rows');
+      if (rows.isNotEmpty) {
+        var headerRow = rows.first.map((cell) => (cell as Data?)?.value?.toString()).toList();
+        // Checking if the header row contains the expected columns
+        if (headerRow.length >= 7 &&
+            headerRow[0] == 'Type' &&
+            headerRow[1] == 'Name' &&
+            headerRow[2] == 'Description' &&
+            headerRow[3] == 'Amount' &&
+            headerRow[4] == 'Date' &&
+            headerRow[5] == 'Time' &&
+            headerRow[6] == 'Categories') {
+          // File is valid, proceed with further processing
+        } else {
+          _showErrorDialog(context, 'Invalid file format. Please ensure the file matches the template.');
+        }
+      } else {
+        _showErrorDialog(context, 'The file is empty.');
+      }
+    } else {
+      _showErrorDialog(context, 'No tables found in the file.');
+    }
+  }
+
+  void _showErrorDialog(BuildContext context, String errorMessage) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Error"),
+          content: Text(errorMessage),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Close'),
               onPressed: () {
-                // Implement file picker and validation logic
+                Navigator.of(context).pop();
               },
             ),
           ],
