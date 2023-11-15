@@ -1,6 +1,3 @@
-import 'package:expnz/models/TransactionsModel.dart';
-import 'package:provider/provider.dart';
-
 import 'DatabaseHelper.dart';
 
 class TransactionsDB {

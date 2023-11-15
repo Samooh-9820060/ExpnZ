@@ -212,7 +212,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             headerRow[4] == 'Date' &&
             headerRow[5] == 'Time' &&
             headerRow[6] == 'Categories') {
-          // File is valid, proceed with further processing
+          _validateDataRows(rows, context);
         } else {
           _showErrorDialog(context, 'Invalid file format. Please ensure the file matches the template.');
         }
@@ -223,7 +223,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _showErrorDialog(context, 'No tables found in the file.');
     }
   }
+  void _validateDataRows(List<List<dynamic>> rows, BuildContext context) {
+    List<int> invalidRows = [];
+    for (int i = 1; i < rows.length; i++) { // Start from 1 to skip the header row
+      var row = rows[i];
+      var typeCell = row.length > 0 ? (row[0] as Data?)?.value?.toString() : '';
+      if (typeCell != 'Income' && typeCell != 'Expense') {
+        invalidRows.add(i + 1); // Adding 1 because row index starts from 0
+      }
+    }
 
+    if (invalidRows.isNotEmpty) {
+      String errorMessage = 'Invalid type found in rows: ${invalidRows.join(', ')}.';
+      _showErrorDialog(context, errorMessage);
+    } else {
+      // Data is valid, proceed with further processing
+    }
+  }
   void _showErrorDialog(BuildContext context, String errorMessage) {
     showDialog(
       context: context,
