@@ -159,9 +159,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Text('Column 2: Name'),
                 Text('Column 3: Description'),
                 Text('Column 4: Amount'),
-                Text('Column 5: Date (YYYY-MM-DD)'),
-                Text('Column 6: Time (HH:MM)'),
-                Text('Column 7: Categories (comma-separated)'),
+                Text('Column 5: DateTime (YYYY-MM-DD HH:MM)'),
+                Text('Column 6: Categories (comma-separated)'),
               ],
             ),
           ),
@@ -204,14 +203,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (rows.isNotEmpty) {
         var headerRow = rows.first.map((cell) => (cell as Data?)?.value?.toString()).toList();
         // Checking if the header row contains the expected columns
-        if (headerRow.length >= 7 &&
+        if (headerRow.length >= 6 &&
             headerRow[0] == 'Type' &&
             headerRow[1] == 'Name' &&
             headerRow[2] == 'Description' &&
             headerRow[3] == 'Amount' &&
-            headerRow[4] == 'Date' &&
-            headerRow[5] == 'Time' &&
-            headerRow[6] == 'Categories') {
+            headerRow[4] == 'DateTime' &&
+            headerRow[5] == 'Categories') {
           _validateDataRows(rows, context);
         } else {
           _showErrorDialog(context, 'Invalid file format. Please ensure the file matches the template.');
@@ -223,23 +221,72 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _showErrorDialog(context, 'No tables found in the file.');
     }
   }
+
+  String _getCellData(List<dynamic> row, int index) {
+    return row.length > index ? (row[index] as Data?)?.value?.toString() ?? '' : '';
+  }
+
   void _validateDataRows(List<List<dynamic>> rows, BuildContext context) {
-    List<int> invalidRows = [];
+    List<String> errorMessages = [];
+
     for (int i = 1; i < rows.length; i++) { // Start from 1 to skip the header row
       var row = rows[i];
-      var typeCell = row.length > 0 ? (row[0] as Data?)?.value?.toString() : '';
+
+      // Initialize cell values
+      var typeCell = _getCellData(row, 0);
+      var nameCell = _getCellData(row, 1);
+      var descriptionCell = _getCellData(row, 2);
+      var amountCell = _getCellData(row, 3);
+      var dateTimeCell = _getCellData(row, 4);
+      var categoriesCell = _getCellData(row, 5);
+
+      // Validate each cell
       if (typeCell != 'Income' && typeCell != 'Expense') {
-        invalidRows.add(i + 1); // Adding 1 because row index starts from 0
+        errorMessages.add('Row ${i + 1}, Column 1: Invalid type "$typeCell"');
+      }
+      if (nameCell.isEmpty) {
+        errorMessages.add('Row ${i + 1}, Column 2: Name is empty');
+      }
+      if (descriptionCell.isEmpty) {
+        errorMessages.add('Row ${i + 1}, Column 3: Description is empty');
+      }
+      if (!_isValidAmount(amountCell)) {
+        errorMessages.add('Row ${i + 1}, Column 4: Invalid amount "$amountCell"');
+      }
+      if (!_isValidDateTime(dateTimeCell)) {
+        errorMessages.add('Row ${i + 1}, Column 5: Invalid date time "$dateTimeCell"');
+      }
+      if (categoriesCell.isEmpty) {
+        errorMessages.add('Row ${i + 1}, Column 6: Categories are empty');
+      }
+      if (!_isValidCategoryList(categoriesCell)) {
+        errorMessages.add('Row ${i + 1}, Column 6: Categories are not valid');
       }
     }
 
-    if (invalidRows.isNotEmpty) {
-      String errorMessage = 'Invalid type found in rows: ${invalidRows.join(', ')}.';
-      _showErrorDialog(context, errorMessage);
+    if (errorMessages.isNotEmpty) {
+      _showDetailedErrorDialog(context, errorMessages);
     } else {
-      // Data is valid, proceed with further processing
+      // Data is valid proceed with further processing
     }
   }
+
+  bool _isValidCategoryList(String categories) {
+    return true;
+  }
+
+  bool _isValidAmount(String amount) {
+    // Implement your logic to validate amount
+    // For example, checking if it's a valid number
+    return double.tryParse(amount) != null;
+  }
+
+  bool _isValidDateTime(String date) {
+    print(date);
+    return DateTime.tryParse(date) != null;
+  }
+
+
   void _showErrorDialog(BuildContext context, String errorMessage) {
     showDialog(
       context: context,
@@ -253,6 +300,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onPressed: () {
                 Navigator.of(context).pop();
               },
+            ),
+          ],
+        );
+      },
+    );
+  }
+  void _showDetailedErrorDialog(BuildContext context, List<String> errorMessages) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Errors in Imported Data"),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: errorMessages.map((message) => Text(message)).toList(),
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Close'),
+              onPressed: () => Navigator.of(context).pop(),
             ),
           ],
         );
