@@ -33,6 +33,11 @@ class TransactionsDB {
     );
   }
 
+  Future<void> deleteAllTransactions() async {
+    final db = await DatabaseHelper.instance.database;
+    await db?.delete(TransactionsDB.tableName); // Assuming 'TransactionsDB.tableName' holds your table name
+  }
+
   //method to update transaction by its id
   Future<int> updateTransaction(int id, Map<String, dynamic> row) async {
     final db = await DatabaseHelper.instance.database;

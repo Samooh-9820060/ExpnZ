@@ -21,6 +21,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _showImportOptions = false;
   bool _showExportOptions = false;
+  bool _showDeleteOptions = false;
   int selectedAccoutIndex = -1;
   int selectedAccoutId = -1;
 
@@ -63,9 +64,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 title: Text('Clear Data', style: TextStyle(color: Colors.white)),
                 trailing: Icon(Icons.delete, color: Colors.white),
                 onTap: () => setState(() {
-
+                  _showDeleteOptions = !_showDeleteOptions;
                 }),
               ),
+              if (_showDeleteOptions) _buildDeleteOptions(),
             ],
           ),
         ),
@@ -135,7 +137,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ],
     );
   }
-
   Widget _buildExportOptions() {
     return Column(
       children: [
@@ -147,6 +148,60 @@ class _SettingsScreenState extends State<SettingsScreen> {
           },
         )
       ],
+    );
+  }
+  Widget _buildDeleteOptions() {
+    return Column(
+      children: [
+        ListTile(
+          title: Text('Clear All Transactions, Accounts, and Categories', style: TextStyle(color: Colors.white70)),
+          leading: Icon(Icons.arrow_right, color: Colors.white70),
+          onTap: () => _clearData(context, clearAll: true),
+        ),
+        ListTile(
+          title: Text('Clear All Transactions and Categories', style: TextStyle(color: Colors.white70)),
+          leading: Icon(Icons.arrow_right, color: Colors.white70),
+          onTap: () => _clearData(context, clearTransactions: true, clearCategories: true),
+        ),
+        ListTile(
+          title: Text('Clear All Transactions and Accounts', style: TextStyle(color: Colors.white70)),
+          leading: Icon(Icons.arrow_right, color: Colors.white70),
+          onTap: () => _clearData(context, clearTransactions: true, clearAccounts: true),
+        ),
+        ListTile(
+          title: Text('Clear Only All Transactions', style: TextStyle(color: Colors.white70)),
+          leading: Icon(Icons.arrow_right, color: Colors.white70),
+          onTap: () => _clearData(context, clearTransactions: true),
+        ),
+      ],
+    );
+  }
+
+  void _clearData(BuildContext context, {bool clearAll = false, bool clearTransactions = false, bool clearAccounts = false, bool clearCategories = false}) async {
+    // Show confirmation dialog before clearing data
+    bool confirm = await _showConfirmationDialog(context);
+    if (!confirm) return;
+
+    if (clearAll || clearTransactions) {
+      // Clear transactions logic
+      final transactionsModel = Provider.of<TransactionsModel>(context, listen: false);
+      await transactionsModel.clearTransactions();
+    }
+    if (clearAll || clearAccounts) {
+      // Clear accounts logic
+      final accountsModel = Provider.of<AccountsModel>(context, listen: false);
+      await accountsModel.clearAccounts();
+    }
+    if (clearAll || clearCategories) {
+      // Clear categories logic
+      final categoriesModel = Provider.of<CategoriesModel>(context, listen: false);
+      await categoriesModel.clearCategories();
+    }
+
+    Navigator.of(context).pop(); // Close the dialog
+    // Show success message
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Data cleared successfully')),
     );
   }
 
@@ -230,7 +285,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _getCellData(List<dynamic> row, int index) {
     return row.length > index ? (row[index] as Data?)?.value?.toString() ?? '' : '';
   }
-
   Future<void> _validateDataRows(List<List<dynamic>> rows, BuildContext context) async {
     List<String> errorMessages = [];
     List<String> categoriesToCreate = [];
@@ -286,8 +340,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
 
       if (errorsInRow == false) {
-        String categoryIds = categoriesModel.getCategoryIdsFromNames(categoryList);
-        var dateTimeParts = dateTimeCell.split(' ');
+        var dateTimeParts = dateTimeCell.split('T');
         var datePart = dateTimeParts[0];
         var timePart = dateTimeParts.length > 1 ? dateTimeParts[1] : '00:00';
         var parsedDate = DateFormat('yyyy-MM-dd').parse(datePart);
@@ -323,17 +376,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
       });
     }
   }
-
   bool _isValidAmount(String amount) {
     // Implement your logic to validate amount
     // For example, checking if it's a valid number
     return double.tryParse(amount) != null;
   }
-
   bool _isValidDateTime(String date) {
     return DateTime.tryParse(date) != null;
   }
-
   Future<void> _createCategories(List<String> categoriesToCreate, BuildContext context) async {
     final categoriesModel = Provider.of<CategoriesModel>(context, listen: false);
     for (var categoryName in categoriesToCreate) {
@@ -388,7 +438,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     transactionsModel.fetchTransactions();
     _showSuccessPrompt(context, transactionsData.length);
   }
-
 
   void _showSuccessPrompt(BuildContext context, int count) {
     // You can use a dialog, snackbar, or any other widget to show the success message
@@ -480,5 +529,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
         );
       },
     );
+  }
+  Future<bool> _showConfirmationDialog(BuildContext context) async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Confirm Deletion'),
+          content: Text('Are you sure you want to clear this data? This action cannot be undone.'),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Cancel'),
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
+            TextButton(
+              child: Text('Confirm'),
+              onPressed: () => Navigator.of(context).pop(true),
+            ),
+          ],
+        );
+      },
+    ) ?? false;
   }
 }

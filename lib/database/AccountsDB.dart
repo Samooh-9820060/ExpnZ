@@ -15,6 +15,11 @@ class AccountsDB {
     return await db!.insert(tableName, row);
   }
 
+  Future<void> deleteAllAccounts() async {
+    final db = await DatabaseHelper.instance.database;
+    await db?.delete(AccountsDB.tableName); // Assuming 'AccountsDB.tableName' holds your table name
+  }
+
   // method to fetch all accounts from the database
   Future<List<Map<String, dynamic>>> getAllAccounts() async {
     final db = await DatabaseHelper.instance.database;

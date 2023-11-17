@@ -11,6 +11,11 @@ class CategoriesDB {
   static final columnIconFontPackage = 'iconFontPackage';
   static final columnSelectedImageBlob = 'selectedImageBlob';
 
+  Future<void> deleteAllCategories() async {
+    final db = await DatabaseHelper.instance.database;
+    await db?.delete(CategoriesDB.tableName); // Assuming 'CategoriesDB.tableName' holds your table name
+  }
+
   Future<int> insertCategory(Map<String, dynamic> row) async {
     final db = await DatabaseHelper.instance.database;
     return await db!.insert(tableName, row);

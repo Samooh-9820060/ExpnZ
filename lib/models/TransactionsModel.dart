@@ -19,6 +19,12 @@ class TransactionsModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> clearTransactions() async {
+    final db = TransactionsDB();
+    await db.deleteAllTransactions();
+    notifyListeners();
+  }
+
   Future<void> deleteTransactionsByCategoryId(int categoryId, String? searchText, BuildContext context) async {
     final db = TransactionsDB();
 

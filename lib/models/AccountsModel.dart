@@ -13,6 +13,12 @@ class AccountsModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> clearAccounts() async {
+    final db = AccountsDB();
+    await db.deleteAllAccounts();
+    notifyListeners();
+  }
+
   Future<void> deleteAccount(int accountId) async {
     await db.deleteAccount(accountId);
     await fetchAccounts();  // Refresh the categories

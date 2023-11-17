@@ -14,6 +14,12 @@ class CategoriesModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> clearCategories() async {
+    final db = CategoriesDB();
+    await db.deleteAllCategories();
+    notifyListeners();
+  }
+
   Future<List<Map<String, dynamic>>> preprocessCategories(List<Map<String, dynamic>> categories) async {
     List<Map<String, dynamic>> processedCategories = [];
 
