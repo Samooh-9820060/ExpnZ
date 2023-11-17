@@ -19,51 +19,34 @@ class TransactionsModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> deleteTransactionsByCategoryName(int categoryId, String? searchText, BuildContext context) async {
+  Future<void> deleteTransactionsByCategoryId(int categoryId, String? searchText, BuildContext context) async {
     final db = TransactionsDB();
-    final categoriesDb = CategoriesDB();
-
-    Future<String> getCategoryNameById(int id) async {
-      Map<String, dynamic>? category = await categoriesDb.getSelectedCategory(id);
-      return category != null ? category[CategoriesDB.columnName] : '';
-    }
-
-    final String categoryName = await getCategoryNameById(categoryId);  // Get category name based on its ID
-
 
     // Iterate through transactions to find those with the specified category
     for (var transaction in transactions) {
-      final List<dynamic> categories = jsonDecode(transaction[TransactionsDB.columnCategories] ?? '[]');
+
+      // Extract category IDs and convert them to a list of strings
+      List<dynamic> categoryIds = (transaction[TransactionsDB.columnCategories] ?? '')
+          .split(',')
+          .map((id) => id.trim())
+          .toList();
 
       // Check if the transaction has the specified category
-      bool hasCategory = categories.any((category) => category['name'] == categoryName);
+      if (categoryIds.contains(categoryId.toString())) {
+        // Remove the categoryId from the list
+        categoryIds.remove(categoryId.toString());
 
-      if (hasCategory) {
-        int transactionId = transaction[TransactionsDB.columnId]; // Assuming the column for id is named 'id'
-
-        // If the transaction has more than one category, just remove this one
-        if (categories.length > 1) {
-          categories.removeWhere((category) => category['name'] == categoryName);
-        }
-        // If the transaction only has this category, set it to "Unassigned"
-        else {
-          // Create a new map from the existing map
-          Map<String, dynamic> newCategory = Map.from(categories[0]);
-          newCategory['name'] = 'Unassigned';
-          newCategory['icon'] = Icons.help_outline.codePoint;
-
-          // Replace the original map with the modified map
-          categories[0] = newCategory;
-        }
+        // Convert the list back to a comma-separated string
+        String updatedCategories = categoryIds.join(', ');
 
         // Create a mutable copy of the transaction
         Map<String, dynamic> mutableTransaction = Map<String, dynamic>.from(transaction);
 
         // Update the mutable copy of the transaction
-        mutableTransaction[TransactionsDB.columnCategories] = jsonEncode(categories);
+        mutableTransaction[TransactionsDB.columnCategories] = updatedCategories;
 
-        // Use the mutable copy in the updateTransaction method
-        await db.updateTransaction(transactionId, mutableTransaction);
+        // Update the transaction in the database
+        await db.updateTransaction(transaction[TransactionsDB.columnId], mutableTransaction);
       }
     }
 

@@ -138,7 +138,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> with SingleTickerPr
             TextButton(
               child: Text("Delete"),
               onPressed: () async {
-                await Provider.of<TransactionsModel>(context, listen: false).deleteTransactionsByCategoryName(categoryId, null, context);
+                await Provider.of<TransactionsModel>(context, listen: false).deleteTransactionsByCategoryId(categoryId, null, context);
                 await Provider.of<CategoriesModel>(context, listen: false).deleteCategory(categoryId);
                 Navigator.of(context).pop();
               },

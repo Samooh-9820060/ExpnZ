@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:excel/excel.dart';
 import 'package:expnz/database/AccountsDB.dart';
+import 'package:expnz/database/CategoriesDB.dart';
 import 'package:expnz/models/AccountsModel.dart';
 import 'package:expnz/models/CategoriesModel.dart';
 import 'package:expnz/widgets/AppWidgets/SelectAccountCard.dart';
@@ -276,10 +277,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (errorMessages.isNotEmpty) {
       _showDetailedErrorDialog(context, errorMessages);
     } else {
-      //if there are uncreated categoies
+      //if there are uncreated categories
       _showCreateCategoriesDialog(context, categoriesToCreate);
 
-      // Data is valid proceed with further processing
+      // categories created. proceed with further processing
 
     }
   }
@@ -294,6 +295,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return DateTime.tryParse(date) != null;
   }
 
+  Future<void> _createCategories(List<String> categoriesToCreate, BuildContext context) async {
+    final categoriesModel = Provider.of<CategoriesModel>(context, listen: false);
+    for (var categoryName in categoriesToCreate) {
+      // Default values for icon, color, and description
+      final defaultIcon = Icons.category;
+      final defaultColor = Colors.blue;
+      final description = categoryName;
+
+      // Prepare data to insert
+      Map<String, dynamic> row = {
+        'name': categoryName,
+        'description': description,
+        'color': defaultColor.value,
+        'iconCodePoint': defaultIcon.codePoint,
+        'iconFontFamily': defaultIcon.fontFamily,
+        'iconFontPackage': defaultIcon.fontPackage,
+        'selectedImageBlob': null, // No image
+      };
+
+      // Insert new category
+      final int? id = await CategoriesDB().insertCategory(row);
+      if (id != null && id > 0) {
+        // Category added successfully
+        print("Category '$categoryName' added successfully.");
+      } else {
+        // Error handling if needed
+        print("Failed to add category '$categoryName'.");
+      }
+    }
+
+    // Refresh the categories list
+    return categoriesModel.fetchCategories();
+  }
 
   void _showErrorDialog(BuildContext context, String errorMessage) {
     showDialog(
@@ -366,9 +400,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Text('Create'),
               onPressed: () {
                 // logic to create these categories
-                
-
-                Navigator.of(context).pop();
+                _createCategories(categoriesToCreate, context).then((value) => Navigator.of(context).pop());
               },
             ),
           ],

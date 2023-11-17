@@ -64,14 +64,18 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
     File? newSelectedImage;
     Color? newSelectedColor;
 
+    print(category);
     if (category != null) {
       isModifyMode = true;
 
       if (category[CategoriesDB.columnSelectedImageBlob] == null) {
+        String? iconFontPackage = category[CategoriesDB.columnIconFontPackage] as String?;
+        iconFontPackage ??= null; // Default font package
+
         newSelectedIcon = IconData(
           category[CategoriesDB.columnIconCodePoint] as int,
           fontFamily: category[CategoriesDB.columnIconFontFamily] as String,
-          fontPackage: category[CategoriesDB.columnIconFontPackage] as String,
+          fontPackage: iconFontPackage,
         );
       } else {
         newSelectedIcon = Icons.search;
@@ -343,7 +347,7 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
             SizedBox(height: 16),
             // Redesigned Button for Icon Picker
             // Container for the entire row
-// Container for the entire row
+            // Container for the entire row
             Container(
               padding: EdgeInsets.symmetric(vertical: 12, horizontal: 20),
               decoration: BoxDecoration(
