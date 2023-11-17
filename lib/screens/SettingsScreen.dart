@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:excel/excel.dart';
 import 'package:expnz/database/AccountsDB.dart';
 import 'package:expnz/models/AccountsModel.dart';
+import 'package:expnz/models/CategoriesModel.dart';
 import 'package:expnz/widgets/AppWidgets/SelectAccountCard.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -226,8 +227,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return row.length > index ? (row[index] as Data?)?.value?.toString() ?? '' : '';
   }
 
-  void _validateDataRows(List<List<dynamic>> rows, BuildContext context) {
+  Future<void> _validateDataRows(List<List<dynamic>> rows, BuildContext context) async {
     List<String> errorMessages = [];
+    List<String> categoriesToCreate = [];
+
+    var categoriesModel = Provider.of<CategoriesModel>(context, listen: false);
 
     for (int i = 1; i < rows.length; i++) { // Start from 1 to skip the header row
       var row = rows[i];
@@ -259,20 +263,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (categoriesCell.isEmpty) {
         errorMessages.add('Row ${i + 1}, Column 6: Categories are empty');
       }
-      if (!_isValidCategoryList(categoriesCell)) {
-        errorMessages.add('Row ${i + 1}, Column 6: Categories are not valid');
+
+      //check if existing categories
+      var categoryList = categoriesCell.split(',');
+      for (var category in categoryList) {
+        if (categoriesModel.getCategoryByName(category) == null && !categoriesToCreate.contains(category)) {
+          categoriesToCreate.add(category.trim());
+        }
       }
     }
 
     if (errorMessages.isNotEmpty) {
       _showDetailedErrorDialog(context, errorMessages);
     } else {
-      // Data is valid proceed with further processing
-    }
-  }
+      //if there are uncreated categoies
+      _showCreateCategoriesDialog(context, categoriesToCreate);
 
-  bool _isValidCategoryList(String categories) {
-    return true;
+      // Data is valid proceed with further processing
+
+    }
   }
 
   bool _isValidAmount(String amount) {
@@ -282,7 +291,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   bool _isValidDateTime(String date) {
-    print(date);
     return DateTime.tryParse(date) != null;
   }
 
@@ -321,6 +329,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
             TextButton(
               child: Text('Close'),
               onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
+        );
+      },
+    );
+  }
+  void _showCreateCategoriesDialog(BuildContext context, List<String> categoriesToCreate) {
+    if (categoriesToCreate.isEmpty) {
+      return; // No categories to create, skip the dialog
+    }
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Create Categories"),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text('The following categories do not exist and need to be created:'),
+                for (var category in categoriesToCreate)
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text(category),
+                  ),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Cancel'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            TextButton(
+              child: Text('Create'),
+              onPressed: () {
+                // logic to create these categories
+                
+
+                Navigator.of(context).pop();
+              },
             ),
           ],
         );

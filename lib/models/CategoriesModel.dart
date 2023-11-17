@@ -40,6 +40,15 @@ class CategoriesModel extends ChangeNotifier {
     return null;
   }
 
+  Map<String, dynamic>? getCategoryByName(String categoryName) {
+    for (var category in _categories) {
+      if (category[CategoriesDB.columnName] == categoryName) {
+        return category;
+      }
+    }
+    return null;
+  }
+
   List<Map<String, dynamic>> get categories => _categories;
 
   Future<void> deleteCategory(int categoryId) async {
