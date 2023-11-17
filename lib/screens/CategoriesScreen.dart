@@ -3,9 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../database/CategoriesDB.dart';
 import '../models/CategoriesModel.dart';
-import '../utils/image_utils.dart';
 import '../widgets/AppWidgets/CategoryCard.dart';
-import 'dart:io';
 
 class CategoriesScreen extends StatefulWidget {
   @override

@@ -49,6 +49,23 @@ class CategoriesModel extends ChangeNotifier {
     return null;
   }
 
+  // This function takes a list of category names and returns a list of corresponding category IDs.
+  String getCategoryIdsFromNames(List<String> categoryNames) {
+    List<String> categoryIds = [];
+
+    for (var categoryName in categoryNames) {
+      var category = getCategoryByName(categoryName);
+      if (category != null) {
+        int? categoryId = category[CategoriesDB.columnId];
+        if (categoryId != null) {
+          categoryIds.add(categoryId.toString());
+        }
+      }
+    }
+
+    return categoryIds.join(', ');
+  }
+
   List<Map<String, dynamic>> get categories => _categories;
 
   Future<void> deleteCategory(int categoryId) async {

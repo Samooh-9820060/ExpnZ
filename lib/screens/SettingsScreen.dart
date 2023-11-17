@@ -3,11 +3,14 @@ import 'dart:io';
 import 'package:excel/excel.dart';
 import 'package:expnz/database/AccountsDB.dart';
 import 'package:expnz/database/CategoriesDB.dart';
+import 'package:expnz/database/TransactionsDB.dart';
 import 'package:expnz/models/AccountsModel.dart';
 import 'package:expnz/models/CategoriesModel.dart';
+import 'package:expnz/models/TransactionsModel.dart';
 import 'package:expnz/widgets/AppWidgets/SelectAccountCard.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -231,11 +234,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _validateDataRows(List<List<dynamic>> rows, BuildContext context) async {
     List<String> errorMessages = [];
     List<String> categoriesToCreate = [];
+    List<Map<String, dynamic>> transactionsToCreate = [];
 
     var categoriesModel = Provider.of<CategoriesModel>(context, listen: false);
 
     for (int i = 1; i < rows.length; i++) { // Start from 1 to skip the header row
       var row = rows[i];
+
+      bool errorsInRow = false;
 
       // Initialize cell values
       var typeCell = _getCellData(row, 0);
@@ -247,22 +253,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       // Validate each cell
       if (typeCell != 'Income' && typeCell != 'Expense') {
+        errorsInRow = true;
         errorMessages.add('Row ${i + 1}, Column 1: Invalid type "$typeCell"');
       }
       if (nameCell.isEmpty) {
+        errorsInRow = true;
         errorMessages.add('Row ${i + 1}, Column 2: Name is empty');
       }
       if (descriptionCell.isEmpty) {
+        errorsInRow = true;
         errorMessages.add('Row ${i + 1}, Column 3: Description is empty');
       }
       if (!_isValidAmount(amountCell)) {
+        errorsInRow = true;
         errorMessages.add('Row ${i + 1}, Column 4: Invalid amount "$amountCell"');
       }
       if (!_isValidDateTime(dateTimeCell)) {
+        errorsInRow = true;
         errorMessages.add('Row ${i + 1}, Column 5: Invalid date time "$dateTimeCell"');
       }
       if (categoriesCell.isEmpty) {
         errorMessages.add('Row ${i + 1}, Column 6: Categories are empty');
+        errorsInRow = true;
       }
 
       //check if existing categories
@@ -272,16 +284,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
           categoriesToCreate.add(category.trim());
         }
       }
+
+      if (errorsInRow == false) {
+        String categoryIds = categoriesModel.getCategoryIdsFromNames(categoryList);
+        var dateTimeParts = dateTimeCell.split(' ');
+        var datePart = dateTimeParts[0];
+        var timePart = dateTimeParts.length > 1 ? dateTimeParts[1] : '00:00';
+        var parsedDate = DateFormat('yyyy-MM-dd').parse(datePart);
+        var timeParts = timePart.split(':');
+        var parsedTime = TimeOfDay(hour: int.parse(timeParts[0]), minute: int.parse(timeParts[1]));
+
+        Map<String, dynamic> row = {
+          TransactionsDB.columnType: typeCell.toLowerCase(),  // income, expense or transfer
+          TransactionsDB.columnName: nameCell,
+          TransactionsDB.columnDescription: descriptionCell,
+          TransactionsDB.columnAmount: amountCell,
+          TransactionsDB.columnDate: DateFormat('yyyy-MM-dd').format(parsedDate),
+          TransactionsDB.columnTime: parsedTime.format(context),
+          TransactionsDB.columnAccountId: selectedAccoutId,
+          TransactionsDB.columnCategories: categoriesCell,
+        };
+        transactionsToCreate.add(row);
+      }
     }
 
     if (errorMessages.isNotEmpty) {
       _showDetailedErrorDialog(context, errorMessages);
     } else {
       //if there are uncreated categories
-      _showCreateCategoriesDialog(context, categoriesToCreate);
-
-      // categories created. proceed with further processing
-
+      _showCreateCategoriesDialog(context, categoriesToCreate, () async {
+        // Refresh categories model to include newly created categories
+        await categoriesModel.fetchCategories();
+        // Update category IDs in transactions
+        _updateCategoryIdsInTransactions(transactionsToCreate, categoriesModel);
+        // Create transactions
+        _createTransactions(transactionsToCreate, context);
+        Navigator.of(context).pop();
+      });
     }
   }
 
@@ -328,7 +367,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
     // Refresh the categories list
     return categoriesModel.fetchCategories();
   }
+  void _updateCategoryIdsInTransactions(List<Map<String, dynamic>> transactions, CategoriesModel categoriesModel) {
+    for (var transaction in transactions) {
+      var categoryNames = (transaction[TransactionsDB.columnCategories] as String).split(',');
+      var updatedCategoryIds = categoriesModel.getCategoryIdsFromNames(categoryNames);
+      transaction[TransactionsDB.columnCategories] = updatedCategoryIds;
+    }
+  }
+  Future<void> _createTransactions(List<Map<String, dynamic>> transactionsData, BuildContext context) async {
+    final transactionsModel = Provider.of<TransactionsModel>(context, listen: false);
+    for (var transactionData in transactionsData) {
+      // You can modify this to suit your transaction creation logic
+      final id = await TransactionsDB().insertTransaction(transactionData);
+      if (id != null && id > 0) {
+        print("Transaction added successfully.");
+      } else {
+        print("Failed to add transaction.");
+      }
+    }
+    transactionsModel.fetchTransactions();
+    _showSuccessPrompt(context, transactionsData.length);
+  }
 
+
+  void _showSuccessPrompt(BuildContext context, int count) {
+    // You can use a dialog, snackbar, or any other widget to show the success message
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("$count transactions successfully added"),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
   void _showErrorDialog(BuildContext context, String errorMessage) {
     showDialog(
       context: context,
@@ -369,9 +439,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       },
     );
   }
-  void _showCreateCategoriesDialog(BuildContext context, List<String> categoriesToCreate) {
+  void _showCreateCategoriesDialog(BuildContext context, List<String> categoriesToCreate, Function onCategoriesCreated) {
     if (categoriesToCreate.isEmpty) {
-      return; // No categories to create, skip the dialog
+      onCategoriesCreated();
+      return;
     }
 
     showDialog(
@@ -399,8 +470,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             TextButton(
               child: Text('Create'),
               onPressed: () {
-                // logic to create these categories
-                _createCategories(categoriesToCreate, context).then((value) => Navigator.of(context).pop());
+                _createCategories(categoriesToCreate, context).then((_) {
+                  Navigator.of(context).pop();
+                  onCategoriesCreated();
+                });
               },
             ),
           ],
