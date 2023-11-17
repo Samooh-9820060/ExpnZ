@@ -24,51 +24,55 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _showDeleteOptions = false;
   int selectedAccoutIndex = -1;
   int selectedAccoutId = -1;
+  final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.blueGrey[900],
-      appBar: AppBar(
-        title: Text('Settings'),
-        backgroundColor: Colors.blueGrey[700],
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Data Management',
-                style: TextStyle(fontSize: 22, color: Colors.white, fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 10),
-              ListTile(
-                title: Text('Import Data', style: TextStyle(color: Colors.white)),
-                trailing: Icon(Icons.import_export, color: Colors.white),
-                onTap: () => setState(() {
-                  _showImportOptions = !_showImportOptions;
-                }),
-              ),
-              if (_showImportOptions) _buildImportOptions(),
-              ListTile(
-                title: Text('Export Data', style: TextStyle(color: Colors.white)),
-                trailing: Icon(Icons.import_export, color: Colors.white),
-                onTap: () => setState(() {
-                  _showExportOptions = !_showExportOptions;
-                }),
-              ),
-              if (_showExportOptions) _buildExportOptions(),
-              ListTile(
-                title: Text('Clear Data', style: TextStyle(color: Colors.white)),
-                trailing: Icon(Icons.delete, color: Colors.white),
-                onTap: () => setState(() {
-                  _showDeleteOptions = !_showDeleteOptions;
-                }),
-              ),
-              if (_showDeleteOptions) _buildDeleteOptions(),
-            ],
+    return ScaffoldMessenger(
+      key: _scaffoldMessengerKey,
+      child: Scaffold(
+        backgroundColor: Colors.blueGrey[900],
+        appBar: AppBar(
+          title: Text('Settings'),
+          backgroundColor: Colors.blueGrey[700],
+        ),
+        body: SingleChildScrollView(
+          child: Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Data Management',
+                  style: TextStyle(fontSize: 22, color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 10),
+                ListTile(
+                  title: Text('Import Data', style: TextStyle(color: Colors.white)),
+                  trailing: Icon(Icons.import_export, color: Colors.white),
+                  onTap: () => setState(() {
+                    _showImportOptions = !_showImportOptions;
+                  }),
+                ),
+                if (_showImportOptions) _buildImportOptions(),
+                ListTile(
+                  title: Text('Export Data', style: TextStyle(color: Colors.white)),
+                  trailing: Icon(Icons.import_export, color: Colors.white),
+                  onTap: () => setState(() {
+                    _showExportOptions = !_showExportOptions;
+                  }),
+                ),
+                if (_showExportOptions) _buildExportOptions(),
+                ListTile(
+                  title: Text('Clear Data', style: TextStyle(color: Colors.white)),
+                  trailing: Icon(Icons.delete, color: Colors.white),
+                  onTap: () => setState(() {
+                    _showDeleteOptions = !_showDeleteOptions;
+                  }),
+                ),
+                if (_showDeleteOptions) _buildDeleteOptions(),
+              ],
+            ),
           ),
         ),
       ),
@@ -306,7 +310,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       var categoriesCell = _getCellData(row, 5);
 
       // Validate each cell
-      if (typeCell != 'Income' && typeCell != 'Expense') {
+      if (typeCell.toLowerCase() != 'income' && typeCell.toLowerCase() != 'expense') {
         errorsInRow = true;
         errorMessages.add('Row ${i + 1}, Column 1: Invalid type "$typeCell"');
       }
@@ -425,6 +429,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
   Future<void> _createTransactions(List<Map<String, dynamic>> transactionsData, BuildContext context) async {
+    await _showLoadingDialog(context, "Processing transactions...");
     final transactionsModel = Provider.of<TransactionsModel>(context, listen: false);
     for (var transactionData in transactionsData) {
       // You can modify this to suit your transaction creation logic
@@ -435,19 +440,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
         print("Failed to add transaction.");
       }
     }
+    Navigator.of(context).pop(); // Dismiss the loading dialog
     transactionsModel.fetchTransactions();
-    _showSuccessPrompt(context, transactionsData.length);
+    _showSuccessPrompt(transactionsData.length);
   }
 
-  void _showSuccessPrompt(BuildContext context, int count) {
-    // You can use a dialog, snackbar, or any other widget to show the success message
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text("$count transactions successfully added"),
-        backgroundColor: Colors.green,
-      ),
+  Future<void> _showLoadingDialog(BuildContext context, String message) async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false, // User must not close the dialog.
+      builder: (BuildContext context) {
+        return AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 20),
+              Expanded(child: Text(message)),
+            ],
+          ),
+        );
+      },
     );
   }
+  void _showSuccessPrompt(int transactionsCount) {
+    _scaffoldMessengerKey.currentState?.showSnackBar(
+      SnackBar(content: Text('$transactionsCount transactions added successfully')),
+    );
+  }
+
   void _showErrorDialog(BuildContext context, String errorMessage) {
     showDialog(
       context: context,
