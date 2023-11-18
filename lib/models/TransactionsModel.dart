@@ -129,13 +129,14 @@ class TransactionsModel extends ChangeNotifier {
       var transaction = transList[i];
       bool shouldInclude = true;
 
-
+      print(transaction);
 
       // Date-based filtering
       if (fromDate != null && toDate != null) {
         DateTime transactionDate = DateTime.parse(transaction['date']);
         shouldInclude = (transactionDate.isAfter(fromDate) && transactionDate.isBefore(toDate)) || transactionDate == fromDate || transactionDate == toDate;
       }
+      print('date $shouldInclude');
 
       // Category-based filtering
       if (shouldInclude && transaction.containsKey('categories')) {
@@ -143,16 +144,20 @@ class TransactionsModel extends ChangeNotifier {
         if (includeCategories != null) {
           shouldInclude = categoryIds.any((id) => includeCategories.contains(id));
         }
-        if (excludeCategories != null) {
+        if (shouldInclude && excludeCategories != null) {
           shouldInclude = !categoryIds.any((id) => excludeCategories.contains(id));
         }
       }
+
+      print('category $shouldInclude');
 
       // Account-based filtering
       if (shouldInclude && includeAccounts != null) {
         int accountId = transaction[TransactionsDB.columnAccountId];
         shouldInclude = includeAccounts.contains(accountId);
       }
+
+      print('account $shouldInclude');
 
       // Text-based filtering
       if (shouldInclude && searchText != null && searchText.isNotEmpty) {
@@ -172,6 +177,8 @@ class TransactionsModel extends ChangeNotifier {
           }
         }
       }
+
+      print('txt $shouldInclude');
 
       if (shouldInclude) {
         filteredTransactions.add(transaction);
