@@ -37,6 +37,8 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   DateTime selectedFromDate = DateTime(DateTime.now().year, 1, 1);
   DateTime selectedToDate = DateTime(DateTime.now().year, 12, 31);
 
+  bool _cancelOngoingFiltering = false;
+
   @override
   void initState() {
     super.initState();
@@ -64,13 +66,35 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   void _filterTransactions() {
     String searchText = _searchController.text.toLowerCase();
 
-    if (filteredConditionalTransactions == null || filteredConditionalTransactions.isEmpty){
-      Provider.of<TransactionsModel>(context, listen: false)
+    // Signal to cancel any ongoing filtering operation
+    _cancelOngoingFiltering = true;
+
+    // Delay to ensure any ongoing operation has time to stop
+    Future.delayed(Duration(milliseconds: 100), () {
+      // Reset the flag and start new filtering
+      _cancelOngoingFiltering = false;
+      _performFiltering(searchText);
+    });
+  }
+
+  Future<void> _performFiltering(String searchText) async {
+    // Check if the operation should be canceled at the start
+    if (_cancelOngoingFiltering) return;
+
+    // Your filtering logic here
+    // For example:
+    if (filteredConditionalTransactions == null || filteredConditionalTransactions.isEmpty) {
+      await Provider.of<TransactionsModel>(context, listen: false)
           .filterTransactions(context, searchText);
     } else {
-      Provider.of<TransactionsModel>(context, listen: false)
+      await Provider.of<TransactionsModel>(context, listen: false)
           .filterTransactions(context, searchText, filteredConditionalTransactions);
     }
+
+    // Check if the operation should be canceled at significant steps
+    if (_cancelOngoingFiltering) return;
+
+    // Continue with your logic...
   }
 
   @override
