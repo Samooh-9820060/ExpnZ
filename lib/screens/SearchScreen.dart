@@ -38,10 +38,13 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   DateTime selectedToDate = DateTime(DateTime.now().year, 12, 31);
 
   bool _cancelOngoingFiltering = false;
+  ScrollController _scrollController = ScrollController();
+  int _currentMax = 10;
 
   @override
   void initState() {
     super.initState();
+    //_scrollController.addListener(_loadMore);
     _searchController.addListener(_filterTransactions);
     Provider.of<TransactionsModel>(context, listen: false).fetchTransactions();
     // Fetch accounts and populate selectedAccounts
@@ -63,6 +66,24 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     });
   }
 
+  Future<void> _loadMore() async {
+    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
+      // Load more data here
+      setState(() {
+        _currentMax += 10; // Increase the max items to display
+      });
+
+      String searchText = _searchController.text.toLowerCase();
+      if (filteredConditionalTransactions == null || filteredConditionalTransactions.isEmpty) {
+        await Provider.of<TransactionsModel>(context, listen: false)
+            .filterTransactions(context, searchText, null, null, null, null, null, null, 100, false);
+      } else {
+        await Provider.of<TransactionsModel>(context, listen: false)
+            .filterTransactions(context, searchText, filteredConditionalTransactions);
+      }
+    }
+  }
+
   void _filterTransactions() {
     String searchText = _searchController.text.toLowerCase();
 
@@ -81,8 +102,6 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     // Check if the operation should be canceled at the start
     if (_cancelOngoingFiltering) return;
 
-    // Your filtering logic here
-    // For example:
     if (filteredConditionalTransactions == null || filteredConditionalTransactions.isEmpty) {
       await Provider.of<TransactionsModel>(context, listen: false)
           .filterTransactions(context, searchText);
@@ -93,14 +112,13 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
 
     // Check if the operation should be canceled at significant steps
     if (_cancelOngoingFiltering) return;
-
-    // Continue with your logic...
   }
 
   @override
   void dispose() {
     _categoryIncludeSearchController.dispose();
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -645,9 +663,15 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
           if (_searchController.text.isNotEmpty || filteredConditionalTransactions.isNotEmpty) {
             if (transactionsToShow.isNotEmpty) {
               childWidget = SingleChildScrollView(
+                controller: _scrollController,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (transactionsToShow.length >= _currentMax)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        child: Center(child: Container()), // Show a loading indicator
+                      ),
                     Padding(
                       padding: const EdgeInsets.all(16.0),
                       child: Text(

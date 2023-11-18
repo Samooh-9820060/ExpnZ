@@ -13,6 +13,19 @@ class AccountsModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<Map<int, String>> fetchAllAccountsAsMap() async {
+    var allAccounts = await db.getAllAccounts();
+    Map<int, String> accountsMap = {};
+
+    for (var account in allAccounts) {
+      int accountId = account[AccountsDB.accountId];
+      String accountName = account[AccountsDB.accountName];
+      accountsMap[accountId] = accountName;
+    }
+
+    return accountsMap;
+  }
+
   Future<void> clearAccounts() async {
     final db = AccountsDB();
     await db.deleteAllAccounts();

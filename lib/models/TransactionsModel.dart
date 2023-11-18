@@ -102,107 +102,85 @@ class TransactionsModel extends ChangeNotifier {
       DateTime? toDate,
       List<int>? includeCategories,
       List<int>? excludeCategories,
-      List<int>? includeAccounts]
+      List<int>? includeAccounts,
+      int batchSize = 100,
+        bool isNewSearch = true,
+      ]
       ) async {
 
     // Use transactionsToFilter if provided, otherwise use the existing transactions list
     final transList = transactionsToFilter ?? transactions;
 
-    List<Map<String, dynamic>> tempTransactions = [];
+    // Clear existing filtered transactions if it's a new search
+    if (isNewSearch) {
+      filteredTransactions.clear();
+    }
 
-    for (var transaction in transList) {
+    var categoriesModel = Provider.of<CategoriesModel>(context, listen: false);
+    var accountsModel = Provider.of<AccountsModel>(context, listen: false);
+
+    var categoriesMap = await categoriesModel.fetchAllCategoriesAsMap();
+    var accountsMap = await accountsModel.fetchAllAccountsAsMap();
+
+    int processedCount = 0;
+    int i = filteredTransactions.length;
+
+    while (processedCount < batchSize && i < transList.length) {
+      var transaction = transList[i];
       bool shouldInclude = true;
 
 
 
       // Date-based filtering
-      if ((fromDate != null && toDate != null) && shouldInclude == true) {
+      if (fromDate != null && toDate != null) {
         DateTime transactionDate = DateTime.parse(transaction['date']);
-        if ((transactionDate.isAfter(fromDate) && transactionDate.isBefore(toDate))|| transactionDate == fromDate || transactionDate == toDate) {
-          shouldInclude = true;
-        } else {
-          shouldInclude = false;
-        }
+        shouldInclude = (transactionDate.isAfter(fromDate) && transactionDate.isBefore(toDate)) || transactionDate == fromDate || transactionDate == toDate;
       }
 
       // Category-based filtering
-      if (includeCategories != null && shouldInclude == true) {
-        if (transaction.containsKey('categories')) {
-          final List<int> categoryIds = List<int>.from(
-              (transaction['categories'] as String)
-                  .split(',')
-                  .map((e) => int.tryParse(e.trim()) ?? 0)
-          );
-
-          for (int categoryId in categoryIds) {
-            if (includeCategories.contains(categoryId)) {
-              shouldInclude = true;
-            }
-          }
+      if (shouldInclude && transaction.containsKey('categories')) {
+        final categoryIds = transaction['categories'].split(',').map((e) => int.tryParse(e.trim()) ?? 0).toSet();
+        if (includeCategories != null) {
+          shouldInclude = categoryIds.any((id) => includeCategories.contains(id));
         }
-      }
-
-      if (excludeCategories != null && shouldInclude == true) {
-        if (transaction.containsKey('categories')) {
-          final List<int> categoryIds = List<int>.from(
-              (transaction['categories'] as String)
-                  .split(',')
-                  .map((e) => int.tryParse(e.trim()) ?? 0)
-          );
-
-          for (int categoryId in categoryIds) {
-            if (excludeCategories.contains(categoryId)) {
-              shouldInclude = false;  // Exclude this transaction
-            }
-          }
+        if (excludeCategories != null) {
+          shouldInclude = !categoryIds.any((id) => excludeCategories.contains(id));
         }
       }
 
       // Account-based filtering
-      if (includeAccounts != null && includeAccounts.contains(transaction[TransactionsDB.columnAccountId]) && shouldInclude == true) {
-        shouldInclude = true;
-      } else {
-        shouldInclude = false;
+      if (shouldInclude && includeAccounts != null) {
+        int accountId = transaction[TransactionsDB.columnAccountId];
+        shouldInclude = includeAccounts.contains(accountId);
       }
 
       // Text-based filtering
-      if (searchText != null && searchText.isNotEmpty) {
-        if (transaction.containsKey('categories')) {
-          final List<int> categoryIds = List<int>.from(
-              (transaction['categories'] as String)
-                  .split(',')
-                  .map((e) => int.tryParse(e.trim()) ?? 0)
-          );
-
-          for (int categoryId in categoryIds) {
-            var category = await Provider.of<CategoriesModel>(context, listen: false).getCategoryById(categoryId);
-            if (category != null && (category[CategoriesDB.columnName] as String).toLowerCase().contains(searchText)) {
-              shouldInclude = true;
-            }
+      if (shouldInclude && searchText != null && searchText.isNotEmpty) {
+        shouldInclude = transaction.values.any((element) => element.toString().toLowerCase().contains(searchText));
+        if (!shouldInclude) {
+          int categoryId = transaction[TransactionsDB.columnId];
+          String? categoryName = categoriesMap[categoryId];
+          if (categoryName != null && categoryName.toLowerCase().contains(searchText)) {
+            shouldInclude = true;
           }
         }
-
-        if (!shouldInclude && transaction.values.any((element) => element.toString().toLowerCase().contains(searchText))) {
-          shouldInclude = true;
-        }
-
-        if (transaction.containsKey(TransactionsDB.columnAccountId)) {
+        if (!shouldInclude) {
           int accountId = transaction[TransactionsDB.columnAccountId];
-          // Access the account name through the other Provider model
-          String accountName = await Provider.of<AccountsModel>(context, listen: false).getAccountNameById(accountId);
-
-          if (accountName.toLowerCase().contains(searchText)) {
+          String? accountName = accountsMap[accountId];
+          if (accountName != null && accountName.toLowerCase().contains(searchText)) {
             shouldInclude = true;
           }
         }
       }
 
       if (shouldInclude) {
-        tempTransactions.add(transaction);
+        filteredTransactions.add(transaction);
+        processedCount++;
       }
+
+      i++;
     }
 
-    filteredTransactions = tempTransactions;
     notifyListeners();  // Important to notify listeners
   }
 

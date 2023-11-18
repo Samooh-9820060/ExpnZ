@@ -74,7 +74,7 @@ class TransactionCard extends StatelessWidget {
           .getAccountDetailsById(transaction['account_id']),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return CircularProgressIndicator();
+          return Container();
         } else if (snapshot.hasError) {
           return Text('Error: ${snapshot.error}');
         } else {

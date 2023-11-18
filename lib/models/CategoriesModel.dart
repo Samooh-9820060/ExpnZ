@@ -14,6 +14,20 @@ class CategoriesModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<Map<int, String>> fetchAllCategoriesAsMap() async {
+    var allCategories = await db.getAllCategories();
+    Map<int, String> categoriesMap = {};
+
+    for (var category in allCategories) {
+      int categoryId = category[CategoriesDB.columnId];
+      String categoryName = category[CategoriesDB.columnName];
+      categoriesMap[categoryId] = categoryName;
+    }
+
+    return categoriesMap;
+  }
+
+
   Future<void> clearCategories() async {
     final db = CategoriesDB();
     await db.deleteAllCategories();
