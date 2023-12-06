@@ -7,11 +7,16 @@ import 'package:expnz/database/TransactionsDB.dart';
 import 'package:expnz/models/AccountsModel.dart';
 import 'package:expnz/models/CategoriesModel.dart';
 import 'package:expnz/models/TransactionsModel.dart';
+import 'package:expnz/utils/NotificationListener.dart';
 import 'package:expnz/widgets/AppWidgets/SelectAccountCard.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:notifications/notifications.dart';
 
 class SettingsScreen extends StatefulWidget {
   @override
@@ -24,7 +29,58 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _showDeleteOptions = false;
   int selectedAccoutIndex = -1;
   int selectedAccoutId = -1;
+  bool _allowNotificationReading = false;
   final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+  final AppNotificationListener _notificationListener = AppNotificationListener();
+
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedSettings();
+  }
+
+  Future<void> _loadSavedSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedSetting = prefs.getBool('allowNotificationReading') ?? false;
+    setState(() {
+      _allowNotificationReading = savedSetting;
+    });
+  }
+
+  Future<bool> _checkNotificationPermission() async {
+    PackageInfo packageInfo = await PackageInfo.fromPlatform();
+    final String packageName = packageInfo.packageName;
+    final String? enabledNotificationListeners = await SystemChannels.platform.invokeMethod<String>('SystemSettings.getEnabledNotificationListeners');
+    return enabledNotificationListeners?.contains(packageName) ?? false;
+  }
+
+  void _handleNotificationPermission(bool value) async {
+    if (value) {
+      bool isPermissionGranted = await _checkNotificationPermission();
+      _notificationListener.startListening(onData);
+    } else {
+      _notificationListener.stopListening();
+    }
+    // Update the shared preferences and UI state
+    _updateNotificationReadingPreference(value);
+  }
+
+  void onData(NotificationEvent event) {
+    setState(() {
+      _notificationListener.log.add(event);
+    });
+    print(event.toString());
+  }
+
+  Future<void> _updateNotificationReadingPreference(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('allowNotificationReading', value);
+    setState(() {
+      _allowNotificationReading = value;
+    });
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +98,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                SizedBox(height: 20),
                 Text(
                   'Data Management',
                   style: TextStyle(fontSize: 22, color: Colors.white, fontWeight: FontWeight.bold),
@@ -71,6 +128,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   }),
                 ),
                 if (_showDeleteOptions) _buildDeleteOptions(),
+                SizedBox(height: 20),
+                Text(
+                  'Notification Management',
+                  style: TextStyle(fontSize: 22, color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+                // Toggle for reading notifications
+                SwitchListTile(
+                  title: Text('Allow Reading of Notifications',
+                      style: TextStyle(color: Colors.white)),
+                  value: _allowNotificationReading, // Boolean variable to track the toggle state
+                  onChanged: _handleNotificationPermission,
+                  secondary: Icon(Icons.notifications_active, color: Colors.white),
+                ),
               ],
             ),
           ),

@@ -13,10 +13,11 @@ void main() {
         ChangeNotifierProvider(create: (context) => AccountsModel()),
         ChangeNotifierProvider(create: (context) => TransactionsModel()),
       ],
-      child: MyApp(),
+        child: MyApp(),
     ),
   );
 }
+
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
