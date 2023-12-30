@@ -58,19 +58,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _handleNotificationPermission(bool value) async {
     if (value) {
       bool isPermissionGranted = await _checkNotificationPermission();
-      _notificationListener.startListening(onData);
+      _notificationListener.stopListening();
+      _notificationListener.startListening();
     } else {
       _notificationListener.stopListening();
     }
     // Update the shared preferences and UI state
     _updateNotificationReadingPreference(value);
-  }
-
-  void onData(NotificationEvent event) {
-    setState(() {
-      _notificationListener.log.add(event);
-    });
-    print(event.toString());
   }
 
   Future<void> _updateNotificationReadingPreference(bool value) async {

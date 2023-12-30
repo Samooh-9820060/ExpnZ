@@ -6,11 +6,13 @@ import 'package:expnz/screens/OverviewScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:animated_drawer/views/animated_drawer.dart';
 import 'package:provider/provider.dart';
-
+import 'package:notifications/notifications.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../menus/CustomAppBar.dart';
 import '../menus/CustomBottomNavBar.dart';
 import '../menus/FloatingActionMenu.dart';
 import '../models/CategoriesModel.dart';
+import '../utils/NotificationListener.dart';
 import 'HomeScreen.dart';
 import '../menus/MenuDrawer.dart';
 
@@ -43,6 +45,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin, Widg
   @override
   void initState() {
     super.initState();
+    initializeApp();
     Future.delayed(Duration.zero, () {
       Provider.of<CategoriesModel>(context, listen: false).fetchCategories();
       Provider.of<AccountsModel>(context, listen: false).fetchAccounts();
@@ -54,6 +57,20 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin, Widg
     );
     _animation = Tween<double>(begin: 0, end: 1).animate(_animationController);
   }
+
+  Future<void> initializeApp() async {
+    final prefs = await SharedPreferences.getInstance();
+    final allowNotificationReading = prefs.getBool('allowNotificationReading') ?? false;
+
+    AppNotificationListener _notificationListener = AppNotificationListener();
+
+    if (allowNotificationReading) {
+      // Start listening for notifications
+      _notificationListener.stopListening();
+      _notificationListener.startListening();
+    }
+  }
+
 
   @override
   void dispose() {

@@ -1,6 +1,8 @@
 import 'package:expnz/models/TransactionsModel.dart';
+import 'package:expnz/utils/NotificationListener.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import './screens/MainPage.dart';
 import 'models/AccountsModel.dart';
 import 'models/CategoriesModel.dart';
@@ -13,7 +15,7 @@ void main() {
         ChangeNotifierProvider(create: (context) => AccountsModel()),
         ChangeNotifierProvider(create: (context) => TransactionsModel()),
       ],
-        child: MyApp(),
+        child: const MyApp(),
     ),
   );
 }
