@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 
 import '../database/AccountsDB.dart';
 import '../models/AccountsModel.dart';
+import '../models/TempTransactionsModel.dart';
 import '../models/TransactionsModel.dart';
 import '../widgets/AppWidgets/FinanceCard.dart';
 import '../widgets/AppWidgets/NotificationsCard.dart';
@@ -324,54 +325,52 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                   );
                 },
-                child: FutureBuilder<List<Map<String, dynamic>>>(
-                  future: TempTransactionsDB().getAllTransaction(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const CircularProgressIndicator(); // Show loading indicator
-                    } else if (snapshot.hasError) {
-                      return Text('Error: ${snapshot.error}');
-                    } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-                      // If data is present and not empty, show heading and notifications
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Padding(
-                            padding: EdgeInsets.fromLTRB(30.0, 0.0, 0.0, 0.0),
-                            child: Text(
-                              'Notifications',
-                              style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                            child: Column(
-                              children: snapshot.data!.map((transaction) {
-                                return NotificationCard(
-                                  title: transaction[TempTransactionsDB.columnTitle] ?? 'No Title',
-                                  content: transaction[TempTransactionsDB.columnContent] ?? 'No Content',
-                                  icon: getIconBasedOnType(transaction[TempTransactionsDB.columnType]),
-                                  color: getColorBasedOnType(transaction[TempTransactionsDB.columnType]),
-                                  date: transaction[TempTransactionsDB.columnDate] ?? '',
-                                  time: transaction[TempTransactionsDB.columnTime] ?? '',
-                                  transactionId: transaction[TempTransactionsDB.columnId], // set this appropriately
-                                  onTap: (int transactionId) async {
-                                    await _handleNotificationCardClick(transactionId);
-                                  },
-                                );
-                              }).toList(),
-                            ),
-                          ),
-                        ],
-                      );
-                    } else {
-                      // If no data or empty data, return an empty container or a suitable widget
-                      return Container();
+                child: Consumer<TempTransactionsModel>(  // Using Consumer
+                  builder: (context, tempTransactionsModel, child) {
+                    if (tempTransactionsModel.transactions.isEmpty) {
+                      return Container();  // If no data or empty data
                     }
+
+                    // If data is present and not empty, show heading and notifications
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Padding(
+                          padding: EdgeInsets.fromLTRB(30.0, 0.0, 0.0, 0.0),
+                          child: Text(
+                            'Notifications',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: Column(
+                            children: tempTransactionsModel.transactions.map((transaction) {
+                              return NotificationCard(
+                                title: transaction[TempTransactionsDB.columnTitle] ?? 'No Title',
+                                content: transaction[TempTransactionsDB.columnContent] ?? 'No Content',
+                                icon: getIconBasedOnType(transaction[TempTransactionsDB.columnType]),
+                                color: getColorBasedOnType(transaction[TempTransactionsDB.columnType]),
+                                date: transaction[TempTransactionsDB.columnDate] ?? '',
+                                time: transaction[TempTransactionsDB.columnTime] ?? '',
+                                transactionId: transaction[TempTransactionsDB.columnId], // set this appropriately
+                                onTap: (int transactionId) async {
+                                  await _handleNotificationCardClick(context, transactionId);
+                                },
+                                onDelete: (int transactionId) {
+                                  Provider.of<TempTransactionsModel>(context, listen: false).deleteTransactions(transactionId, null, context);
+                                  Provider.of<TempTransactionsModel>(context, listen: false).fetchTransactions();
+                                },
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ],
+                    );
                   },
                 ),
               ),
@@ -489,7 +488,7 @@ Color getColorBasedOnType(String? type) {
       return Colors.yellow; // Replace with a default color
   }
 }
-  Future<void> _handleNotificationCardClick(int transactionId) async {
+  Future<void> _handleNotificationCardClick(BuildContext context, int transactionId) async {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -498,7 +497,15 @@ Color getColorBasedOnType(String? type) {
     );
 
     if (result != null && result == true) {
-      TempTransactionsDB().deleteTransaction(transactionId);
+      Provider.of<TempTransactionsModel>(context,
+          listen: false)
+          .deleteTransactions(
+          transactionId,
+          null,
+          context);
+      Provider.of<TempTransactionsModel>(context,
+          listen: false)
+          .fetchTransactions();
     }
   }
 }

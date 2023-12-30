@@ -1,4 +1,6 @@
+import 'package:expnz/database/TempTransactionsDB.dart';
 import 'package:expnz/models/AccountsModel.dart';
+import 'package:expnz/models/TempTransactionsModel.dart';
 import 'package:expnz/models/TransactionsModel.dart';
 import 'package:expnz/screens/AccountsScreen.dart';
 import 'package:expnz/screens/CategoriesScreen.dart';
@@ -50,6 +52,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin, Widg
       Provider.of<CategoriesModel>(context, listen: false).fetchCategories();
       Provider.of<AccountsModel>(context, listen: false).fetchAccounts();
       Provider.of<TransactionsModel>(context, listen: false).fetchTransactions();
+      Provider.of<TempTransactionsModel>(context, listen: false).fetchTransactions();
     });
     _animationController = AnimationController(
       vsync: this,

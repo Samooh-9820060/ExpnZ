@@ -1,3 +1,4 @@
+import 'package:expnz/database/TempTransactionsDB.dart';
 import 'package:flutter/material.dart';
 
 class NotificationCard extends StatelessWidget {
@@ -9,6 +10,7 @@ class NotificationCard extends StatelessWidget {
   final String time;
   final int transactionId;
   final Function(int) onTap;
+  final Function(int) onDelete;
 
   const NotificationCard({super.key,
     required this.title,
@@ -19,13 +21,39 @@ class NotificationCard extends StatelessWidget {
     required this.time, // Initialize time
     required this.transactionId,
     required this.onTap,
+    required this.onDelete,
   });
+
+  void showDeleteDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Delete Transaction'),
+        content: Text('Are you sure you want to delete this saved notification?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              await TempTransactionsDB().deleteTransaction(transactionId);
+              Navigator.pop(context);
+              onDelete(transactionId); // Call the callback function after deletion
+            },
+            child: Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 8),
       child: InkWell(
+        onLongPress: () => showDeleteDialog(context),
         onTap: () => onTap(transactionId),
         child: Container(
           decoration: BoxDecoration(

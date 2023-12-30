@@ -1,3 +1,4 @@
+import 'package:expnz/models/TempTransactionsModel.dart';
 import 'package:expnz/models/TransactionsModel.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -12,6 +13,7 @@ void main() {
         ChangeNotifierProvider(create: (context) => CategoriesModel()),
         ChangeNotifierProvider(create: (context) => AccountsModel()),
         ChangeNotifierProvider(create: (context) => TransactionsModel()),
+        ChangeNotifierProvider(create: (context) => TempTransactionsModel()),
       ],
         child: const MyApp(),
     ),
