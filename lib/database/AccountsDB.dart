@@ -1,14 +1,14 @@
 import 'DatabaseHelper.dart';
 
 class AccountsDB {
-  static final tableName = 'accounts';
-  static final accountId = '_id';
-  static final accountName = 'name';
-  static final accountCurrency = 'currency';
-  static final accountIconCodePoint = 'iconCodePoint';
-  static final accountIconFontFamily = 'iconFontFamily';
-  static final accountIconFontPackage = 'iconFontPackage';
-  static final accountCardNumber = 'card_number';
+  static const tableName = 'accounts';
+  static const accountId = '_id';
+  static const accountName = 'name';
+  static const accountCurrency = 'currency';
+  static const accountIconCodePoint = 'iconCodePoint';
+  static const accountIconFontFamily = 'iconFontFamily';
+  static const accountIconFontPackage = 'iconFontPackage';
+  static const accountCardNumber = 'card_number';
 
   Future<int> insertAccount(Map<String, dynamic> row) async {
     final db = await DatabaseHelper.instance.database;

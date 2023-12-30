@@ -41,8 +41,8 @@ class _OverviewScreenState extends State<OverviewScreen> with TickerProviderStat
         elevation: 0,
         backgroundColor: Colors.blueGrey[900],
         flexibleSpace: Container(
-          margin: EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: const BoxDecoration(
             borderRadius: BorderRadius.vertical(
               bottom: Radius.circular(30),
             ),
@@ -62,7 +62,7 @@ class _OverviewScreenState extends State<OverviewScreen> with TickerProviderStat
                   borderRadius: BorderRadius.circular(50),
                   color: Colors.grey[700],
                 ),
-                tabs: [
+                tabs: const [
                   Tab(text: 'Income'),
                   Tab(text: 'Expense'),
                 ],
@@ -75,19 +75,19 @@ class _OverviewScreenState extends State<OverviewScreen> with TickerProviderStat
         children: [
           // Filter Icon and Buttons
           Container(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
                   children: [
                     IconButton(
-                      icon: Icon(Icons.filter_list, color: Colors.white),
+                      icon: const Icon(Icons.filter_list, color: Colors.white),
                       onPressed: () {
                         // Open filter dialog or navigate to filter screen
                       },
                     ),
-                    Text(
+                    const Text(
                       "Current Filter: All", // Update this based on the selected filter
                       style: TextStyle(color: Colors.white),
                     ),
@@ -95,7 +95,7 @@ class _OverviewScreenState extends State<OverviewScreen> with TickerProviderStat
                 ),
                 // Optional: Add more filter or sort buttons here
                 IconButton(
-                  icon: Icon(Icons.sort, color: Colors.white),
+                  icon: const Icon(Icons.sort, color: Colors.white),
                   onPressed: () {
                     // Open sort dialog or action
                   },

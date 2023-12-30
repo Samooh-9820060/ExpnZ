@@ -43,7 +43,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> with SingleTickerPr
       child: Consumer<CategoriesModel>(
         builder: (context, categoriesModel, child) {
           if (categoriesModel.categories.isEmpty) {
-            return Center(
+            return const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -67,7 +67,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> with SingleTickerPr
             );
           } else {
             // Sort the list of categories by name in ascending order
-            List<Map<String, dynamic>> sortedData = List.from(categoriesModel.categories!);
+            List<Map<String, dynamic>> sortedData = List.from(categoriesModel.categories);
             sortedData.sort((a, b) => a[CategoriesDB.columnName].compareTo(b[CategoriesDB.columnName]));
 
             return ListView.builder(
@@ -123,18 +123,18 @@ class _CategoriesScreenState extends State<CategoriesScreen> with SingleTickerPr
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text("Delete Category"),
-          content: Text("Are you sure you want to delete this category?\n\n"
+          title: const Text("Delete Category"),
+          content: const Text("Are you sure you want to delete this category?\n\n"
               "This will remove this category from all transactions with more than 1 category and Uncategorize any transactions with this category only."),
           actions: [
             TextButton(
-              child: Text("Cancel"),
+              child: const Text("Cancel"),
               onPressed: () {
                 Navigator.of(context).pop();
               },
             ),
             TextButton(
-              child: Text("Delete"),
+              child: const Text("Delete"),
               onPressed: () async {
                 await Provider.of<TransactionsModel>(context, listen: false).deleteTransactionsByCategoryId(categoryId, null, context);
                 await Provider.of<CategoriesModel>(context, listen: false).deleteCategory(categoryId);

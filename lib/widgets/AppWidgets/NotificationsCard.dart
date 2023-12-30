@@ -5,12 +5,16 @@ class NotificationCard extends StatelessWidget {
   final String content;
   final IconData icon;
   final Color color;
+  final String date;
+  final String time;
 
-  NotificationCard({
+  const NotificationCard({super.key,
     required this.title,
     required this.content,
     required this.icon,
     required this.color,
+    required this.date, // Initialize date
+    required this.time, // Initialize time
   });
 
   @override
@@ -23,27 +27,40 @@ class NotificationCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(15),
         ),
         child: ListTile(
-          contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+          contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
           leading: Icon(
             icon,
             color: color,
-            size: 20,
+            size: 30,
           ),
           title: Text(
             title,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 14,
               color: Colors.white,
             ),
           ),
-          subtitle: Text(
-            content,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.white,
-            ),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                content,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 4), // Spacing between content and date/time
+              Text(
+                "$date $time", // Displaying date and time
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.white.withOpacity(0.7),
+                ),
+              ),
+            ],
           ),
-          isThreeLine: false,
+          isThreeLine: true, // Set to true to accommodate the additional line
           dense: true,
         ),
       ),

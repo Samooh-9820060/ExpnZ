@@ -8,8 +8,8 @@ import 'CategoriesDB.dart';
 import 'TransactionsDB.dart';
 
 class DatabaseHelper {
-  static final _databaseName = "ExpnzDatabase.db";
-  static final _databaseVersion = 1;
+  static const  _databaseName = "ExpnzDatabase.db";
+  static const _databaseVersion = 1;
 
   // make this a singleton class
   DatabaseHelper._privateConstructor();
@@ -86,6 +86,8 @@ class DatabaseHelper {
     await db.execute('''
     CREATE TABLE ${TempTransactionsDB.tableName} (
       ${TempTransactionsDB.columnId} INTEGER PRIMARY KEY,
+      ${TempTransactionsDB.columnTitle} TEXT NOT NULL,
+      ${TempTransactionsDB.columnContent} TEXT NOT NULL,
       ${TempTransactionsDB.columnType} TEXT,
       ${TempTransactionsDB.columnName} TEXT, 
       ${TempTransactionsDB.columnDescription} TEXT, 

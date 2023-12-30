@@ -13,14 +13,14 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     // Set the status bar color
     SystemChrome.setSystemUIOverlayStyle(
-      SystemUiOverlayStyle(
+      const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent, // transparent status bar
         statusBarIconBrightness: Brightness.light,
       ),
     );
 
     return Container(
-      padding: EdgeInsets.all(8.0),
+      padding: const EdgeInsets.all(8.0),
       decoration: BoxDecoration(
         color: Colors.blueGrey[900],
       ),
@@ -29,30 +29,30 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         elevation: 0,
         titleSpacing: 50,
         title: Transform.translate(
-          offset: Offset(0, -5),  // Move title upwards by 5 units
+          offset: const Offset(0, -5),  // Move title upwards by 5 units
           child: Text(
             title,
-            style: TextStyle(color: Colors.white),
+            style: const TextStyle(color: Colors.white),
           ),
         ),
         actions: [
           // In CustomAppBar
           Transform.translate(
-            offset: Offset(0, -5),  // Move icon upwards by 5 units
+            offset: const Offset(0, -5),  // Move icon upwards by 5 units
             child: IconButton(
-              icon: Icon(Icons.search, color: Colors.white),
+              icon: const Icon(Icons.search, color: Colors.white),
               onPressed: () {
                 Navigator.push(
                   context,
                   PageRouteBuilder(
-                    transitionDuration: Duration(milliseconds: 500),
+                    transitionDuration: const Duration(milliseconds: 500),
                     pageBuilder: (BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation) {
                       return SearchScreen();
                     },
                     transitionsBuilder: (BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation, Widget child) {
                       return SlideTransition(
                         position: Tween<Offset>(
-                          begin: Offset(1.0, 0.0),
+                          begin: const Offset(1.0, 0.0),
                           end: Offset.zero,
                         ).animate(animation),
                         child: child,
@@ -69,5 +69,5 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 
   @override
-  Size get preferredSize => Size.fromHeight(kToolbarHeight);
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 }

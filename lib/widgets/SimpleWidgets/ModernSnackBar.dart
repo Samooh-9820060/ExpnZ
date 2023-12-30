@@ -39,16 +39,16 @@ class ModernSnackBar extends StatelessWidget {
               BoxShadow(
                 color: Colors.black.withOpacity(0.6),
                 blurRadius: 15,
-                offset: Offset(0, 5),
+                offset: const Offset(0, 5),
               ),
             ],
           ),
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Center(
               child: Text(
                 message,
-                style: TextStyle(
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -82,7 +82,7 @@ Future<void> showModernSnackBar({
       },
     ),
   );
-  Overlay.of(context)!.insert(overlayEntry);
+  Overlay.of(context).insert(overlayEntry);
   await Future.delayed(Duration(seconds: durationSeconds));
   if (!completer.isCompleted) {
     overlayEntry.remove();

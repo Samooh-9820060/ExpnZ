@@ -54,7 +54,9 @@ class AppNotificationListener {
           String time = timeStamp != null ? "${timeStamp.hour}:${timeStamp.minute}:${timeStamp.second}" : "";
 
           Map<String, dynamic> row = {
-            TempTransactionsDB.columnType: TransactionType.income,
+            TempTransactionsDB.columnTitle: event.title,
+            TempTransactionsDB.columnContent: event.message,
+            TempTransactionsDB.columnType: TransactionType.income.toString().split('.').last,
             TempTransactionsDB.columnName: senderName,
             TempTransactionsDB.columnAmount: double.tryParse(amountReceived) ?? 0.0,
             TempTransactionsDB.columnDate: date,
@@ -82,7 +84,9 @@ class AppNotificationListener {
           String time = timeStamp != null ? "${timeStamp.hour}:${timeStamp.minute}:${timeStamp.second}" : "";
 
           Map<String, dynamic> row = {
-            TempTransactionsDB.columnType: TransactionType.expense,
+            TempTransactionsDB.columnTitle: event.title,
+            TempTransactionsDB.columnContent: event.message,
+            TempTransactionsDB.columnType: TransactionType.expense.toString().split('.').last,
             TempTransactionsDB.columnName: senderName,
             TempTransactionsDB.columnAmount: double.tryParse(amountSent) ?? 0.0,
             TempTransactionsDB.columnDate: date,
@@ -111,7 +115,9 @@ class AppNotificationListener {
 
 
           Map<String, dynamic> row = {
-            TempTransactionsDB.columnType: TransactionType.expense,
+            TempTransactionsDB.columnTitle: 'Card Transaction',
+            TempTransactionsDB.columnContent: event.message,
+            TempTransactionsDB.columnType: TransactionType.expense.toString().split('.').last,
             TempTransactionsDB.columnName: placeName,
             TempTransactionsDB.columnAmount: double.tryParse(amount) ?? 0.0,
             TempTransactionsDB.columnDate: date,

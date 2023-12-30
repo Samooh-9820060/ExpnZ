@@ -1,15 +1,15 @@
 import 'DatabaseHelper.dart';
 
 class CategoriesDB {
-  static final tableName = 'categories';
-  static final columnId = '_id';
-  static final columnName = 'name';
-  static final columnDescription = 'description';
-  static final columnColor = 'color';
-  static final columnIconCodePoint = 'iconCodePoint';
-  static final columnIconFontFamily = 'iconFontFamily';
-  static final columnIconFontPackage = 'iconFontPackage';
-  static final columnSelectedImageBlob = 'selectedImageBlob';
+  static const  tableName = 'categories';
+  static const columnId = '_id';
+  static const columnName = 'name';
+  static const columnDescription = 'description';
+  static const columnColor = 'color';
+  static const columnIconCodePoint = 'iconCodePoint';
+  static const columnIconFontFamily = 'iconFontFamily';
+  static const columnIconFontPackage = 'iconFontPackage';
+  static const columnSelectedImageBlob = 'selectedImageBlob';
 
   Future<void> deleteAllCategories() async {
     final db = await DatabaseHelper.instance.database;

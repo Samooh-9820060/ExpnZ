@@ -91,7 +91,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     _cancelOngoingFiltering = true;
 
     // Delay to ensure any ongoing operation has time to stop
-    Future.delayed(Duration(milliseconds: 100), () {
+    Future.delayed(const Duration(milliseconds: 100), () {
       // Reset the flag and start new filtering
       _cancelOngoingFiltering = false;
       _performFiltering(searchText);
@@ -178,22 +178,22 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
               ),
               child: Container(
                 height: MediaQuery.of(context).size.height * 0.7,
-                margin: EdgeInsets.all(10),
+                margin: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: Colors.blueGrey,
                   borderRadius: BorderRadius.circular(40),
                 ),
                 child: Padding(
-                  padding: EdgeInsets.all(20.0),
+                  padding: const EdgeInsets.all(20.0),
                   child: SingleChildScrollView(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        SizedBox(height: 20),
-                        Center(child: Text("Filter Conditions", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold))),
-                        SizedBox(height: 40),
-                        Text("Select Date Range", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                        SizedBox(height: 20),
+                        const SizedBox(height: 20),
+                        const Center(child: Text("Filter Conditions", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold))),
+                        const SizedBox(height: 40),
+                        const Text("Select Date Range", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 20),
                         SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
                           child: Row(
@@ -216,11 +216,11 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                                 },
                                 borderRadius: BorderRadius.circular(50),
                                 child: Container(
-                                  padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                                   decoration: BoxDecoration(
                                     color: Colors.blueGrey[700],
                                     borderRadius: BorderRadius.circular(50),
-                                    boxShadow: [
+                                    boxShadow: const [
                                       BoxShadow(
                                         color: Colors.black12,
                                         blurRadius: 10,
@@ -230,11 +230,11 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                                   ),
                                   child: Row(
                                     children: [
-                                      Icon(Icons.calendar_today, color: Colors.white),
-                                      SizedBox(width: 5),
+                                      const Icon(Icons.calendar_today, color: Colors.white),
+                                      const SizedBox(width: 5),
                                       Text(
                                         DateFormat('yyyy-MM-dd').format(selectedFromDate),  // Replace 'selectedFromDate' with your variable
-                                        style: TextStyle(
+                                        style: const TextStyle(
                                           color: Colors.white,
                                           fontWeight: FontWeight.bold,
                                         ),
@@ -261,11 +261,11 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                                 },
                                 borderRadius: BorderRadius.circular(50),
                                 child: Container(
-                                  padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                                   decoration: BoxDecoration(
                                     color: Colors.blueGrey[700],
                                     borderRadius: BorderRadius.circular(50),
-                                    boxShadow: [
+                                    boxShadow: const [
                                       BoxShadow(
                                         color: Colors.black12,
                                         blurRadius: 10,
@@ -275,11 +275,11 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                                   ),
                                   child: Row(
                                     children: [
-                                      Icon(Icons.calendar_today, color: Colors.white),
-                                      SizedBox(width: 8),
+                                      const Icon(Icons.calendar_today, color: Colors.white),
+                                      const SizedBox(width: 8),
                                       Text(
                                         DateFormat('yyyy-MM-dd').format(selectedToDate),  // Replace 'selectedToDate' with your variable
-                                        style: TextStyle(
+                                        style: const TextStyle(
                                           color: Colors.white,
                                           fontWeight: FontWeight.bold,
                                         ),
@@ -292,13 +292,13 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                           ),
                         ),
                         // Account selection
-                        SizedBox(height: 20),
+                        const SizedBox(height: 20),
                         Builder(
                           builder: (context) {
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
+                                const Text(
                                   'Select Accounts To Include In Search',
                                   style: TextStyle(
                                     color: Colors.white,
@@ -310,7 +310,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                                   child: Consumer<AccountsModel>(
                                     builder: (context, accountsModel, child) {
                                       if (accountsModel.accounts.isEmpty) {
-                                        return Center(
+                                        return const Center(
                                           child: Text('No accounts available.'),
                                         );
                                       } else {

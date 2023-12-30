@@ -29,7 +29,7 @@ class ExpnZButton extends StatelessWidget {
       ),
       style: ButtonStyle(
         backgroundColor: MaterialStateProperty.all(primaryColor),
-        padding: MaterialStateProperty.all(EdgeInsets.symmetric(horizontal: 50, vertical: 20)),
+        padding: MaterialStateProperty.all(const EdgeInsets.symmetric(horizontal: 50, vertical: 20)),
         textStyle: MaterialStateProperty.all(TextStyle(fontSize: fontSize, fontWeight: FontWeight.bold)),
         elevation: MaterialStateProperty.all(5),
         shape: MaterialStateProperty.all(

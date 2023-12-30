@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:currency_picker/currency_picker.dart';
+import 'package:expnz/database/TempTransactionsDB.dart';
 import 'package:flutter/material.dart';
-import 'package:notifications/notifications.dart';
 import 'package:provider/provider.dart';
 
 import '../database/AccountsDB.dart';
@@ -197,14 +197,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      const Text(
                         'Samooh Moosa',
                         style: TextStyle(
                             fontSize: 25, // Reduced font size
                             fontWeight: FontWeight.bold,
                             color: Colors.white),
                       ),
-                      SizedBox(height: 10),
+                      const SizedBox(height: 10),
                       Text(
                         'Welcome Back!',
                         style: TextStyle(
@@ -220,9 +220,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               // Animated Balance Card
               FinanceCard(
                 cardController: _cardController,
-                totalBalance: financialData!['balance'].toString(),
-                income: financialData!['income'].toString(),
-                expense: financialData!['expense'].toString(),
+                totalBalance: financialData['balance'].toString(),
+                income: financialData['income'].toString(),
+                expense: financialData['expense'].toString(),
                 optionalIcon: Icons.credit_card,
                 currencyMap: currencyMap,
                 currencyCodes: currencyCodes,
@@ -231,7 +231,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 },
               ),
 
-              SizedBox(height: 10), // Add some space below the card
+              const SizedBox(height: 10), // Add some space below the card
 
               AnimatedBuilder(
                 animation: _nameController,
@@ -244,8 +244,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                   );
                 },
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(30.0, 0.0, 0.0, 0.0),
+                child: const Padding(
+                  padding: EdgeInsets.fromLTRB(30.0, 0.0, 0.0, 0.0),
                   child: Text(
                     'This Month',
                     style: TextStyle(
@@ -276,9 +276,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       child: SummaryMonthCardWidget(
                         width: cardWidth,
                         title: 'Income',
-                        total: financialData!['periodIncome'].toString(),
+                        total: financialData['periodIncome'].toString(),
                         currencyMap: currencyMap,
-                        data: financialData!['graphDataIncome'],
+                        data: financialData['graphDataIncome'],
                         graphLineColor: Colors.green,
                         iconData: Icons.arrow_upward,
                       ),
@@ -300,9 +300,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       child: SummaryMonthCardWidget(
                         width: cardWidth,
                         title: 'Expense',
-                        total: financialData!['periodExpense'].toString(),
+                        total: financialData['periodExpense'].toString(),
                         currencyMap: currencyMap,
-                        data: financialData!['graphDataExpense'],
+                        data: financialData['graphDataExpense'],
                         graphLineColor: Colors.red,
                         iconData: Icons.arrow_downward,
                       ),
@@ -310,68 +310,68 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ],
                 ),
               ),
-              SizedBox(height: 10),
-              AnimatedBuilder(
-                animation: _nameController,
-                builder: (context, child) {
-                  return Transform.translate(
-                    offset: Offset(-300 * (1 - _nameController.value), 0),
-                    child: Opacity(
-                      opacity: _nameController.value,
-                      child: child,
-                    ),
-                  );
-                },
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(30.0, 0.0, 0.0, 0.0),
-                  child: Text(
-                    'Notifications',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               // Animated Notifications Section
               AnimatedBuilder(
                 animation: _notificationCardController,
                 builder: (context, child) {
                   return Transform.translate(
-                    offset: Offset(
-                        0, 300 * (1 - _notificationCardController.value)),
+                    offset: Offset(0, 300 * (1 - _notificationCardController.value)),
                     child: Opacity(
                       opacity: _notificationCardController.value,
                       child: child,
                     ),
                   );
                 },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  // Left and Right Padding
-                  child: Column(
-                    children: [
-                      NotificationCard(
-                        title: "Large Transaction Alert",
-                        content:
-                            "A transaction of \$500 was made at ABC Store.",
-                        icon: Icons.warning_amber_outlined,
-                        color: Colors.orange,
-                      ),
-                      NotificationCard(
-                        title: "Bill Due Soon",
-                        content:
-                            "Your electricity bill of \$120 is due in 3 days.",
-                        icon: Icons.calendar_today_outlined,
-                        color: Colors.blue,
-                      ),
-                    ],
-                  ),
+                child: FutureBuilder<List<Map<String, dynamic>>>(
+                  future: TempTransactionsDB().getAllTransaction(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const CircularProgressIndicator(); // Show loading indicator
+                    } else if (snapshot.hasError) {
+                      return Text('Error: ${snapshot.error}');
+                    } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                      // If data is present and not empty, show heading and notifications
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.fromLTRB(30.0, 0.0, 0.0, 0.0),
+                            child: Text(
+                              'Notifications',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                            child: Column(
+                              children: snapshot.data!.map((transaction) {
+                                return NotificationCard(
+                                  title: transaction[TempTransactionsDB.columnTitle] ?? 'No Title',
+                                  content: transaction[TempTransactionsDB.columnContent] ?? 'No Content',
+                                  icon: getIconBasedOnType(transaction[TempTransactionsDB.columnType]),
+                                  color: getColorBasedOnType(transaction[TempTransactionsDB.columnType]),
+                                  date: transaction[TempTransactionsDB.columnDate] ?? '',
+                                  time: transaction[TempTransactionsDB.columnTime] ?? '',
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                        ],
+                      );
+                    } else {
+                      // If no data or empty data, return an empty container or a suitable widget
+                      return Container();
+                    }
+                  },
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.only(
+              const Padding(
+                padding: EdgeInsets.only(
                     bottom: 80.0), // Add 60.0 or whatever value that suits you
               ),
             ],
@@ -380,7 +380,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       );
     } else {
       // Show loading or empty state
-      return Center(child: CircularProgressIndicator());
+      return const Center(child: CircularProgressIndicator());
     }
   }
 
@@ -402,7 +402,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     DateTime now = DateTime.now();
     startDate ??= DateTime(now.year, now.month, 1);
     DateTime firstDayNextMonth = DateTime(now.year, now.month + 1, 1);
-    endDate ??= firstDayNextMonth.subtract(Duration(days: 1));
+    endDate ??= firstDayNextMonth.subtract(const Duration(days: 1));
 
     double totalIncome =
         await transactionsModel.getTotalIncomeForCurrency(currencyCode);
@@ -459,4 +459,29 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       'graphDataExpense': graphDataExpense,
     };
   }
+
+IconData getIconBasedOnType(String? type) {
+  // Logic to return an icon based on the transaction type
+  switch (type) {
+    case 'income':
+      return Icons.arrow_upward; // Replace with actual icon
+    case 'expense':
+      return Icons.arrow_downward;
+  // Add more cases as needed
+    default:
+      return Icons.question_mark; // Replace with a default icon
+  }
+}
+
+Color getColorBasedOnType(String? type) {
+  // Logic to return a color based on the transaction type
+  switch (type) {
+    case 'income':
+      return Colors.green;
+    case 'expense':
+      return Colors.red;
+    default:
+      return Colors.yellow; // Replace with a default color
+  }
+}
 }

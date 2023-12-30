@@ -28,14 +28,14 @@ class CustomTextField extends StatelessWidget {
               color: Colors.black.withOpacity(0.2),
               spreadRadius: 1,
               blurRadius: 7,
-              offset: Offset(0, 3),
+              offset: const Offset(0, 3),
             ),
           ],
         ),
         child: TextField(
           controller: controller,
           maxLength: maxLength,
-          style: TextStyle(
+          style: const TextStyle(
             color: Colors.white,
             fontSize: 18,
           ),
@@ -43,7 +43,7 @@ class CustomTextField extends StatelessWidget {
           decoration: InputDecoration(
             counterText: "",
             labelText: label,
-            labelStyle: TextStyle(
+            labelStyle: const TextStyle(
               color: Colors.white,
               fontSize: 16,
             ),
@@ -56,11 +56,11 @@ class CustomTextField extends StatelessWidget {
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(25),
-              borderSide: BorderSide(
+              borderSide: const BorderSide(
                 color: Colors.transparent,
               ),
             ),
-            contentPadding: EdgeInsets.all(20),
+            contentPadding: const EdgeInsets.all(20),
           ),
         ),
       ),

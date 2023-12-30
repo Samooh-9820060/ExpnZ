@@ -1,8 +1,6 @@
 import 'package:expnz/models/TransactionsModel.dart';
-import 'package:expnz/utils/NotificationListener.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import './screens/MainPage.dart';
 import 'models/AccountsModel.dart';
 import 'models/CategoriesModel.dart';
@@ -53,8 +51,8 @@ class MyApp extends StatelessWidget {
 
         dialogTheme: DialogTheme(
           backgroundColor: Colors.grey[900],
-          titleTextStyle: TextStyle(color: Colors.white, fontSize: 20),
-          contentTextStyle: TextStyle(color: Colors.white),
+          titleTextStyle: const TextStyle(color: Colors.white, fontSize: 20),
+          contentTextStyle: const TextStyle(color: Colors.white),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
@@ -65,11 +63,11 @@ class MyApp extends StatelessWidget {
             borderRadius: BorderRadius.circular(20),
           ),
           focusedBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: Colors.blueAccent, width: 2),
+            borderSide: const BorderSide(color: Colors.blueAccent, width: 2),
             borderRadius: BorderRadius.circular(20),
           ),
-          labelStyle: TextStyle(color: Colors.white),
-          hintStyle: TextStyle(color: Colors.grey),
+          labelStyle: const TextStyle(color: Colors.white),
+          hintStyle: const TextStyle(color: Colors.grey),
         ),
       ),
 
