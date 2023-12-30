@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../database/AccountsDB.dart';
+import '../database/TempTransactionsDB.dart';
 import '../database/TransactionsDB.dart';
 import '../models/CategoriesModel.dart';
 import '../models/TransactionsModel.dart';
@@ -17,10 +18,11 @@ import '../widgets/SimpleWidgets/ModernSnackBar.dart';
 enum TransactionType { income, expense, transfer }
 
 class AddTransactionScreen extends StatefulWidget {
+  final Map<String, dynamic>? transaction; // Nullable named parameter
+  final int? tempTransactionId; // New nullable named parameter
 
-  Map<String, dynamic>? transaction;
-
-  AddTransactionScreen({this.transaction});
+  // Constructor with named parameters
+  AddTransactionScreen({this.transaction, this.tempTransactionId});
 
   @override
   _AddTransactionScreenState createState() => _AddTransactionScreenState();
@@ -42,6 +44,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
   bool _showDropdown = false;
   bool isProcessing = false;
   bool updateMode = false;
+  bool tempAdding = false;
 
   List<Map<String, dynamic>> filteredCategories = [];
   List<Map<String, dynamic>> selectedCategoriesList = [];
@@ -63,6 +66,30 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
     Provider.of<AccountsModel>(context, listen: false).fetchAccounts();
     Provider.of<CategoriesModel>(context, listen: false).fetchCategories();
     if (widget.transaction != null) { updateMode = true; loadTransactionData(); }
+    if (widget.tempTransactionId != null) { tempAdding = true; loadTempTransactionData(); }
+  }
+
+  Future<void> loadTempTransactionData() async {
+    final tempTransactionData = await TempTransactionsDB().getSelectedTransaction(widget.tempTransactionId!);
+    if (tempTransactionData != null) {
+      setState(() {
+        if (tempTransactionData[TempTransactionsDB.columnType] == 'expense') {
+          _selectedType = TransactionType.expense;
+        } else if (tempTransactionData[TempTransactionsDB.columnType] == 'income') {
+          _selectedType = TransactionType.income;
+        }
+        _nameController.text = tempTransactionData[TempTransactionsDB.columnName] ?? '';
+        _descriptionController.text = tempTransactionData[TempTransactionsDB.columnDescription] ?? '';
+        _amountController.text = tempTransactionData[TempTransactionsDB.columnAmount].toString() ?? '';
+        if (tempTransactionData[TempTransactionsDB.columnDate] != null && tempTransactionData[TempTransactionsDB.columnTime] != null) {
+          final String date = tempTransactionData[TempTransactionsDB.columnDate];
+          final String time = tempTransactionData[TempTransactionsDB.columnTime];
+          DateTime completeDateTime = DateTime.parse("$date $time");
+          selectedDate = DateTime.parse(tempTransactionData[TempTransactionsDB.columnDate]);
+          selectedTime = TimeOfDay.fromDateTime(completeDateTime);
+        }
+      });
+    }
   }
 
   void loadTransactionData() {
@@ -443,7 +470,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
           leading: BackButton(
             color: Colors.white,
             onPressed: () {
-              Navigator.pop(context, true);
+              Navigator.pop(context, false);
             },
           ),
           title: Text(

@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:currency_picker/currency_picker.dart';
 import 'package:expnz/database/TempTransactionsDB.dart';
+import 'package:expnz/screens/AddTransaction.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -357,6 +358,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   color: getColorBasedOnType(transaction[TempTransactionsDB.columnType]),
                                   date: transaction[TempTransactionsDB.columnDate] ?? '',
                                   time: transaction[TempTransactionsDB.columnTime] ?? '',
+                                  transactionId: transaction[TempTransactionsDB.columnId], // set this appropriately
+                                  onTap: (int transactionId) async {
+                                    await _handleNotificationCardClick(transactionId);
+                                  },
                                 );
                               }).toList(),
                             ),
@@ -484,4 +489,16 @@ Color getColorBasedOnType(String? type) {
       return Colors.yellow; // Replace with a default color
   }
 }
+  Future<void> _handleNotificationCardClick(int transactionId) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddTransactionScreen(tempTransactionId: transactionId),
+      ),
+    );
+
+    if (result != null && result == true) {
+      TempTransactionsDB().deleteTransaction(transactionId);
+    }
+  }
 }
