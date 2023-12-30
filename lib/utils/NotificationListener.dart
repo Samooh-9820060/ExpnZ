@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'package:notifications/notifications.dart';
 
+import '../database/TempTransactionsDB.dart';
+
+enum TransactionType { income, expense, transfer }
 class AppNotificationListener {
   Notifications? _notifications;
   StreamSubscription<NotificationEvent>? _subscription;
@@ -35,6 +38,64 @@ class AppNotificationListener {
 
       print(event);
 
+      TempTransactionsDB tempTransDB = TempTransactionsDB();
+
+      //BML Funds Received Notification
+      if (event.packageName == "mv.com.bml.mib" && event.title == "Funds Received") {
+        final match = BMLFundsReceivedRegex.firstMatch(event.message ?? "");
+        print("Funds Received");
+        print(match);
+        if (match != null) {
+          String amountReceived = match.group(1) ?? "";
+          String senderName = match.group(2) ?? "";
+          String accountNumber = match.group(3) ?? "";
+          DateTime? timeStamp = event.timeStamp;
+          String date = timeStamp != null ? "${timeStamp.year}-${timeStamp.month}-${timeStamp.day}" : "";
+          String time = timeStamp != null ? "${timeStamp.hour}:${timeStamp.minute}:${timeStamp.second}" : "";
+
+          Map<String, dynamic> row = {
+            TempTransactionsDB.columnType: TransactionType.income,
+            TempTransactionsDB.columnName: senderName,
+            TempTransactionsDB.columnAmount: double.tryParse(amountReceived) ?? 0.0,
+            TempTransactionsDB.columnDate: date,
+            TempTransactionsDB.columnTime: time,
+            TempTransactionsDB.columnDescription: accountNumber,
+          };
+
+          // Insert the transaction into the database
+          tempTransDB.insertTransaction(row);
+          print("Amount Received: $amountReceived, Sender: $senderName, Account Number: $accountNumber, Date: $date, Time: $time");
+        }
+      }
+
+      //BML Funds Transferred Notification
+      if (event.packageName == "mv.com.bml.mib" && event.title == "Funds Transferred") {
+        final match = BMLFundsTransferredRegex.firstMatch(event.message ?? "");
+        print("Funds Transferred");
+        print(match);
+        if (match != null) {
+          String amountSent = match.group(1) ?? "";
+          String accountNumber = match.group(2) ?? "";
+          String senderName = match.group(3) ?? "";
+          DateTime? timeStamp = event.timeStamp;
+          String date = timeStamp != null ? "${timeStamp.year}-${timeStamp.month}-${timeStamp.day}" : "";
+          String time = timeStamp != null ? "${timeStamp.hour}:${timeStamp.minute}:${timeStamp.second}" : "";
+
+          Map<String, dynamic> row = {
+            TempTransactionsDB.columnType: TransactionType.expense,
+            TempTransactionsDB.columnName: senderName,
+            TempTransactionsDB.columnAmount: double.tryParse(amountSent) ?? 0.0,
+            TempTransactionsDB.columnDate: date,
+            TempTransactionsDB.columnTime: time,
+            TempTransactionsDB.columnDescription: accountNumber,
+          };
+
+          // Insert the transaction into the database
+          tempTransDB.insertTransaction(row);
+          print("Amount Received: $amountSent, Sender: $senderName, Account Number: $accountNumber, Date: $date, Time: $time");
+        }
+      }
+
       if (event.packageName == "com.google.android.apps.messaging" &&
           (event.title == "455" || event.title == "+455")) {
         final match = transactionRegex.firstMatch(event.message ?? "");
@@ -48,10 +109,21 @@ class AppNotificationListener {
           String referenceNo = match.group(6) ?? "";
           String approvalCode = match.group(7) ?? "";
 
+
+          Map<String, dynamic> row = {
+            TempTransactionsDB.columnType: TransactionType.expense,
+            TempTransactionsDB.columnName: placeName,
+            TempTransactionsDB.columnAmount: double.tryParse(amount) ?? 0.0,
+            TempTransactionsDB.columnDate: date,
+            TempTransactionsDB.columnTime: time,
+            TempTransactionsDB.columnDescription: "$referenceNo - $approvalCode",
+            TempTransactionsDB.columnCardDigits: cardDigits,
+          };
+
+          // Insert the transaction into the database
+          tempTransDB.insertTransaction(row);
           // Now you can use these extracted details
           print("Card Digits: $cardDigits, Date: $date, Time: $time, Amount: $amount, Place: $placeName, Reference No: $referenceNo, Approval Code: $approvalCode");
-
-          // Additional processing like adding to a database can be done here
         }
       }
     }
@@ -62,5 +134,10 @@ class AppNotificationListener {
   final RegExp transactionRegex = RegExp(
       r"Transaction from (\d{4}) on (\d{2}/\d{2}/\d{2}) at (\d{2}:\d{2}:\d{2}) for MVR(\d+\.\d{2}) at ([^ ]+) was processed\. Reference No: (\d+), Approval Code:(\d+)"
   );
-
+  final RegExp BMLFundsReceivedRegex = RegExp(
+      r"You have received MVR (\d+\.\d{2}) from ([A-Z .]+) to (\d+\*\d+)"
+  );
+  final RegExp BMLFundsTransferredRegex = RegExp(
+      r"You have sent MVR (\d+\.\d{2}) from (\d+\*\d+) to ([A-Z .]+)"
+  );
 }

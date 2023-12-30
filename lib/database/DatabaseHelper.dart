@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:expnz/database/AccountsDB.dart';
+import 'package:expnz/database/TempTransactionsDB.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
@@ -32,6 +33,7 @@ class DatabaseHelper {
     await _createCategoriesTable(db); // creating the Categories table
     await _createAccountsTable(db); // creating the Accounts table
     await _createTransactionsTable(db); // creating the transactions table
+    await _createTempTransactionsTable(db);
   }
 
   Future _createAccountsTable(Database db) async {
@@ -77,6 +79,24 @@ class DatabaseHelper {
           ${TransactionsDB.columnCategories} TEXT NOT NULL,
           FOREIGN KEY (${TransactionsDB.columnAccountId}) REFERENCES ${AccountsDB.tableName}(${AccountsDB.accountId})
         )
+  ''');
+  }
+
+  Future _createTempTransactionsTable(Database db) async {
+    await db.execute('''
+    CREATE TABLE ${TempTransactionsDB.tableName} (
+      ${TempTransactionsDB.columnId} INTEGER PRIMARY KEY,
+      ${TempTransactionsDB.columnType} TEXT,
+      ${TempTransactionsDB.columnName} TEXT, 
+      ${TempTransactionsDB.columnDescription} TEXT, 
+      ${TempTransactionsDB.columnAmount} REAL,
+      ${TempTransactionsDB.columnDate} TEXT,
+      ${TempTransactionsDB.columnTime} TEXT,
+      ${TempTransactionsDB.columnAccountId} INTEGER,
+      ${TempTransactionsDB.columnCategories} TEXT,
+      ${TempTransactionsDB.columnCardDigits} TEXT,
+      FOREIGN KEY (${TempTransactionsDB.columnAccountId}) REFERENCES ${AccountsDB.tableName}(${AccountsDB.accountId})
+    )
   ''');
   }
 }
