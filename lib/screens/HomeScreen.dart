@@ -382,7 +382,31 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
         ),
       );
-    } else {
+    } else if (accountsModel.accounts.isEmpty) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.account_balance,
+              color: Colors.grey,
+              size: 64,
+            ),
+            SizedBox(height: 16),
+            Text(
+              'No info available.',
+              style: TextStyle(
+                color: Colors.grey,
+                fontSize: 20,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    else {
       // Show loading or empty state
       return const Center(child: CircularProgressIndicator());
     }
