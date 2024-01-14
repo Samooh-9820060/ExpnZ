@@ -38,7 +38,7 @@ class TempTransactionsDB {
     ];
 
     for (var row in tempData) {
-      await insertTransaction(row);
+      //await insertTransaction(row);
     }
   }
 

@@ -460,8 +460,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
 
     return WillPopScope(
       onWillPop: () async {
-        Navigator.pop(context, true);
-        return true;
+        Navigator.pop(context, false);
+        return false;
       },
       child: Scaffold(
         backgroundColor: Colors.blueGrey[900],

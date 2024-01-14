@@ -352,6 +352,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 },
                 child: Consumer<TempTransactionsModel>(  // Using Consumer
                   builder: (context, tempTransactionsModel, child) {
+                    tempTransactionsModel.fetchTransactions();
                     if (tempTransactionsModel.transactions.isEmpty) {
                       return Container();  // If no data or empty data
                     }
@@ -545,7 +546,7 @@ Color getColorBasedOnType(String? type) {
       ),
     );
 
-    if (result != null && result == true) {
+    if (result == true) {
       Provider.of<TempTransactionsModel>(context,
           listen: false)
           .deleteTransactions(
