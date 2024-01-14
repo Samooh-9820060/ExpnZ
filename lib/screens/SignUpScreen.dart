@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:expnz/screens/SignInScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -11,6 +12,8 @@ class _SignUpScreenState extends State<SignUpScreen> with SingleTickerProviderSt
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _nameController = TextEditingController(); // Name field controller
+  final _mobileNumberController = TextEditingController(); // Mobile Number field controller
   late AnimationController _animationController;
   late Animation<double> _animation;
 
@@ -29,8 +32,8 @@ class _SignUpScreenState extends State<SignUpScreen> with SingleTickerProviderSt
   }
 
   Future<void> signUpWithEmailAndPassword() async {
-    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
-      _showErrorDialog("Email and password cannot be empty");
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty || _nameController.text.isEmpty) {
+      _showErrorDialog("Name, Email and password cannot be empty");
       return;
     }
     else if (_passwordController.text == _confirmPasswordController.text) {
@@ -38,8 +41,21 @@ class _SignUpScreenState extends State<SignUpScreen> with SingleTickerProviderSt
         final UserCredential userCredential = await FirebaseAuth.instance
             .createUserWithEmailAndPassword(
             email: _emailController.text, password: _passwordController.text);
-        // Navigate to the sign-in screen if successful
-        Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => SignInScreen()));
+
+        // User successfully registered, now insert details into Firestore
+        final uid = userCredential.user?.uid;
+        if (uid != null) {
+          await FirebaseFirestore.instance.collection('users').doc(uid).set({
+            'name': _nameController.text,
+            'phoneNumber': _mobileNumberController.text,
+            // Add other user details here as needed
+          });
+
+          // Navigate to the sign-in screen if Firestore insertion is successful
+          Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => SignInScreen()));
+        } else {
+          _showErrorDialog("An error occurred while registering.");
+        }
       } on FirebaseAuthException catch (e) {
         // Handle Firebase Auth error
         _showErrorDialog(e.message ?? "An error occurred");
@@ -117,6 +133,41 @@ class _SignUpScreenState extends State<SignUpScreen> with SingleTickerProviderSt
                   },
                 ),
                 SizedBox(height: 50),
+
+                // Name TextField
+                TextField(
+                  controller: _nameController,
+                  decoration: InputDecoration(
+                    labelText: 'You Name',
+                    labelStyle: TextStyle(color: Colors.white),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.blueAccent),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.green),
+                    ),
+                  ),
+                  style: TextStyle(color: Colors.white),
+                ),
+                SizedBox(height: 20),
+
+                // Phone TextField
+                TextField(
+                  controller: _mobileNumberController,
+                  decoration: InputDecoration(
+                    labelText: 'Phone Number',
+                    labelStyle: TextStyle(color: Colors.white),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.blueAccent),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.green),
+                    ),
+                  ),
+                  style: TextStyle(color: Colors.white),
+                  keyboardType: TextInputType.number,
+                ),
+                SizedBox(height: 20),
 
                 // Email TextField
                 TextField(

@@ -1,5 +1,7 @@
 import 'package:expnz/screens/HomeScreen.dart';
 import 'package:expnz/screens/SettingsScreen.dart';
+import 'package:expnz/screens/SignInScreen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
@@ -14,6 +16,16 @@ class MenuDrawer extends StatefulWidget {
 
 class _MenuDrawerState extends State<MenuDrawer> {
   bool isDarkMode = false;
+
+  Future<void> _signOut() async {
+    try {
+      await FirebaseAuth.instance.signOut();
+      // Navigate to the HomeScreen or any other screen after successful logout
+      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => SignInScreen()));
+    } catch (e) {
+      print("Error while logging out: $e");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,25 +51,24 @@ class _MenuDrawerState extends State<MenuDrawer> {
             SizedBox(height: 40),
             menuGroup([
               //menuItem(Icons.home, "Home", context, HomeScreen()),
-              menuItem(Icons.person, "My Profile", context, HomeScreen()),
+              menuItem(Icons.person, "My Profile", context, targetPage: HomeScreen()),
             ]),
             menuGroup([
-              menuItem(Icons.settings, "Settings", context, SettingsScreen()),
-              menuItem(Icons.help, "Help & Support", context, HomeScreen()),
-              menuItem(Icons.notifications, "Notifications", context, HomeScreen()),
+              menuItem(Icons.settings, "Settings", context, targetPage: SettingsScreen()),
+              menuItem(Icons.help, "Help & Support", context, targetPage: HomeScreen()),
+              menuItem(Icons.notifications, "Notifications", context, targetPage: HomeScreen()),
             ]),
             menuGroup([
-              menuItem(Icons.loop, "Recurring Transactions", context, HomeScreen()),
-              menuItem(Icons.group_add, "Invite Friends", context, HomeScreen()),
-              menuItem(Icons.info, "About Us", context, HomeScreen()),
+              menuItem(Icons.loop, "Recurring Transactions", context, targetPage: HomeScreen()),
+              menuItem(Icons.group_add, "Invite Friends", context, targetPage: HomeScreen()),
+              menuItem(Icons.info, "About Us", context, targetPage: HomeScreen()),
             ]),
             menuGroup([
-              menuItem(Icons.exit_to_app, "Logout", context, HomeScreen()),
+              menuItem(Icons.exit_to_app, "Logout", context, targetPage: null, onTap: _signOut),
               menuItem(
                   Icons.brightness_4,
                   "Dark Mode",
                   context,
-                  null,
                   trailing: Transform.scale(
                     scale: 0.8,
                     child: Switch(
@@ -94,7 +105,7 @@ class _MenuDrawerState extends State<MenuDrawer> {
     );
   }
 
-  Widget menuItem(IconData icon, String title, BuildContext context, Widget? targetPage, {Widget? trailing}) {
+  Widget menuItem(IconData icon, String title, BuildContext context, {Widget? targetPage, Widget? trailing, Function()? onTap}) {
     return Align(
       alignment: Alignment.centerLeft,
       child: InkWell(
@@ -118,6 +129,8 @@ class _MenuDrawerState extends State<MenuDrawer> {
                 },
               ),
             );
+          } else {
+            onTap!(); // Call the onTap function
           }
         },
         child: AnimatedContainer(

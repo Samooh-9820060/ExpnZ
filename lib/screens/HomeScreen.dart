@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:currency_picker/currency_picker.dart';
 import 'package:expnz/database/TempTransactionsDB.dart';
 import 'package:expnz/screens/AddTransaction.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -69,10 +71,33 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   };
   Map<String, dynamic> currencyMap = {};
   Set<String> currencyCodes = {};
+  String userName = '';
+
+  // Function to fetch user's name from Firestore
+  void fetchUserName() async {
+    try {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid != null) {
+        final userDoc =
+        await FirebaseFirestore.instance.collection('users').doc(uid).get();
+        if (userDoc.exists) {
+          final userData = userDoc.data() as Map<String, dynamic>;
+          final fetchedName = userData['name'] ?? '';
+          setState(() {
+            userName = fetchedName;
+          });
+        }
+      }
+    } catch (e) {
+      // Handle any errors while fetching the name
+      print(e.toString());
+    }
+  }
 
   @override
   void initState() {
     super.initState();
+    fetchUserName();
     _fetchData();
     _nameController = AnimationController(
       duration: const Duration(milliseconds: 500),
@@ -199,9 +224,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Ahmed Shimaah',
-                        style: TextStyle(
+                      Text(
+                        userName,
+                        style: const TextStyle(
                             fontSize: 25, // Reduced font size
                             fontWeight: FontWeight.bold,
                             color: Colors.white),
