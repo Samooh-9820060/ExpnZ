@@ -1,12 +1,23 @@
 import 'package:expnz/models/TempTransactionsModel.dart';
 import 'package:expnz/models/TransactionsModel.dart';
+import 'package:expnz/screens/SignInScreen.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import './screens/MainPage.dart';
 import 'models/AccountsModel.dart';
 import 'models/CategoriesModel.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: const FirebaseOptions(
+        apiKey: 'AIzaSyBu0WPNfLczhNybs6B-gm5rG-kWGPy2ltM',
+        appId: '1:347008289129:android:e746de7b0fe331b78495f8',
+        messagingSenderId: '347008289129',
+        projectId: 'expnzapp')
+  );
+
   runApp(
     MultiProvider(
       providers: [
@@ -74,7 +85,7 @@ class MyApp extends StatelessWidget {
       ),
 
       debugShowCheckedModeBanner: false,
-      home: HomePage(),
+      home: SignInScreen(),
     );
   }
 }

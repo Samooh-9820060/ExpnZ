@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "347008289129",
+    "project_id": "expnzapp",
+    "storage_bucket": "expnzapp.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:347008289129:android:e746de7b0fe331b78495f8",
+        "android_client_info": {
+          "package_name": "com.techNova.ExpnZ.expnz"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "347008289129-dh5doq0gk5o2moeiomng1t96reu0erdp.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.techNova.ExpnZ.expnz",
+            "certificate_hash": "86637f259ca50c2481661e4fd3bdfafbd90cc3a8"
+          }
+        },
+        {
+          "client_id": "347008289129-hhr85kacbb7vg1fa2ntvdj6udi35s61k.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.techNova.ExpnZ.expnz",
+            "certificate_hash": "23a4bcc45923b67cb2932d9e49500a92569c402d"
+          }
+        },
+        {
+          "client_id": "347008289129-7lia7br2v4so970jh19ibn51bt1k5bu6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBu0WPNfLczhNybs6B-gm5rG-kWGPy2ltM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "347008289129-7lia7br2v4so970jh19ibn51bt1k5bu6.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
