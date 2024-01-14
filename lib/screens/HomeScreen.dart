@@ -200,7 +200,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Samooh Moosa',
+                        'Ahmed Shimaah',
                         style: TextStyle(
                             fontSize: 25, // Reduced font size
                             fontWeight: FontWeight.bold,

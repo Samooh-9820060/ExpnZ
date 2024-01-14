@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'CategoriesDB.dart';
+import 'ProfileDB.dart';
 import 'TransactionsDB.dart';
 
 class DatabaseHelper {
@@ -30,6 +31,7 @@ class DatabaseHelper {
   }
 
   Future _onCreate(Database db, int version) async {
+    await _createProfileTable(db);
     await _createCategoriesTable(db); // creating the Categories table
     await _createAccountsTable(db); // creating the Accounts table
     await _createTransactionsTable(db); // creating the transactions table
@@ -100,5 +102,17 @@ class DatabaseHelper {
       FOREIGN KEY (${TempTransactionsDB.columnAccountId}) REFERENCES ${AccountsDB.tableName}(${AccountsDB.accountId})
     )
   ''');
+  }
+
+  Future _createProfileTable(Database db) async {
+    await db.execute('''
+          CREATE TABLE ${ProfileDB.tableName} (
+            ${ProfileDB.columnId} INTEGER PRIMARY KEY,
+            ${ProfileDB.columnName} TEXT NOT NULL,
+            ${ProfileDB.columnEmail} TEXT NOT NULL,
+            ${ProfileDB.columnProfilePic} BLOB, 
+            ${ProfileDB.columnPhoneNumber} TEXT
+          )
+    ''');
   }
 }
