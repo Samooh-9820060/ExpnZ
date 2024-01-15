@@ -218,13 +218,13 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                     builder: (context) => ChangePasswordScreen(),
                   ));
                 },
-                child: Text('Change Password'),
                 style: ElevatedButton.styleFrom(
                   primary: Colors.blue,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                   ),
                 ),
+                child: const Text('Change Password'),
               ),
             ],
           ),

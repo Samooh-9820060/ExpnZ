@@ -41,8 +41,9 @@ class _SignUpScreenState extends State<SignUpScreen> with SingleTickerProviderSt
           TextButton(
             child: Text('Okay'),
             onPressed: () {
-              Navigator.of(ctx).pop(); // Closes the dialog
-            },
+              // Optionally, navigate to the sign-in screen or a confirmation screen
+              Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => SignInScreen()));
+              },
           ),
         ],
       ),
@@ -75,9 +76,6 @@ class _SignUpScreenState extends State<SignUpScreen> with SingleTickerProviderSt
 
           // Show a message that tells the user to verify their email
           _showVerifyEmailSentDialog();
-
-          // Optionally, navigate to the sign-in screen or a confirmation screen
-          Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => SignInScreen()));
         } else {
           _showErrorDialog("An error occurred while registering.");
         }
