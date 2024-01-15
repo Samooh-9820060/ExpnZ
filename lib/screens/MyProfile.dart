@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as Path;
 
+import 'ChangePassword.dart';
+
 class MyProfileScreen extends StatefulWidget {
   @override
   _MyProfileScreenState createState() => _MyProfileScreenState();
@@ -212,7 +214,9 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
               // Change Password Button
               ElevatedButton(
                 onPressed: () {
-                  // Logic to navigate to Change Password Screen
+                  Navigator.of(context).push(MaterialPageRoute(
+                    builder: (context) => ChangePasswordScreen(),
+                  ));
                 },
                 child: Text('Change Password'),
                 style: ElevatedButton.styleFrom(
