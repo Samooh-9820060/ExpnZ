@@ -40,6 +40,16 @@ class _SignInScreenState extends State<SignInScreen>
         final UserCredential userCredential = await FirebaseAuth.instance
             .signInWithEmailAndPassword(
             email: _emailController.text, password: _passwordController.text);
+
+        final User? user = userCredential.user;
+
+        // Check if user's email is verified
+        if (user != null && !user.emailVerified) {
+          _showErrorDialog("Email is not verified. Please check your email to verify.");
+          await user.sendEmailVerification();
+          return;
+        }
+
         // Navigate to the next screen if successful
         Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => HomePage()));
       } on FirebaseAuthException catch (e) {

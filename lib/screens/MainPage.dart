@@ -1,9 +1,11 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:expnz/models/AccountsModel.dart';
 import 'package:expnz/models/TempTransactionsModel.dart';
 import 'package:expnz/models/TransactionsModel.dart';
 import 'package:expnz/screens/AccountsScreen.dart';
 import 'package:expnz/screens/CategoriesScreen.dart';
 import 'package:expnz/screens/OverviewScreen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:animated_drawer/views/animated_drawer.dart';
 import 'package:provider/provider.dart';
@@ -28,6 +30,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin, Widg
   late AnimationController _animationController;
   late Animation<double> _animation;
   late AppNotificationListener appNotificationListener;
+  String? _profileImageUrl;
 
   final List<Widget> _children = [
     HomeScreen(),
@@ -47,6 +50,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin, Widg
   void initState() {
     super.initState();
     appNotificationListener = AppNotificationListener();
+    _fetchUserData();
     initializeApp(context);
     Future.delayed(Duration.zero, () {
       Provider.of<CategoriesModel>(context, listen: false).fetchCategories();
@@ -125,6 +129,20 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin, Widg
     });
   }
 
+  Future<void> _fetchUserData() async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      DocumentSnapshot userData = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      setState(() {
+        // Other user data
+        if (userData['profileImageUrl'] is String) {
+          _profileImageUrl = userData['profileImageUrl'];
+        }
+      });
+    }
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -137,7 +155,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin, Widg
             colors: [Colors.blueGrey[900]!, Colors.blueGrey[800]!],
           ),
           shadowColor: Colors.blueGrey[700]!,
-          menuPageContent: MenuDrawer(),
+          menuPageContent: MenuDrawer(profilePicUrl: _profileImageUrl),
           homePageContent: Scaffold(
             extendBody: true,
             backgroundColor: Colors.blueGrey[900],

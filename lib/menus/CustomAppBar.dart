@@ -60,6 +60,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
         color: Colors.blueGrey[900],
       ),
       child: AppBar(
+        automaticallyImplyLeading: false,
         backgroundColor: Colors.transparent,
         elevation: 0,
         titleSpacing: 50,

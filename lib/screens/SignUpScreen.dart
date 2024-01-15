@@ -31,6 +31,24 @@ class _SignUpScreenState extends State<SignUpScreen> with SingleTickerProviderSt
     _animationController.forward();
   }
 
+  void _showVerifyEmailSentDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Verify Your Email'),
+        content: Text('A verification email has been sent. Please check your email and verify your account. After verifying please sign in.'),
+        actions: <Widget>[
+          TextButton(
+            child: Text('Okay'),
+            onPressed: () {
+              Navigator.of(ctx).pop(); // Closes the dialog
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> signUpWithEmailAndPassword() async {
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty || _nameController.text.isEmpty) {
       _showErrorDialog("Name, Email and password cannot be empty");
@@ -43,15 +61,22 @@ class _SignUpScreenState extends State<SignUpScreen> with SingleTickerProviderSt
             email: _emailController.text, password: _passwordController.text);
 
         // User successfully registered, now insert details into Firestore
+        final User? user = userCredential.user;
         final uid = userCredential.user?.uid;
-        if (uid != null) {
+        if (uid != null && user != null) {
           await FirebaseFirestore.instance.collection('users').doc(uid).set({
             'name': _nameController.text,
             'phoneNumber': _mobileNumberController.text,
-            'profileImageUrl': '',
+            'profileImageUrl': null,
           });
 
-          // Navigate to the sign-in screen if Firestore insertion is successful
+          // Send verification email
+          await user.sendEmailVerification();
+
+          // Show a message that tells the user to verify their email
+          _showVerifyEmailSentDialog();
+
+          // Optionally, navigate to the sign-in screen or a confirmation screen
           Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => SignInScreen()));
         } else {
           _showErrorDialog("An error occurred while registering.");
