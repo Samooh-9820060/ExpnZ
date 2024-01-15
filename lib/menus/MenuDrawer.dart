@@ -1,4 +1,5 @@
 import 'package:expnz/screens/HomeScreen.dart';
+import 'package:expnz/screens/MyProfile.dart';
 import 'package:expnz/screens/SettingsScreen.dart';
 import 'package:expnz/screens/SignInScreen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -51,7 +52,7 @@ class _MenuDrawerState extends State<MenuDrawer> {
             SizedBox(height: 40),
             menuGroup([
               //menuItem(Icons.home, "Home", context, HomeScreen()),
-              menuItem(Icons.person, "My Profile", context, targetPage: HomeScreen()),
+              menuItem(Icons.person, "My Profile", context, targetPage: MyProfileScreen()),
             ]),
             menuGroup([
               menuItem(Icons.settings, "Settings", context, targetPage: SettingsScreen()),

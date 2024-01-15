@@ -48,7 +48,7 @@ class _SignUpScreenState extends State<SignUpScreen> with SingleTickerProviderSt
           await FirebaseFirestore.instance.collection('users').doc(uid).set({
             'name': _nameController.text,
             'phoneNumber': _mobileNumberController.text,
-            // Add other user details here as needed
+            'profileImageUrl': '',
           });
 
           // Navigate to the sign-in screen if Firestore insertion is successful
