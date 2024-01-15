@@ -1,13 +1,48 @@
+import 'dart:async';
+
+import 'package:expnz/utils/NotificationListener.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../screens/SearchScreen.dart';
 
-class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
+class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
   final String title;
   final VoidCallback toggleDrawer;
+  final AppNotificationListener notificationListener;
 
-  CustomAppBar({required this.title, required this.toggleDrawer});
+  CustomAppBar({required this.title, required this.toggleDrawer, required this.notificationListener});
+
+  @override
+  _CustomAppBarState createState() => _CustomAppBarState();
+
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+}
+
+class _CustomAppBarState extends State<CustomAppBar> {
+  bool isListenerActive = false;
+
+  late StreamSubscription<bool> _listenerSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _listenerSubscription = widget.notificationListener.statusStream.listen(
+          (isActive) {
+        setState(() {
+          print('changing to $isActive');
+          isListenerActive = isActive;
+        });
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _listenerSubscription.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,11 +66,16 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         title: Transform.translate(
           offset: const Offset(0, -5),  // Move title upwards by 5 units
           child: Text(
-            title,
+            widget.title,
             style: const TextStyle(color: Colors.white),
           ),
         ),
         actions: [
+          if (isListenerActive)
+            Transform.translate(
+              offset: const Offset(0, -5),  // Move icon upwards by 5 units
+              child: Icon(Icons.circle, color: Colors.green, size: 5.0),
+            ),
           // In CustomAppBar
           Transform.translate(
             offset: const Offset(0, -5),  // Move icon upwards by 5 units
@@ -67,7 +107,4 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       ),
     );
   }
-
-  @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 }

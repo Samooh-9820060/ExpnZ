@@ -9,20 +9,30 @@ class AppNotificationListener {
   StreamSubscription<NotificationEvent>? _subscription;
   List<NotificationEvent> log = [];
   bool started = false;
+  final _controller = StreamController<bool>.broadcast();
+  Stream<bool> get statusStream => _controller.stream;
+
 
   void startListening() {
     _notifications = Notifications();
     try {
       _subscription = _notifications!.notificationStream!.listen(_processNotification);
       started = true;
+      _controller.sink.add(true);
     } on NotificationException catch (exception) {
+      _controller.sink.add(false);
       print(exception);
     }
+  }
+
+  bool isListeningActive() {
+    return started;
   }
 
   void stopListening() {
     _subscription?.cancel();
     started = false;
+    _controller.sink.add(false);
   }
 
   bool _isSimilarNotificationExists(NotificationEvent newEvent, Duration duration) {
@@ -144,6 +154,6 @@ class AppNotificationListener {
       r"You have received MVR (\d+\.\d{2}) from ([A-Z .]+) to (\d+\*\d+)"
   );
   final RegExp BMLFundsTransferredRegex = RegExp(
-      r"You have sent MVR (\d+\.\d{2}) from (\d+\*\d+) to ([A-Z .]+)"
+      r"You have sent MVR (\d+\.\d{1,2}) from (\d+\*\d+) to ([A-Z\\. ]+)"
   );
 }

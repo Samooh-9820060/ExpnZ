@@ -1,4 +1,3 @@
-import 'package:expnz/database/TempTransactionsDB.dart';
 import 'package:expnz/models/AccountsModel.dart';
 import 'package:expnz/models/TempTransactionsModel.dart';
 import 'package:expnz/models/TransactionsModel.dart';
@@ -8,7 +7,6 @@ import 'package:expnz/screens/OverviewScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:animated_drawer/views/animated_drawer.dart';
 import 'package:provider/provider.dart';
-import 'package:notifications/notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../menus/CustomAppBar.dart';
 import '../menus/CustomBottomNavBar.dart';
@@ -29,6 +27,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin, Widg
   int _currentIndex = 0;
   late AnimationController _animationController;
   late Animation<double> _animation;
+  late AppNotificationListener appNotificationListener;
 
   final List<Widget> _children = [
     HomeScreen(),
@@ -47,7 +46,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin, Widg
   @override
   void initState() {
     super.initState();
-    initializeApp();
+    appNotificationListener = AppNotificationListener();
+    initializeApp(context);
     Future.delayed(Duration.zero, () {
       Provider.of<CategoriesModel>(context, listen: false).fetchCategories();
       Provider.of<AccountsModel>(context, listen: false).fetchAccounts();
@@ -61,18 +61,39 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin, Widg
     _animation = Tween<double>(begin: 0, end: 1).animate(_animationController);
   }
 
-  Future<void> initializeApp() async {
+  Future<void> initializeApp(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
     final allowNotificationReading = prefs.getBool('allowNotificationReading') ?? false;
 
-    AppNotificationListener _notificationListener = AppNotificationListener();
-
     if (allowNotificationReading) {
-      // Start listening for notifications
-      _notificationListener.stopListening();
-      _notificationListener.startListening();
+      if (appNotificationListener.started) {
+        // If already listening, show an alert dialog
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text("Notification Listener Active"),
+              content: Text("The app is already listening for notifications."),
+              actions: <Widget>[
+                TextButton(
+                  child: Text("OK"),
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Closes the dialog
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      } else {
+        // Start listening for notifications
+        appNotificationListener.startListening();
+      }
+    } else {
+      appNotificationListener.stopListening();
     }
   }
+
 
 
   @override
@@ -123,6 +144,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin, Widg
             appBar: CustomAppBar(
               title: _tabNames[_currentIndex],
               toggleDrawer: toggleDrawer,
+              notificationListener: appNotificationListener,
             ),
             body: _children[_currentIndex],
             bottomNavigationBar: SafeArea(

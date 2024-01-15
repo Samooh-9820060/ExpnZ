@@ -18,6 +18,8 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:notifications/notifications.dart';
 
+import 'MainPage.dart';
+
 class SettingsScreen extends StatefulWidget {
   @override
   _SettingsScreenState createState() => _SettingsScreenState();
@@ -49,17 +51,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<bool> _checkNotificationPermission() async {
+    /*print('srartg');
     PackageInfo packageInfo = await PackageInfo.fromPlatform();
+    print(packageInfo);
     final String packageName = packageInfo.packageName;
+    print(packageName);
     final String? enabledNotificationListeners = await SystemChannels.platform.invokeMethod<String>('SystemSettings.getEnabledNotificationListeners');
-    return enabledNotificationListeners?.contains(packageName) ?? false;
+    print(enabledNotificationListeners);
+    return enabledNotificationListeners?.contains(packageName) ?? false;*/
+    return true;
   }
 
   void _handleNotificationPermission(bool value) async {
+    print('started');
     if (value) {
       bool isPermissionGranted = await _checkNotificationPermission();
-      _notificationListener.stopListening();
-      _notificationListener.startListening();
+      print('went here');
+
+      if (isPermissionGranted) {
+        print('turning on permission');
+        _notificationListener.stopListening();
+        _notificationListener.startListening();
+      }
     } else {
       _notificationListener.stopListening();
     }
@@ -83,6 +96,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Scaffold(
         backgroundColor: Colors.blueGrey[900],
         appBar: AppBar(
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back),
+            onPressed: () {
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (context) => HomePage()),
+                    (Route<dynamic> route) => false,
+              ); // Pops the current route off the navigation stack
+            },
+          ),
+          automaticallyImplyLeading: false,
           title: Text('Settings'),
           backgroundColor: Colors.blueGrey[700],
         ),
