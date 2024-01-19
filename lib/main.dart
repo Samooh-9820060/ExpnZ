@@ -8,15 +8,12 @@ import 'package:provider/provider.dart';
 import './screens/MainPage.dart';
 import 'models/AccountsModel.dart';
 import 'models/CategoriesModel.dart';
+import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
-    options: const FirebaseOptions(
-        apiKey: 'AIzaSyBu0WPNfLczhNybs6B-gm5rG-kWGPy2ltM',
-        appId: '1:347008289129:android:e746de7b0fe331b78495f8',
-        messagingSenderId: '347008289129',
-        projectId: 'expnzapp')
+    options: DefaultFirebaseOptions.currentPlatform,
   );
 
   runApp(
@@ -27,7 +24,7 @@ void main() async {
         ChangeNotifierProvider(create: (context) => TransactionsModel()),
         ChangeNotifierProvider(create: (context) => TempTransactionsModel()),
       ],
-        child: MyApp(),
+        child: const MyApp(),
     ),
   );
 }
@@ -68,7 +65,7 @@ class _MyAppState extends State<MyApp> {
 
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            primary: Colors.blueAccent,
+            backgroundColor: Colors.blueAccent,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
             ),
