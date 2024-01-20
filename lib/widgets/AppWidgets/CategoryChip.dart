@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
-
 import 'package:provider/provider.dart';
-
-import '../../models/CategoriesModel.dart';
 
 class CategoryChip extends StatefulWidget {
   final bool isSelected;
@@ -53,8 +50,9 @@ class _CategoryChipState extends State<CategoryChip>
 
   @override
   Widget build(BuildContext context) {
-    var categoriesModel = Provider.of<CategoriesModel>(context);
-    var categoryDetails = categoriesModel.getCategoryById(widget.categoryId);
+    //var categoriesModel = Provider.of<CategoriesModel>(context);
+    //var categoryDetails = categoriesModel.getCategoryById(widget.categoryId);
+    var categoryDetails = null;
 
     if (categoryDetails == null) {
       // Handle the case when the category is null (e.g., show a default widget)

@@ -6,8 +6,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import './screens/MainPage.dart';
-import 'models/AccountsModel.dart';
-import 'models/CategoriesModel.dart';
+import 'database/ProfileDB.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -19,8 +18,6 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (context) => CategoriesModel()),
-        //ChangeNotifierProvider(create: (context) => AccountsModel()),
         ChangeNotifierProvider(create: (context) => TransactionsModel()),
         ChangeNotifierProvider(create: (context) => TempTransactionsModel()),
       ],
@@ -43,6 +40,20 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      // Start listening to profile changes if the user is logged in
+      ProfileDB().listenToProfileChanges(user!.uid);
+    }
+
+    // Set up an auth state change listener
+    FirebaseAuth.instance.authStateChanges().listen((User? currentUser) {
+      setState(() {
+        user = currentUser;
+        if (user != null) {
+          ProfileDB().listenToProfileChanges(user!.uid);
+        }
+      });
+    });
   }
 
   @override

@@ -1,8 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:expnz/models/TransactionsModel.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../database/CategoriesDB.dart';
-import '../models/CategoriesModel.dart';
 import '../widgets/AppWidgets/CategoryCard.dart';
 
 class CategoriesScreen extends StatefulWidget {
@@ -13,13 +14,11 @@ class CategoriesScreen extends StatefulWidget {
 class _CategoriesScreenState extends State<CategoriesScreen> with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _animation;
-  final db = CategoriesDB();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   @override
   void initState() {
     super.initState();
-    final categoriesModel = Provider.of<CategoriesModel>(context, listen: false);
-    categoriesModel.fetchCategories();
     _controller = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
@@ -40,9 +39,16 @@ class _CategoriesScreenState extends State<CategoriesScreen> with SingleTickerPr
   Widget build(BuildContext context) {
     return Container(
       color: Colors.blueGrey[900],
-      child: Consumer<CategoriesModel>(
-        builder: (context, categoriesModel, child) {
-          if (categoriesModel.categories.isEmpty) {
+      child: StreamBuilder<QuerySnapshot>(
+        stream: _firestore
+            .collection(CategoriesDB.collectionName)
+            .where(CategoriesDB.uid, isEqualTo: FirebaseAuth.instance.currentUser!.uid)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.data!.docs.isEmpty) {
             return const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -65,39 +71,30 @@ class _CategoriesScreenState extends State<CategoriesScreen> with SingleTickerPr
                 ],
               ),
             );
-          } else {
-            // Sort the list of categories by name in ascending order
-            List<Map<String, dynamic>> sortedData = List.from(categoriesModel.categories);
-            sortedData.sort((a, b) => a[CategoriesDB.columnName].compareTo(b[CategoriesDB.columnName]));
-
-            return ListView.builder(
-              itemCount: sortedData.length,
-              itemBuilder: (context, index) {
-                final category = sortedData[index];
-
-                return buildAnimatedCategoryCard(
-                  key: ValueKey(category[CategoriesDB.columnId]),
-                  categoryId: category[CategoriesDB.columnId],
-                  income: "\$200",
-                  expense: "\$50",
-                );
-              },
-            );
           }
-        },
+
+          return ListView.builder(
+            itemCount: snapshot.data!.docs.length,
+            itemBuilder: (context, index) {
+              //final category = snapshot.data!.docs[index].data() as Map<String, dynamic>;
+              return buildAnimatedCategoryCard(
+                key: ValueKey(snapshot.data!.docs[index].id),
+                documentId: snapshot.data!.docs[index].id,
+              );
+            },
+          );
+        }
       ),
     );
   }
 
   Widget buildAnimatedCategoryCard({
     Key? key,
-    required int categoryId,
-    required String income,
-    required String expense,
+    required String documentId,
   }) {
     return GestureDetector(
       onLongPress: () {
-        _showDeleteConfirmationDialog(context, categoryId);
+        _showDeleteConfirmationDialog(context, documentId);
       },
       child: AnimatedBuilder(
         animation: _animation,
@@ -108,7 +105,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> with SingleTickerPr
               scale: _animation.value,
               /*child: CategoryCard(
                 key: key,
-                categoryId: categoryId,
+                documentId: documentId,
                 animation: _animation,
               ),*/
             ),
@@ -118,7 +115,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> with SingleTickerPr
     );
   }
 
-  void _showDeleteConfirmationDialog(BuildContext context, int categoryId) {
+  void _showDeleteConfirmationDialog(BuildContext context, String documentId) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -136,8 +133,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> with SingleTickerPr
             TextButton(
               child: const Text("Delete"),
               onPressed: () async {
-                await Provider.of<TransactionsModel>(context, listen: false).deleteTransactionsByCategoryId(categoryId, null, context);
-                await Provider.of<CategoriesModel>(context, listen: false).deleteCategory(categoryId);
+                //await Provider.of<TransactionsModel>(context, listen: false).deleteTransactionsByCategoryId(categoryId, null, context);
+                CategoriesDB().deleteCategory(documentId);
                 Navigator.of(context).pop();
               },
             ),

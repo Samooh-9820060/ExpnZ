@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../database/AccountsDB.dart';
-import '../../models/AccountsModel.dart';
-import '../../models/CategoriesModel.dart';
 import '../../utils/currency_utils.dart';
 import '../../utils/image_utils.dart';
 
@@ -58,10 +56,10 @@ class TransactionCard extends StatelessWidget {
         .map((e) => int.tryParse(e.trim()) ?? 0)
         .toList();
 
-    final categoriesModel = Provider.of<CategoriesModel>(context);
+    //final categoriesModel = Provider.of<CategoriesModel>(context);
     final int firstCategoryId = categoryIds.isNotEmpty ? categoryIds.first : 0;
-    final Map<String, dynamic>? firstCategory = categoriesModel.getCategoryById(firstCategoryId);
-    final Widget categoryWidget = getCategoryWidget(firstCategory);
+    //final Map<String, dynamic>? firstCategory = categoriesModel.getCategoryById(firstCategoryId);
+    //final Widget categoryWidget = getCategoryWidget(firstCategory);
 
 
     // Determine color based on transaction type

@@ -138,8 +138,8 @@ class _AccountsScreenState extends State<AccountsScreen>
             TextButton(
               child: Text("Delete"),
               onPressed: () async {
-                _firestore.collection(AccountsDB.collectionName).doc(documentId).delete();
-                //implement transaction deletion logic later on
+                AccountsDB().deleteAccount(documentId);
+
                 Navigator.of(context).pop();
               },
             ),

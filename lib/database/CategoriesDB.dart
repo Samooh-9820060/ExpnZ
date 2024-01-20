@@ -1,88 +1,75 @@
-import 'DatabaseHelper.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class CategoriesDB {
-  static const  tableName = 'categories';
-  static const columnId = '_id';
-  static const columnName = 'name';
-  static const columnDescription = 'description';
-  static const columnColor = 'color';
-  static const columnIconCodePoint = 'iconCodePoint';
-  static const columnIconFontFamily = 'iconFontFamily';
-  static const columnIconFontPackage = 'iconFontPackage';
-  static const columnSelectedImageBlob = 'selectedImageBlob';
+  static const String collectionName = 'categories';
+  static const String usersCollection = 'users';
 
+  static const String uid = 'uid';
+  static const String categoryName = 'name';
+  static const String categoryDescription = 'description';
+  static const String categoryColor = 'color';
+  static const String categoryIconCodePoint = 'iconCodePoint';
+  static const String categoryIconFontFamily = 'iconFontFamily';
+  static const String categoryIconFontPackage = 'iconFontPackage';
+  static const String categorySelectedImageBlob = 'selectedImageBlob';
+  static const String totalIncome = 'totalIncome';
+  static const String totalExpense = 'totalExpense';
+
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  String userUid = FirebaseAuth.instance.currentUser!.uid;
+
+  Future<DocumentReference> insertCategory(Map<String, dynamic> data) async {
+    data[uid] = userUid;
+
+    // Add the new account to the accounts collection
+    DocumentReference categoryRef = await _firestore.collection(collectionName).add(data);
+
+    return categoryRef;
+  }
+
+  Future<bool> checkIfCategoryExists(String name) async {
+    final querySnapshot = await _firestore.collection(collectionName)
+        .where(uid, isEqualTo: userUid)
+        .where(categoryName, isEqualTo: name)
+        .limit(1)
+        .get();
+
+    return querySnapshot.docs.isNotEmpty;
+  }
+
+  Stream<QuerySnapshot> getAllCategories() {
+    String userUid = FirebaseAuth.instance.currentUser!.uid;
+    return _firestore.collection(collectionName)
+        .where(uid, isEqualTo: userUid)
+        .snapshots();
+  }
+
+  Future<void> updateCategory(String documentId, Map<String, dynamic> data) async {
+    await _firestore.collection(collectionName).doc(documentId).update(data);
+  }
+
+// Deletes all categories for the current user
   Future<void> deleteAllCategories() async {
-    final db = await DatabaseHelper.instance.database;
-    await db?.delete(CategoriesDB.tableName); // Assuming 'CategoriesDB.tableName' holds your table name
-  }
+    var snapshot = await _firestore.collection(collectionName)
+        .where(uid, isEqualTo: userUid)
+        .get();
 
-  Future<int> insertCategory(Map<String, dynamic> row) async {
-    final db = await DatabaseHelper.instance.database;
-    return await db!.insert(tableName, row);
-  }
-
-  // method to fetch all categories from the database
-  Future<List<Map<String, dynamic>>> getAllCategories() async {
-    final db = await DatabaseHelper.instance.database;
-    return await db!.query(tableName);
-  }
-
-
-  Future<bool> checkIfCategoryExists(String name, [int? excludeId]) async {
-    final db = await DatabaseHelper.instance.database;
-    final List<dynamic> whereArgs = [name];
-    String whereString = '$columnName = ?';
-
-    if (excludeId != null) {
-      whereString += ' AND $columnId != ?';
-      whereArgs.add(excludeId);
+    for (var doc in snapshot.docs) {
+      await doc.reference.delete();
     }
-
-    final result = await db!.query(
-      tableName,
-      where: whereString,
-      whereArgs: whereArgs,
-    );
-
-    return result.isNotEmpty;
   }
 
+  Future<void> deleteCategory(String documentId) async {
+    await _firestore.collection(collectionName).doc(documentId).delete();
 
-  // method to delete a category by its id
-  Future<int> deleteCategory(int id) async {
-    final db = await DatabaseHelper.instance.database;
-    return await db!.delete(
-      tableName,
-      where: '$columnId = ?',
-      whereArgs: [id],
-    );
+    // Update the user's document to remove the account's aggregate data
+    await _firestore.collection(usersCollection).doc(userUid).update({
+      'categories.$documentId': FieldValue.delete(),
+    });
   }
 
-  //method to update category by its id
-  Future<int> updateCategory(int id, Map<String, dynamic> row) async {
-    final db = await DatabaseHelper.instance.database;
-    return await db!.update(
-      tableName,
-      row,
-      where: '$columnId = ?',
-      whereArgs: [id],
-    );
-  }
-
-
-  // method to get a category by its id
-  Future<Map<String, dynamic>?> getSelectedCategory(int id) async {
-    final db = await DatabaseHelper.instance.database;
-    final result = await db!.query(
-      tableName,
-      where: '$columnId = ?',
-      whereArgs: [id],
-    );
-
-    if (result.isNotEmpty) {
-      return result.first;
-    } else {
-      return null;
-    }
+  Future<DocumentSnapshot> getSelectedCategory(String documentId) async {
+    return await _firestore.collection(collectionName).doc(documentId).get();
   }
 }

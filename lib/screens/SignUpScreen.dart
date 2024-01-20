@@ -3,6 +3,8 @@ import 'package:expnz/screens/SignInScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../database/ProfileDB.dart';
+
 class SignUpScreen extends StatefulWidget {
   @override
   _SignUpScreenState createState() => _SignUpScreenState();
@@ -65,7 +67,8 @@ class _SignUpScreenState extends State<SignUpScreen> with SingleTickerProviderSt
         final User? user = userCredential.user;
         final uid = userCredential.user?.uid;
         if (uid != null && user != null) {
-          await FirebaseFirestore.instance.collection('users').doc(uid).set({
+          // User successfully registered, now insert details into Firestore
+          await ProfileDB().createUserProfileWithAggregates(uid, {
             'name': _nameController.text,
             'phoneNumber': _mobileNumberController.text,
             'profileImageUrl': null,

@@ -1,13 +1,6 @@
-import 'dart:convert';
-
-import 'package:expnz/models/AccountsModel.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
-import '../database/AccountsDB.dart';
-import '../database/CategoriesDB.dart';
 import '../database/TransactionsDB.dart';
-import 'CategoriesModel.dart';
 
 class TransactionsModel extends ChangeNotifier {
   final db = TransactionsDB();
@@ -116,12 +109,6 @@ class TransactionsModel extends ChangeNotifier {
       filteredTransactions.clear();
     }
 
-    var categoriesModel = Provider.of<CategoriesModel>(context, listen: false);
-    //var accountsModel = Provider.of<AccountsModel>(context, listen: false);
-
-    var categoriesMap = await categoriesModel.fetchAllCategoriesAsMap();
-    //var accountsMap = await accountsModel.fetchAllAccountsAsMap();
-
     int processedCount = 0;
     int i = filteredTransactions.length;
 
@@ -160,7 +147,7 @@ class TransactionsModel extends ChangeNotifier {
       print('account $shouldInclude');
 
       // Text-based filtering
-      if (shouldInclude && searchText != null && searchText.isNotEmpty) {
+      /*if (shouldInclude && searchText != null && searchText.isNotEmpty) {
         shouldInclude = transaction.values.any((element) => element.toString().toLowerCase().contains(searchText));
         if (!shouldInclude) {
           int categoryId = transaction[TransactionsDB.columnId];
@@ -176,7 +163,7 @@ class TransactionsModel extends ChangeNotifier {
             shouldInclude = true;
           }*/
         }
-      }
+      }*/
 
       print('txt $shouldInclude');
 

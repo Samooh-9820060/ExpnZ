@@ -7,18 +7,16 @@ import '../database/CategoriesDB.dart';
 import '../utils/image_utils.dart';
 import '../widgets/SimpleWidgets/ExpnZTextField.dart';
 import '../widgets/SimpleWidgets/ModernSnackBar.dart';
-import '../models/CategoriesModel.dart';
-import 'package:provider/provider.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 
 
 
 class AddCategoryScreen extends StatefulWidget {
-  final int? categoryId;
+  final String? documentId;
 
   AddCategoryScreen({
-    this.categoryId,
+    this.documentId,
   });
 
   @override
@@ -30,7 +28,6 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
   late TextEditingController _descriptionController;
   late IconData selectedIcon = Icons.search;  // Default icon
   late Color selectedColor = Colors.blue; // Default color
-  bool isDuplicateCategory = false;
   bool isProcessing = false;
   bool isModifyMode = false;
   File? selectedImage;
@@ -42,59 +39,50 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
     _categoryController = TextEditingController();
     _descriptionController = TextEditingController();
 
-    _categoryController.addListener(() async {
-      bool duplicate = await CategoriesDB().checkIfCategoryExists(_categoryController.text);
-      setState(() {
-        isDuplicateCategory = duplicate;
-        //isModifyMode = duplicate;
-      });
-    });
 
-    if (widget.categoryId != null){
-      _loadExistingCategory(widget.categoryId!);
+    if (widget.documentId != null){
+      _loadExistingCategory(widget.documentId!);
     } else {
       selectedIcon = Icons.search;
       selectedColor = Colors.blue;
     }
   }
 
-  void _loadExistingCategory(int id) async {
-    final category = await CategoriesDB().getSelectedCategory(id);
+  void _loadExistingCategory(String documentId) async {
+    var snapshot = await CategoriesDB().getSelectedCategory(documentId);
+    var categoryData = snapshot.data() as Map<String, dynamic>?;
+
     IconData? newSelectedIcon;
     File? newSelectedImage;
     Color? newSelectedColor;
 
-    print(category);
-    if (category != null) {
+    if (categoryData != null) {
       isModifyMode = true;
 
-      if (category[CategoriesDB.columnSelectedImageBlob] == null) {
-        String? iconFontPackage = category[CategoriesDB.columnIconFontPackage] as String?;
-        iconFontPackage ??= null; // Default font package
-
+      if (categoryData[CategoriesDB.categorySelectedImageBlob] == null) {
+        String? iconFontPackage = categoryData[CategoriesDB.categoryIconFontPackage] as String?;
         newSelectedIcon = IconData(
-          category[CategoriesDB.columnIconCodePoint] as int,
-          fontFamily: category[CategoriesDB.columnIconFontFamily] as String,
+          categoryData[CategoriesDB.categoryIconCodePoint] as int,
+          fontFamily: categoryData[CategoriesDB.categoryIconFontFamily] as String,
           fontPackage: iconFontPackage,
         );
       } else {
         newSelectedIcon = Icons.search;
-        List<int> retrievedImageBytes = category[CategoriesDB.columnSelectedImageBlob];
+        List<int> retrievedImageBytes = categoryData[CategoriesDB.categorySelectedImageBlob];
         newSelectedImage = await bytesToFile(retrievedImageBytes);
       }
 
-      newSelectedColor = Color(
-        category[CategoriesDB.columnColor] is String ?
-        int.parse(category[CategoriesDB.columnColor] as String) :
-        category[CategoriesDB.columnColor] as int,
-      );
+      int colorInt = categoryData[CategoriesDB.categoryColor] is String
+          ? int.parse(categoryData[CategoriesDB.categoryColor])
+          : categoryData[CategoriesDB.categoryColor];
+      newSelectedColor = Color(colorInt);
 
       setState(() {
-        _categoryController.text = category[CategoriesDB.columnName] as String;
-        _descriptionController.text = category[CategoriesDB.columnDescription] as String;
-        selectedIcon = newSelectedIcon!;
+        _categoryController.text = categoryData[CategoriesDB.categoryName];
+        _descriptionController.text = categoryData[CategoriesDB.categoryDescription];
+        selectedIcon = newSelectedIcon ?? Icons.search;
         selectedImage = newSelectedImage;
-        selectedColor = newSelectedColor!;
+        selectedColor = newSelectedColor ?? Colors.blue;
       });
     } else {
       setState(() {
@@ -164,7 +152,6 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
           ),
         ],
       );
-      print('test');
       if (croppedFile != null) {
         setState(() {
           selectedImage = File(croppedFile.path);
@@ -240,24 +227,12 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
     }
 
     // Check if category name is duplicated
-    isDuplicateCategory = await CategoriesDB().checkIfCategoryExists(
-        _categoryController.text.trim(),
-        isModifyMode ? widget.categoryId : null
-    );
-
-    if (isDuplicateCategory) {
-      await showModernSnackBar(
-        context: context,
-        message: "Category name cannot be duplicated",
-        backgroundColor: Colors.red,
-      );
-      setState(() {
-        isProcessing = false;
-      });
-      return;
+    bool isDuplicate = false;
+    if (isModifyMode) {
+      isDuplicate = await CategoriesDB().checkIfCategoryExists(_categoryController.text.trim());
     }
 
-    if (isDuplicateCategory && !isModifyMode) {
+    if (isDuplicate && !isModifyMode) {
       await showModernSnackBar(
         context: context,
         message: "Category name cannot be duplicated",
@@ -275,43 +250,48 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
     }
     // Prepare data to insert or update
     Map<String, dynamic> row = {
-      'name': _categoryController.text,
-      'description': _descriptionController.text,
-      'color': selectedColor.value,
-      'iconCodePoint': selectedIcon.codePoint,
-      'iconFontFamily': selectedIcon.fontFamily,
-      'iconFontPackage': selectedIcon.fontPackage,
-      'selectedImageBlob': imageBytes == null ? null : imageBytes,
+      CategoriesDB.categoryName: _categoryController.text.trim(),
+      CategoriesDB.categoryDescription: _descriptionController.text.trim(),
+      CategoriesDB.categoryColor: selectedColor.value,
+      CategoriesDB.categoryIconCodePoint: selectedIcon.codePoint,
+      CategoriesDB.categoryIconFontFamily: selectedIcon.fontFamily,
+      CategoriesDB.categoryIconFontPackage: selectedIcon.fontPackage,
+      // Handle the image data as per your requirements
+      CategoriesDB.categorySelectedImageBlob: selectedImage != null ? await selectedImage!.readAsBytes() : null,
     };
 
-    final int? id;
 
-    if (isModifyMode) {
-      // Update existing category
-      id = await CategoriesDB().updateCategory(widget.categoryId!, row);
-    } else {
-      // Add new category
-      id = await CategoriesDB().insertCategory(row);
-    }
+    try {
+      if (isModifyMode) {
+        // Update existing category
+        await CategoriesDB().updateCategory(widget.documentId!, row);
+      } else {
+        // Add new category
+        await CategoriesDB().insertCategory(row);
+      }
 
-    final categoriesModel = Provider.of<CategoriesModel>(context, listen: false);
-    if (id != null && id > 0) {
+      // Update UI and pop the screen
+      // Show success snackbar
       await showModernSnackBar(
         context: context,
         message: isModifyMode ? "Category updated successfully!" : "Category added successfully!",
         backgroundColor: Colors.green,
       );
-      categoriesModel.fetchCategories();
       setState(() {
         isProcessing = false;
       });
       Navigator.pop(context, true);
-    } else {
+    } catch (e) {
+      // Handle errors, show error snackbar
       await showModernSnackBar(
         context: context,
         message: isModifyMode ? "Category was not updated" : "Category was not added",
         backgroundColor: Colors.redAccent,
       );
+      setState(() {
+        isProcessing = false;
+      });
+    } finally {
       setState(() {
         isProcessing = false;
       });
@@ -340,7 +320,7 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Redesigned Text Field for Category
-            CustomTextField(label: "Enter Category", controller: _categoryController, isError: isDuplicateCategory),
+            CustomTextField(label: "Enter Category", controller: _categoryController),
             SizedBox(height: 16),
             // Redesigned Text Field for Description
             CustomTextField(label: "Enter Description", controller: _descriptionController),

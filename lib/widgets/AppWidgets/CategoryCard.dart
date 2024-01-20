@@ -7,28 +7,26 @@ import 'package:provider/provider.dart';
 
 import '../../database/AccountsDB.dart';
 import '../../database/CategoriesDB.dart';
-import '../../models/AccountsModel.dart';
-import '../../models/CategoriesModel.dart';
 import '../../models/TransactionsModel.dart';
 import '../../utils/animation_utils.dart';
 import '../../utils/image_utils.dart';
 
 /*class CategoryCard extends StatefulWidget {
   final Key? key;
-  final int categoryId;
+  final String documentId;
   final Animation<double> animation;
 
   CategoryCard({
     this.key,
-    required this.categoryId,
+    required this.documentId,
     required this.animation,
   }) : super(key: key);
 
   @override
   _CategoryCardState createState() => _CategoryCardState();
-}
+}*/
 
-class _CategoryCardState extends State<CategoryCard>
+/*class _CategoryCardState extends State<CategoryCard>
     with TickerProviderStateMixin {
   late AnimationController _numberController;
   late Animation<double> _numberAnimation;
@@ -57,40 +55,6 @@ class _CategoryCardState extends State<CategoryCard>
     );
     _deleteAnimation =
         Tween<double>(begin: 1, end: 0).animate(_deleteController);
-    _calculateCategoryAmounts();
-  }
-
-  void _calculateCategoryAmounts() {
-    final transactionsModel = Provider.of<TransactionsModel>(context, listen: false);
-
-    // Initialize Maps to store income and expense for each account
-    accountIncome = {};
-    accountExpense = {};
-
-    // Filter transactions related to this category
-    List<Map<String, dynamic>> categoryTransactions = transactionsModel.transactions.where((transaction) {
-      if (transaction.containsKey('categories')) {
-        List<int> categories = (transaction['categories'] as String)
-            .split(", ")
-            .map((e) => int.tryParse(e) ?? 0)
-            .toList();
-
-        return categories.any((category) => category == widget.categoryId);
-      }
-      return false;
-    }).toList();
-
-    // Loop through filtered transactions and sum the income and expense for each account
-    for (var transaction in categoryTransactions) {
-      int accountId = transaction['account_id'];
-      double amount = transaction['amount'];
-
-      if (transaction['type'] == 'income') {
-        accountIncome[accountId] = (accountIncome[accountId] ?? 0) + amount;
-      } else if (transaction['type'] == 'expense') {
-        accountExpense[accountId] = (accountExpense[accountId] ?? 0) + amount;
-      }
-    }
   }
 
   @override
@@ -102,30 +66,27 @@ class _CategoryCardState extends State<CategoryCard>
 
   @override
   Widget build(BuildContext context) {
-    var categoriesModel = Provider.of<CategoriesModel>(context);
-    categoryDetails = categoriesModel.getCategoryById(widget.categoryId) ?? {};
-
     IconData? iconData;
-    if (categoryDetails.containsKey(CategoriesDB.columnIconCodePoint)) {
+    if (categoryDetails.containsKey(CategoriesDB.categoryIconCodePoint)) {
       iconData = IconData(
-        categoryDetails[CategoriesDB.columnIconCodePoint],
-        fontFamily: categoryDetails[CategoriesDB.columnIconFontFamily],
-        fontPackage: categoryDetails[CategoriesDB.columnIconFontPackage],
+        categoryDetails[CategoriesDB.categoryIconCodePoint],
+        fontFamily: categoryDetails[CategoriesDB.categoryIconFontFamily],
+        fontPackage: categoryDetails[CategoriesDB.categoryIconFontPackage],
       );
     }
 
     Future<File?>? _imageFileFuture;
-    if (categoryDetails.containsKey(CategoriesDB.columnSelectedImageBlob) &&
-        categoryDetails[CategoriesDB.columnSelectedImageBlob] != null) {
+    if (categoryDetails.containsKey(CategoriesDB.categorySelectedImageBlob) &&
+        categoryDetails[CategoriesDB.categorySelectedImageBlob] != null) {
       _imageFileFuture = bytesToFile(
-        categoryDetails[CategoriesDB.columnSelectedImageBlob] as List<int>,
+        categoryDetails[CategoriesDB.categorySelectedImageBlob] as List<int>,
       );
     }
 
-    String? categoryName = categoryDetails[CategoriesDB.columnName];
+    String? categoryName = categoryDetails[CategoriesDB.categoryName];
     Color? primaryColor;
-    if (categoryDetails[CategoriesDB.columnColor] != null) {
-      primaryColor = Color(categoryDetails[CategoriesDB.columnColor] as int);
+    if (categoryDetails[CategoriesDB.categoryColor] != null) {
+      primaryColor = Color(categoryDetails[CategoriesDB.categoryColor] as int);
     }
 
 
@@ -146,7 +107,7 @@ class _CategoryCardState extends State<CategoryCard>
                 context,
                 MaterialPageRoute(
                   builder: (context) =>
-                      AddCategoryScreen(categoryId: this.widget.categoryId),
+                      AddCategoryScreen(documentId: widget.documentId),
                 ),
               ).then((value) {
                 setState(() {});

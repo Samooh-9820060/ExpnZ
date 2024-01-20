@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../database/CategoriesDB.dart';
-import '../../models/CategoriesModel.dart';
 
-Widget buildCategoriesDropdown(
+/*Widget buildCategoriesDropdown(
     CategoriesModel categoriesModel,
     List<Map<String, dynamic>> selectedCategoriesList,
     String searchText,
@@ -107,4 +106,4 @@ Widget buildCategoriesDropdown(
       ),
     );
   }
-}
+}*/

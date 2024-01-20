@@ -10,7 +10,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../database/AccountsDB.dart';
-import '../models/AccountsModel.dart';
 import '../models/TempTransactionsModel.dart';
 import '../models/TransactionsModel.dart';
 import '../widgets/AppWidgets/FinanceCard.dart';

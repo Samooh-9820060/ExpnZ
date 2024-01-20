@@ -1,65 +1,49 @@
-import 'DatabaseHelper.dart';
+import 'dart:convert';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:expnz/utils/global.dart';
 
 class ProfileDB {
-  static const tableName = 'profile';
-  static const columnId = '_id';
-  static const columnName = 'name';
-  static const columnEmail = 'email';
-  static const columnProfilePic = 'profile_pic';
-  static const columnPhoneNumber = 'phone_number';
+  static const String collectionName = 'users'; // or 'profiles'
 
-  // Method to insert a profile into the database
-  Future<int> insertProfile(Map<String, dynamic> row) async {
-    final db = await DatabaseHelper.instance.database;
-    return await db!.insert(tableName, row);
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  void listenToProfileChanges(String uid) {
+    _firestore.collection(collectionName).doc(uid).snapshots().listen((snapshot) {
+      if (snapshot.exists) {
+        cacheProfileLocally(snapshot.data());
+      }
+    });
   }
 
-  // Method to fetch all profiles from the database
-  Future<List<Map<String, dynamic>>> getAllProfiles() async {
-    final db = await DatabaseHelper.instance.database;
-    return await db!.query(tableName);
-  }
-
-  // Method to delete a profile by its id
-  Future<int> deleteProfile(int id) async {
-    final db = await DatabaseHelper.instance.database;
-    return await db!.delete(
-      tableName,
-      where: '$columnId = ?',
-      whereArgs: [id],
-    );
-  }
-
-  // Method to delete all profiles from the database
-  Future<void> deleteAllProfiles() async {
-    final db = await DatabaseHelper.instance.database;
-    await db?.delete(tableName);
-  }
-
-  // Method to update a profile by its id
-  Future<int> updateProfile(int id, Map<String, dynamic> row) async {
-    final db = await DatabaseHelper.instance.database;
-    return await db!.update(
-      tableName,
-      row,
-      where: '$columnId = ?',
-      whereArgs: [id],
-    );
-  }
-
-  // Method to get a profile by its id
-  Future<Map<String, dynamic>?> getSelectedProfile(int id) async {
-    final db = await DatabaseHelper.instance.database;
-    final result = await db!.query(
-      tableName,
-      where: '$columnId = ?',
-      whereArgs: [id],
-    );
-
-    if (result.isNotEmpty) {
-      return result.first;
-    } else {
-      return null;
+  Future<void> cacheProfileLocally(Map<String, dynamic>? profileData) async {
+    if (profileData != null) {
+      final prefs = await SharedPreferences.getInstance();
+      String encodedData = json.encode(profileData);
+      await prefs.setString('userProfile', encodedData);
+      profileNotifier.value = profileData;
     }
+  }
+
+  Future<Map<String, dynamic>?> getLocalProfile() async {
+    final prefs = await SharedPreferences.getInstance();
+    String? encodedData = prefs.getString('userProfile');
+    return encodedData != null ? json.decode(encodedData) as Map<String, dynamic> : null;
+  }
+
+  Future<void> createUserProfileWithAggregates(String uid, Map<String, dynamic> profileData) async {
+    // Adding default aggregate data
+    profileData.addAll({
+      'accounts': {},
+      'categories': {},
+    });
+
+    await _firestore.collection(collectionName).doc(uid).set(profileData);
+  }
+
+  Future<DocumentSnapshot> getProfile(String uid) async {
+    return await _firestore.collection(collectionName).doc(uid).get();
   }
 }

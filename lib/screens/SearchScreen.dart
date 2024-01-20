@@ -6,8 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../database/AccountsDB.dart';
-import '../models/AccountsModel.dart';
-import '../models/CategoriesModel.dart';
 import '../models/TransactionsModel.dart';
 import '../widgets/AppWidgets/BuildCategoriesDropdown.dart';
 import '../widgets/AppWidgets/CategoryChip.dart';

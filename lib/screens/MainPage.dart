@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:expnz/models/AccountsModel.dart';
 import 'package:expnz/models/TempTransactionsModel.dart';
 import 'package:expnz/models/TransactionsModel.dart';
 import 'package:expnz/screens/AccountsScreen.dart';
@@ -13,7 +12,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../menus/CustomAppBar.dart';
 import '../menus/CustomBottomNavBar.dart';
 import '../menus/FloatingActionMenu.dart';
-import '../models/CategoriesModel.dart';
 import '../utils/NotificationListener.dart';
 import 'HomeScreen.dart';
 import '../menus/MenuDrawer.dart';
@@ -37,14 +35,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin, Widg
     AccountsScreen(),
     AccountsScreen(),
     CategoriesScreen(),
-    //OverviewScreen(),
   ];
 
   final List<String> _tabNames = [
     "Home",
     "Accounts",
     "Categories",
-    //"Overview",
   ];
 
   @override
@@ -54,8 +50,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin, Widg
     _fetchUserData();
     initializeApp(context);
     Future.delayed(Duration.zero, () {
-      Provider.of<CategoriesModel>(context, listen: false).fetchCategories();
-      //Provider.of<AccountsModel>(context, listen: false).fetchAccounts();
       Provider.of<TransactionsModel>(context, listen: false).fetchTransactions();
       Provider.of<TempTransactionsModel>(context, listen: false).fetchTransactions();
     });

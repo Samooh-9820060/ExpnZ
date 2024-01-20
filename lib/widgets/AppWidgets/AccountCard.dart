@@ -1,12 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:expnz/database/ProfileDB.dart';
 import 'package:expnz/screens/AddAccount.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 import '../../database/AccountsDB.dart';
-import '../../models/AccountsModel.dart';
-import '../../models/TransactionsModel.dart';
 import '../../utils/animation_utils.dart';
+import 'package:expnz/utils/global.dart';
 
 class ModernAccountCard extends StatefulWidget {
   final String documentId;
@@ -47,129 +46,177 @@ class _ModernAccountCardState extends State<ModernAccountCard>
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<DocumentSnapshot>(
-      future: _firestore.collection(AccountsDB.collectionName).doc(widget.documentId).get(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
-        } else if (snapshot.hasError || !snapshot.data!.exists) {
-          return Text('Error fetching account details');
-        } else {
-          final account = snapshot.data!.data() as Map<String, dynamic>;
-          double totalIncome = account[AccountsDB.totalIncome] ?? 0.0;
-          double totalExpense = account[AccountsDB.totalExpense] ?? 0.0;
-          double totalBalance = totalIncome - totalExpense;
-          IconData iconData = IconData(
-            account[AccountsDB.accountIconCodePoint],
-            fontFamily: account[AccountsDB.accountIconFontFamily],
-            fontPackage: account[AccountsDB.accountIconFontPackage],
-          );
 
-          return AnimatedBuilder(
-            animation: _numberController,
-            builder: (context, child) {
-              return InkWell(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          AddAccountScreen(documentId: widget.documentId),
-                    ),
-                  ).then((value) {
-                    setState(() {});
-                  });
+    return ValueListenableBuilder<Map<String, dynamic>?>(
+      valueListenable: profileNotifier,
+      builder: (context, profileData, child) {
+        double totalIncome = 0.0;
+        double totalExpense = 0.0;
+        if (profileData != null && profileData.containsKey('accounts') && profileData['accounts'] != null) {
+          Map<String, dynamic> accountsData = profileData['accounts'];
+          if (accountsData.containsKey(widget.documentId)) {
+            totalIncome = (accountsData[widget.documentId]['totalIncome'] ?? 0).toDouble();
+            totalExpense = (accountsData[widget.documentId]['totalExpense'] ?? 0).toDouble();
+          }
+        }
+
+        return StreamBuilder<DocumentSnapshot>(
+          stream: _firestore.collection(AccountsDB.collectionName).doc(widget.documentId).snapshots(),
+          builder: (context, accountSnapshot) {
+            if (accountSnapshot.connectionState == ConnectionState.waiting) {
+              return Center(child: CircularProgressIndicator());
+            } else if (accountSnapshot.hasError || !accountSnapshot.data!.exists) {
+              return Text('Error fetching account details');
+            } else {
+              final account = accountSnapshot.data!.data() as Map<String, dynamic>;
+              // Use the local user data for total income and total expense
+              return FutureBuilder<Map<String, dynamic>?>(
+                future: ProfileDB().getLocalProfile(),
+                builder: (context, localDataSnapshot) {
+                  if (localDataSnapshot.hasData) {
+                    final userData = localDataSnapshot.data!;
+                    if (userData.containsKey('accounts') && userData['accounts'] != null) {
+                      Map<String, dynamic> accountsData = userData['accounts'];
+                      if (accountsData.containsKey(widget.documentId)) {
+                        double totalIncome = (accountsData[widget.documentId]['totalIncome'] ?? 0).toDouble();
+                        double totalExpense = (accountsData[widget.documentId]['totalExpense'] ?? 0).toDouble();
+                        double totalBalance = totalIncome - totalExpense;
+                        return buildCard(account, totalIncome, totalExpense, totalBalance);
+                      }
+                    }
+                    return buildCard(account, 0.0, 0.0, 0.0);
+                  } else {
+                    // Default to zero if local data is not available
+                    return buildCard(account, 0.0, 0.0, 0.0);
+                  }
                 },
-                child: Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [Colors.black, Colors.grey[850]!],
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.5),
-                        offset: const Offset(0, 4),
-                        blurRadius: 10.0,
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              );
+            }
+          },
+        );
+      },
+    );
+  }
+
+  Widget buildCard(Map<String, dynamic> account, double totalIncome, double totalExpense, double totalBalance) {
+    int? iconCodePoint = account[AccountsDB.accountIconCodePoint] as int?;
+    String? iconFontFamily = account[AccountsDB.accountIconFontFamily] as String?;
+    String? iconFontPackage = account[AccountsDB.accountIconFontPackage] as String?;
+
+    IconData? iconData;
+    if (iconCodePoint != null && iconFontFamily != null) {
+      iconData = IconData(
+        iconCodePoint,
+        fontFamily: iconFontFamily,
+        fontPackage: iconFontPackage,  // Could be null, which is fine
+      );
+    } else {
+      // Default icon in case of null values
+      iconData = Icons.account_balance_wallet;
+    }
+
+    return AnimatedBuilder(
+      animation: _numberController,
+      builder: (context, child) {
+        return InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    AddAccountScreen(documentId: widget.documentId),
+              ),
+            ).then((value) {
+              setState(() {});
+            });
+          },
+          child: Container(
+            width: double.infinity,
+            margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Colors.black, Colors.grey[850]!],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.5),
+                  offset: const Offset(0, 4),
+                  blurRadius: 10.0,
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      RichText(
+                        text: TextSpan(
                           children: [
-                            RichText(
-                              text: TextSpan(
-                                children: [
-                                  TextSpan(
-                                    text: account['name']+' - ('+widget.currencyMap['code']+')',
-                                    style: GoogleFonts.roboto(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ],
+                            TextSpan(
+                              text: account['name']+' - ('+widget.currencyMap['code']+')',
+                              style: GoogleFonts.roboto(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
                               ),
                             ),
-                            Icon(
-                              iconData,
-                              color: Colors.white,
-                              size: 32,
-                            ),
-                          ]),
-                      const SizedBox(height: 16),
-                      // Card Number (Optional)
-                      Text(
-                        account['card_number'] != null && account['card_number']!.isNotEmpty
-                            ? '**** **** **** ' + account['card_number']!
-                            : ' ',  // Replace with a placeholder if you want
-                        style: GoogleFonts.robotoMono(
-                          fontSize: 16,
-                          color: Colors.white70,
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      // Balance
-                      Text(
-                        "Balance: ${animatedNumberString(_numberAnimation.value, totalBalance.toString(), widget.currencyMap)}",
-                        style: GoogleFonts.roboto(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+                      Icon(
+                        iconData,
+                        color: Colors.white,
+                        size: 32,
                       ),
-                      const SizedBox(height: 12),
-                      // Income and Expense
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          infoColumn(
-                              "Income",
-                              animatedNumberString(_numberAnimation.value, totalIncome.toString(), widget.currencyMap),
-                              Colors.green,
-                              Icons.arrow_upward),
-                          infoColumn(
-                              "Expense",
-                              animatedNumberString(_numberAnimation.value, totalExpense.toString(), widget.currencyMap),
-                              Colors.red,
-                              Icons.arrow_downward),
-                        ],
-                      ),
-                    ],
+                    ]),
+                const SizedBox(height: 16),
+                // Card Number (Optional)
+                Text(
+                  account['card_number'] != null && account['card_number']!.isNotEmpty
+                      ? '**** **** **** ' + account['card_number']!
+                      : ' ',  // Replace with a placeholder if you want
+                  style: GoogleFonts.robotoMono(
+                    fontSize: 16,
+                    color: Colors.white70,
                   ),
                 ),
-              );
-            },
-          );
-        }
+                const SizedBox(height: 16),
+                // Balance
+                Text(
+                  "Balance: ${animatedNumberString(_numberAnimation.value, totalBalance.toString(), widget.currencyMap)}",
+                  style: GoogleFonts.roboto(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Income and Expense
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    infoColumn(
+                        "Income",
+                        animatedNumberString(_numberAnimation.value, totalIncome.toString(), widget.currencyMap),
+                        Colors.green,
+                        Icons.arrow_upward),
+                    infoColumn(
+                        "Expense",
+                        animatedNumberString(_numberAnimation.value, totalExpense.toString(), widget.currencyMap),
+                        Colors.red,
+                        Icons.arrow_downward),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
       },
     );
   }

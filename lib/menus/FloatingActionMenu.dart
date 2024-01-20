@@ -1,8 +1,5 @@
-import 'package:expnz/models/AccountsModel.dart';
-import 'package:expnz/models/CategoriesModel.dart';
 import 'package:expnz/screens/AddAccount.dart';
 import 'package:expnz/screens/AddCategory.dart';
-import 'package:expnz/screens/AddTransaction.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -36,8 +33,6 @@ class FloatingActionMenu extends StatelessWidget {
             final result = await onPressed();
             if (result) {
               Provider.of<TransactionsModel>(context, listen: false).fetchTransactions();
-              Provider.of<CategoriesModel>(context, listen: false).fetchCategories();
-              //Provider.of<AccountsModel>(context, listen: false).fetchAccounts();
             }
             closeMenu(); // Close the menu
           },

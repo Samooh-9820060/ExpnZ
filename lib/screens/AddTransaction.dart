@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:expnz/models/AccountsModel.dart';
 import 'package:expnz/widgets/SimpleWidgets/ExpnZTextField.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -7,7 +6,6 @@ import 'package:provider/provider.dart';
 import '../database/AccountsDB.dart';
 import '../database/TempTransactionsDB.dart';
 import '../database/TransactionsDB.dart';
-import '../models/CategoriesModel.dart';
 import '../models/TransactionsModel.dart';
 import '../widgets/AppWidgets/BuildCategoriesDropdown.dart';
 import '../widgets/AppWidgets/CategoryChip.dart';
