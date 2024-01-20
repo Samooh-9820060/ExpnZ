@@ -15,7 +15,7 @@ import '../widgets/AppWidgets/SearchTransactionCard.dart';
 import '../widgets/AppWidgets/SelectAccountCard.dart';
 import 'AddTransaction.dart';
 
-class SearchScreen extends StatefulWidget {
+/*class SearchScreen extends StatefulWidget {
   @override
   _SearchScreenState createState() => _SearchScreenState();
 }
@@ -790,10 +790,10 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     Navigator.pop(context, true);
   }
 }
-
-void main() {
+*/
+/*void main() {
   runApp(MaterialApp(
     home: SearchScreen(),
     theme: ThemeData.dark(),
   ));
-}
+}*/

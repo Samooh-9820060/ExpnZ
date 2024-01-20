@@ -33,12 +33,12 @@ class DatabaseHelper {
   Future _onCreate(Database db, int version) async {
     await _createProfileTable(db);
     await _createCategoriesTable(db); // creating the Categories table
-    await _createAccountsTable(db); // creating the Accounts table
-    await _createTransactionsTable(db); // creating the transactions table
+    //await _createAccountsTable(db); // creating the Accounts table
+    //await _createTransactionsTable(db); // creating the transactions table
     await _createTempTransactionsTable(db);
   }
 
-  Future _createAccountsTable(Database db) async {
+  /*Future _createAccountsTable(Database db) async {
     await db.execute('''
           CREATE TABLE ${AccountsDB.tableName} (
             ${AccountsDB.accountId} INTEGER PRIMARY KEY,
@@ -50,7 +50,7 @@ class DatabaseHelper {
             ${AccountsDB.accountCardNumber} TEXT NULL
           )
     ''');
-  }
+  }*/
 
   Future _createCategoriesTable(Database db) async {
     await db.execute('''
@@ -67,7 +67,7 @@ class DatabaseHelper {
     ''');
   }
 
-  Future _createTransactionsTable(Database db) async {
+  /*Future _createTransactionsTable(Database db) async {
     await db.execute('''
         CREATE TABLE ${TransactionsDB.tableName} (
           ${TransactionsDB.columnId} INTEGER PRIMARY KEY,
@@ -82,7 +82,7 @@ class DatabaseHelper {
           FOREIGN KEY (${TransactionsDB.columnAccountId}) REFERENCES ${AccountsDB.tableName}(${AccountsDB.accountId})
         )
   ''');
-  }
+  }*/
 
   Future _createTempTransactionsTable(Database db) async {
     await db.execute('''
@@ -96,10 +96,8 @@ class DatabaseHelper {
       ${TempTransactionsDB.columnAmount} REAL,
       ${TempTransactionsDB.columnDate} TEXT,
       ${TempTransactionsDB.columnTime} TEXT,
-      ${TempTransactionsDB.columnAccountId} INTEGER,
       ${TempTransactionsDB.columnCategories} TEXT,
       ${TempTransactionsDB.columnCardDigits} TEXT,
-      FOREIGN KEY (${TempTransactionsDB.columnAccountId}) REFERENCES ${AccountsDB.tableName}(${AccountsDB.accountId})
     )
   ''');
   }

@@ -1,20 +1,19 @@
 import 'dart:convert';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:currency_picker/currency_picker.dart';
-import 'package:expnz/models/AccountsModel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_iconpicker/flutter_iconpicker.dart';
-import 'package:provider/provider.dart';
 import '../database/AccountsDB.dart';
 import '../widgets/SimpleWidgets/ExpnZButton.dart';
 import '../widgets/SimpleWidgets/ExpnZTextField.dart';
 import '../widgets/SimpleWidgets/ModernSnackBar.dart';
 
 class AddAccountScreen extends StatefulWidget {
-  final int? accountId;
+  final String? documentId;
 
   AddAccountScreen({
-    this.accountId,
+    this.documentId,
   });
 
   @override
@@ -36,15 +35,15 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
     _cardNumberController = TextEditingController();
     //selectedCurrency = Currency(code: 'USD', name: 'United States Dollar', symbol: '\$');
 
-    if (widget.accountId != null){
-      _loadExistingAccount(widget.accountId!);
+    if (widget.documentId != null){
+      _loadExistingAccount(widget.documentId!);
       isModifyMode = true;
     } else {
       selectedIcon = Icons.star;
     }
   }
 
-  void _loadExistingAccount(int id) async {
+  void _loadExistingAccount(String id) async {
     final account = await AccountsDB().getSelectedAccount(id);
 
     if (account != null) {
@@ -137,26 +136,34 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
       AccountsDB.accountCardNumber: _cardNumberController.text.trim(),
     };
 
-    final int? id;
+    // Firestore document ID (null for new accounts, existing ID for updates)
+    String? documentId;
+
+    // Check if modifying an existing account
     if (isModifyMode) {
-      id = await AccountsDB().updateAccount(widget.accountId!, row);
+      // Update the account in Firestore
+      await AccountsDB().updateAccount(widget.documentId!, row);
+      documentId = widget.documentId;
     } else {
-      id = await AccountsDB().insertAccount(row);
+      // Insert a new account into Firestore
+      DocumentReference docRef = await AccountsDB().insertAccount(row);
+      documentId = docRef.id;
     }
 
-    final accountsModel = Provider.of<AccountsModel>(context, listen: false);
-    if (id != null && id > -1) {
+    // Check if operation was successful
+    if (documentId != null) {
+      // Success handling
       await showModernSnackBar(
         context: context,
         message: isModifyMode ? "Account updated successfully!" : "Account added successfully!",
         backgroundColor: Colors.green,
       );
-      accountsModel.fetchAccounts();
       setState(() {
         isProcessing = false;
       });
       Navigator.pop(context, true);
     } else {
+      // Failure handling
       await showModernSnackBar(
         context: context,
         message: isModifyMode ? "Account was not updated" : "Account was not added",

@@ -20,7 +20,7 @@ import 'package:notifications/notifications.dart';
 
 import 'MainPage.dart';
 
-class SettingsScreen extends StatefulWidget {
+/*class SettingsScreen extends StatefulWidget {
   @override
   _SettingsScreenState createState() => _SettingsScreenState();
 }
@@ -658,4 +658,4 @@ class _SettingsScreenState extends State<SettingsScreen> {
       },
     ) ?? false;
   }
-}
+}*/

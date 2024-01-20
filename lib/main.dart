@@ -20,7 +20,7 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context) => CategoriesModel()),
-        ChangeNotifierProvider(create: (context) => AccountsModel()),
+        //ChangeNotifierProvider(create: (context) => AccountsModel()),
         ChangeNotifierProvider(create: (context) => TransactionsModel()),
         ChangeNotifierProvider(create: (context) => TempTransactionsModel()),
       ],

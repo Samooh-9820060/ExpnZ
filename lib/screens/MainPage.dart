@@ -33,17 +33,18 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin, Widg
   String? _profileImageUrl;
 
   final List<Widget> _children = [
-    HomeScreen(),
+    //HomeScreen(),
+    AccountsScreen(),
     AccountsScreen(),
     CategoriesScreen(),
-    OverviewScreen(),
+    //OverviewScreen(),
   ];
 
   final List<String> _tabNames = [
     "Home",
     "Accounts",
     "Categories",
-    "Overview",
+    //"Overview",
   ];
 
   @override
@@ -54,7 +55,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin, Widg
     initializeApp(context);
     Future.delayed(Duration.zero, () {
       Provider.of<CategoriesModel>(context, listen: false).fetchCategories();
-      Provider.of<AccountsModel>(context, listen: false).fetchAccounts();
+      //Provider.of<AccountsModel>(context, listen: false).fetchAccounts();
       Provider.of<TransactionsModel>(context, listen: false).fetchTransactions();
       Provider.of<TempTransactionsModel>(context, listen: false).fetchTransactions();
     });

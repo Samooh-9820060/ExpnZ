@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../database/AccountsDB.dart';
 
-class AccountsModel extends ChangeNotifier {
+/*class AccountsModel extends ChangeNotifier {
   final db = AccountsDB();
   List<Map<String, dynamic>> accounts = [];
 
@@ -63,4 +63,4 @@ class AccountsModel extends ChangeNotifier {
     return currencyCodes;
   }
 }
-
+*/

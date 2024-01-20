@@ -17,7 +17,7 @@ import '../widgets/AppWidgets/FinanceCard.dart';
 import '../widgets/AppWidgets/NotificationsCard.dart';
 import '../widgets/AppWidgets/SummaryMonthCardWidget.dart';
 
-class HomeScreen extends StatefulWidget {
+/*class HomeScreen extends StatefulWidget {
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
@@ -558,4 +558,4 @@ Color getColorBasedOnType(String? type) {
           .fetchTransactions();
     }
   }
-}
+}*/

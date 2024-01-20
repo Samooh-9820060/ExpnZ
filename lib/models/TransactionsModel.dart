@@ -117,10 +117,10 @@ class TransactionsModel extends ChangeNotifier {
     }
 
     var categoriesModel = Provider.of<CategoriesModel>(context, listen: false);
-    var accountsModel = Provider.of<AccountsModel>(context, listen: false);
+    //var accountsModel = Provider.of<AccountsModel>(context, listen: false);
 
     var categoriesMap = await categoriesModel.fetchAllCategoriesAsMap();
-    var accountsMap = await accountsModel.fetchAllAccountsAsMap();
+    //var accountsMap = await accountsModel.fetchAllAccountsAsMap();
 
     int processedCount = 0;
     int i = filteredTransactions.length;
@@ -171,10 +171,10 @@ class TransactionsModel extends ChangeNotifier {
         }
         if (!shouldInclude) {
           int accountId = transaction[TransactionsDB.columnAccountId];
-          String? accountName = accountsMap[accountId];
+          /*String? accountName = accountsMap[accountId];
           if (accountName != null && accountName.toLowerCase().contains(searchText)) {
             shouldInclude = true;
-          }
+          }*/
         }
       }
 
@@ -231,7 +231,7 @@ class TransactionsModel extends ChangeNotifier {
   }
 
 
-  Future<List<int>> _getAccountIdsForCurrency(String currencyCode) async {
+  /*Future<List<int>> _getAccountIdsForCurrency(String currencyCode) async {
     final accounts = await AccountsDB().getAllAccounts();
     return accounts
         .where((account) {
@@ -240,9 +240,9 @@ class TransactionsModel extends ChangeNotifier {
     })
         .map((account) => account[AccountsDB.accountId] as int)
         .toList();
-  }
+  }*/
 
-  Future<double> getTotalIncomeForCurrency(String currencyCode, {DateTime? startDate, DateTime? endDate}) async {
+  /*Future<double> getTotalIncomeForCurrency(String currencyCode, {DateTime? startDate, DateTime? endDate}) async {
     List<int> accountIds = await _getAccountIdsForCurrency(currencyCode);
     double totalIncome = 0.0;
 
@@ -251,9 +251,9 @@ class TransactionsModel extends ChangeNotifier {
     }
 
     return totalIncome;
-  }
+  }*/
 
-  Future<double> getTotalExpenseForCurrency(String currencyCode, {DateTime? startDate, DateTime? endDate}) async {
+  /*Future<double> getTotalExpenseForCurrency(String currencyCode, {DateTime? startDate, DateTime? endDate}) async {
     List<int> accountIds = await _getAccountIdsForCurrency(currencyCode);
     double totalExpense = 0.0;
 
@@ -262,6 +262,6 @@ class TransactionsModel extends ChangeNotifier {
     }
 
     return totalExpense;
-  }
+  }*/
 }
 

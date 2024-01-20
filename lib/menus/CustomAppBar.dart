@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:expnz/screens/AccountsScreen.dart';
 import 'package:expnz/utils/NotificationListener.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -88,7 +89,8 @@ class _CustomAppBarState extends State<CustomAppBar> {
                   PageRouteBuilder(
                     transitionDuration: const Duration(milliseconds: 500),
                     pageBuilder: (BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation) {
-                      return SearchScreen();
+                      //return SearchScreen();
+                      return AccountsScreen();
                     },
                     transitionsBuilder: (BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation, Widget child) {
                       return SlideTransition(

@@ -17,7 +17,7 @@ import '../widgets/SimpleWidgets/ModernSnackBar.dart';
 
 enum TransactionType { income, expense, transfer }
 
-class AddTransactionScreen extends StatefulWidget {
+/*class AddTransactionScreen extends StatefulWidget {
   final Map<String, dynamic>? transaction; // Nullable named parameter
   final int? tempTransactionId; // New nullable named parameter
 
@@ -1080,5 +1080,5 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
       ),
     );
   }
-}
+}*/
 

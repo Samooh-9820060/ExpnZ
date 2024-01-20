@@ -106,11 +106,11 @@ class _CategoriesScreenState extends State<CategoriesScreen> with SingleTickerPr
             opacity: _animation.value,
             child: Transform.scale(
               scale: _animation.value,
-              child: CategoryCard(
+              /*child: CategoryCard(
                 key: key,
                 categoryId: categoryId,
                 animation: _animation,
-              ),
+              ),*/
             ),
           );
         },

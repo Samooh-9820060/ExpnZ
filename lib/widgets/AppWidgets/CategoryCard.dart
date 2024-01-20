@@ -13,7 +13,7 @@ import '../../models/TransactionsModel.dart';
 import '../../utils/animation_utils.dart';
 import '../../utils/image_utils.dart';
 
-class CategoryCard extends StatefulWidget {
+/*class CategoryCard extends StatefulWidget {
   final Key? key;
   final int categoryId;
   final Animation<double> animation;
@@ -414,4 +414,4 @@ class _CategoryCardState extends State<CategoryCard>
       },
     );
   }
-}
+}*/

@@ -37,7 +37,7 @@ class FloatingActionMenu extends StatelessWidget {
             if (result) {
               Provider.of<TransactionsModel>(context, listen: false).fetchTransactions();
               Provider.of<CategoriesModel>(context, listen: false).fetchCategories();
-              Provider.of<AccountsModel>(context, listen: false).fetchAccounts();
+              //Provider.of<AccountsModel>(context, listen: false).fetchAccounts();
             }
             closeMenu(); // Close the menu
           },
@@ -86,7 +86,8 @@ class FloatingActionMenu extends StatelessWidget {
                   final result = await Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (context) => AddTransactionScreen()),
+                        //builder: (context) => AddTransactionScreen()),
+                      builder: (context) => AddAccountScreen()),
                   );
                   return result != null && result == true;
                 },

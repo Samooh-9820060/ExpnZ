@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:expnz/screens/AddAccount.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -8,11 +9,11 @@ import '../../models/TransactionsModel.dart';
 import '../../utils/animation_utils.dart';
 
 class ModernAccountCard extends StatefulWidget {
-  final int accountId;
+  final String documentId;
   final Map<String, dynamic> currencyMap;
 
   ModernAccountCard({
-    required this.accountId,
+    required this.documentId,
     required this.currencyMap,
   });
 
@@ -24,7 +25,7 @@ class _ModernAccountCardState extends State<ModernAccountCard>
     with SingleTickerProviderStateMixin {
   late AnimationController _numberController;
   late Animation<double> _numberAnimation;
-  bool isGlobalLoadingShown = false;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   @override
   void initState() {
@@ -46,42 +47,23 @@ class _ModernAccountCardState extends State<ModernAccountCard>
 
   @override
   Widget build(BuildContext context) {
-    final accountsModel = Provider.of<AccountsModel>(context, listen: false);
-    final transactionsModel = Provider.of<TransactionsModel>(context, listen: false);
-
-    double totalIncomeDouble = transactionsModel.getTotalIncomeForAccount(widget.accountId);
-    double totalExpenseDouble = transactionsModel.getTotalExpenseForAccount(widget.accountId);
-    String totalIncome = totalIncomeDouble.toStringAsFixed(2);
-    String totalExpense = totalExpenseDouble.toStringAsFixed(2);
-    String totalBalance = (totalIncomeDouble-totalExpenseDouble).toStringAsFixed(2);
-
-    return FutureBuilder(
-      future: accountsModel.getAccountDetailsById(widget.accountId),
+    return FutureBuilder<DocumentSnapshot>(
+      future: _firestore.collection(AccountsDB.collectionName).doc(widget.documentId).get(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          if (!isGlobalLoadingShown) {
-            isGlobalLoadingShown = true;
-            return Center(
-              child: SizedBox(
-                width: 50, // Define a fixed width
-                height: 50, // Define a fixed height
-                child: CircularProgressIndicator(),
-              ),
-            );
-          } else {
-            return Container();
-          }
-
-        } else if (snapshot.hasError || snapshot.data == 'Unknown') {
+          return Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError || !snapshot.data!.exists) {
           return Text('Error fetching account details');
         } else {
-          final Map<String, dynamic> account = snapshot.data as Map<String, dynamic>;
+          final account = snapshot.data!.data() as Map<String, dynamic>;
+          double totalIncome = account[AccountsDB.totalIncome] ?? 0.0;
+          double totalExpense = account[AccountsDB.totalExpense] ?? 0.0;
+          double totalBalance = totalIncome - totalExpense;
           IconData iconData = IconData(
             account[AccountsDB.accountIconCodePoint],
             fontFamily: account[AccountsDB.accountIconFontFamily],
             fontPackage: account[AccountsDB.accountIconFontPackage],
           );
-
 
           return AnimatedBuilder(
             animation: _numberController,
@@ -92,7 +74,7 @@ class _ModernAccountCardState extends State<ModernAccountCard>
                     context,
                     MaterialPageRoute(
                       builder: (context) =>
-                          AddAccountScreen(accountId: this.widget.accountId),
+                          AddAccountScreen(documentId: widget.documentId),
                     ),
                   ).then((value) {
                     setState(() {});
@@ -100,8 +82,8 @@ class _ModernAccountCardState extends State<ModernAccountCard>
                 },
                 child: Container(
                   width: double.infinity,
-                  margin: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                  padding: EdgeInsets.all(16),
+                  margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
@@ -112,7 +94,7 @@ class _ModernAccountCardState extends State<ModernAccountCard>
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.5),
-                        offset: Offset(0, 4),
+                        offset: const Offset(0, 4),
                         blurRadius: 10.0,
                       ),
                     ],
@@ -143,7 +125,7 @@ class _ModernAccountCardState extends State<ModernAccountCard>
                               size: 32,
                             ),
                           ]),
-                      SizedBox(height: 16),
+                      const SizedBox(height: 16),
                       // Card Number (Optional)
                       Text(
                         account['card_number'] != null && account['card_number']!.isNotEmpty
@@ -154,33 +136,29 @@ class _ModernAccountCardState extends State<ModernAccountCard>
                           color: Colors.white70,
                         ),
                       ),
-                      SizedBox(height: 16),
+                      const SizedBox(height: 16),
                       // Balance
                       Text(
-                        "Balance: " +
-                            animatedNumberString(_numberAnimation.value,
-                                totalBalance, widget.currencyMap),
+                        "Balance: ${animatedNumberString(_numberAnimation.value, totalBalance.toString(), widget.currencyMap)}",
                         style: GoogleFonts.roboto(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                         ),
                       ),
-                      SizedBox(height: 12),
+                      const SizedBox(height: 12),
                       // Income and Expense
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           infoColumn(
                               "Income",
-                              animatedNumberString(_numberAnimation.value,
-                                  totalIncome, widget.currencyMap),
+                              animatedNumberString(_numberAnimation.value, totalIncome.toString(), widget.currencyMap),
                               Colors.green,
                               Icons.arrow_upward),
                           infoColumn(
                               "Expense",
-                              animatedNumberString(_numberAnimation.value,
-                                  totalExpense, widget.currencyMap),
+                              animatedNumberString(_numberAnimation.value, totalExpense.toString(), widget.currencyMap),
                               Colors.red,
                               Icons.arrow_downward),
                         ],
@@ -201,7 +179,7 @@ class _ModernAccountCardState extends State<ModernAccountCard>
     return Row(
       children: [
         Icon(icon, color: textColor, size: 18),
-        SizedBox(width: 4),
+        const SizedBox(width: 4),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

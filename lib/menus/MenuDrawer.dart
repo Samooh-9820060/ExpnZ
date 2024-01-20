@@ -55,14 +55,14 @@ class _MenuDrawerState extends State<MenuDrawer> {
               menuItem(Icons.person, "My Profile", context, targetPage: MyProfileScreen()),
             ]),
             menuGroup([
-              menuItem(Icons.settings, "Settings", context, targetPage: SettingsScreen()),
-              menuItem(Icons.help, "Help & Support", context, targetPage: HomeScreen()),
-              menuItem(Icons.notifications, "Notifications", context, targetPage: HomeScreen()),
+              //menuItem(Icons.settings, "Settings", context, targetPage: SettingsScreen()),
+              //menuItem(Icons.help, "Help & Support", context, targetPage: HomeScreen()),
+              //menuItem(Icons.notifications, "Notifications", context, targetPage: HomeScreen()),
             ]),
             menuGroup([
-              menuItem(Icons.loop, "Recurring Transactions", context, targetPage: HomeScreen()),
-              menuItem(Icons.group_add, "Invite Friends", context, targetPage: HomeScreen()),
-              menuItem(Icons.info, "About Us", context, targetPage: HomeScreen()),
+              //menuItem(Icons.loop, "Recurring Transactions", context, targetPage: HomeScreen()),
+              //menuItem(Icons.group_add, "Invite Friends", context, targetPage: HomeScreen()),
+              //menuItem(Icons.info, "About Us", context, targetPage: HomeScreen()),
             ]),
             menuGroup([
               menuItem(Icons.exit_to_app, "Logout", context, targetPage: null, onTap: _signOut),

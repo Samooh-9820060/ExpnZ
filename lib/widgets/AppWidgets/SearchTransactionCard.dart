@@ -69,7 +69,8 @@ class TransactionCard extends StatelessWidget {
         ? Colors.greenAccent[400]
         : (type == 'expense' ? Colors.redAccent[100] : Colors.white);
 
-    return FutureBuilder<Object>(
+    return Container();
+    /*return FutureBuilder<Object>(
       future: Provider.of<AccountsModel>(context, listen: false)
           .getAccountDetailsById(transaction['account_id']),
       builder: (context, snapshot) {
@@ -193,6 +194,6 @@ class TransactionCard extends StatelessWidget {
           );
         }
       },
-    );
+    );*/
   }
 }

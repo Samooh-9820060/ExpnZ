@@ -1,6 +1,11 @@
+import 'dart:ffi';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 import 'DatabaseHelper.dart';
 
-class AccountsDB {
+/*class AccountsDB {
   static const tableName = 'accounts';
   static const accountId = '_id';
   static const accountName = 'name';
@@ -63,5 +68,53 @@ class AccountsDB {
     } else {
       return null;
     }
+  }
+}*/
+
+class AccountsDB {
+  static const String collectionName = 'accounts';
+
+  static const String uid = 'uid';
+  static const String accountName = 'name';
+  static const String accountCurrency = 'currency';
+  static const String accountIconCodePoint = 'iconCodePoint';
+  static const String accountIconFontFamily = 'iconFontFamily';
+  static const String accountIconFontPackage = 'iconFontPackage';
+  static const String accountCardNumber = 'card_number';
+  static const String totalIncome = 'totalIncome';
+  static const String totalExpense = 'totalExpense';
+
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  Future<DocumentReference> insertAccount(Map<String, dynamic> data) async {
+    String userUid = FirebaseAuth.instance.currentUser!.uid;  // Get the current user's UID
+    data[AccountsDB.uid] = userUid;
+    data[AccountsDB.totalIncome] = 0.0;
+    data[AccountsDB.totalExpense] = 0.0;
+    return await _firestore.collection(collectionName).add(data);
+  }
+
+  Future<void> deleteAccount(String documentId) async {
+    await _firestore.collection(collectionName).doc(documentId).delete();
+  }
+
+  Stream<QuerySnapshot> getAllAccounts() {
+    return _firestore.collection(collectionName).snapshots();
+  }
+
+  Future<void> updateAccount(String documentId, Map<String, dynamic> data) async {
+    await _firestore.collection(collectionName).doc(documentId).update(data);
+  }
+
+  Future<DocumentSnapshot> getSelectedAccount(String documentId) async {
+    return await _firestore.collection(collectionName).doc(documentId).get();
+  }
+
+  // Method to update totalIncome and totalExpense
+  Future<void> updateTotals(String documentId, double income, double expense) async {
+    await _firestore.collection(collectionName).doc(documentId).update({
+      totalIncome: income,
+      totalExpense: expense,
+    });
   }
 }
