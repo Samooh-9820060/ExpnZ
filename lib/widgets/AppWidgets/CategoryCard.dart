@@ -3,15 +3,14 @@ import 'dart:io';
 import 'package:expnz/screens/AddCategory.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
-
 import '../../database/AccountsDB.dart';
 import '../../database/CategoriesDB.dart';
-import '../../models/TransactionsModel.dart';
+import '../../database/ProfileDB.dart';
 import '../../utils/animation_utils.dart';
+import '../../utils/global.dart';
 import '../../utils/image_utils.dart';
 
-/*class CategoryCard extends StatefulWidget {
+class CategoryCard extends StatefulWidget {
   final Key? key;
   final String documentId;
   final Animation<double> animation;
@@ -24,9 +23,9 @@ import '../../utils/image_utils.dart';
 
   @override
   _CategoryCardState createState() => _CategoryCardState();
-}*/
+}
 
-/*class _CategoryCardState extends State<CategoryCard>
+class _CategoryCardState extends State<CategoryCard>
     with TickerProviderStateMixin {
   late AnimationController _numberController;
   late Animation<double> _numberAnimation;
@@ -34,8 +33,6 @@ import '../../utils/image_utils.dart';
   late Animation<double> _deleteAnimation;
   late Map<int, double> accountIncome;
   late Map<int, double> accountExpense;
-
-  late Map<String, dynamic> categoryDetails;
 
   bool showMoreInfo = false;
 
@@ -66,27 +63,63 @@ import '../../utils/image_utils.dart';
 
   @override
   Widget build(BuildContext context) {
+    return ValueListenableBuilder<Map<String, dynamic>?>(
+      valueListenable: profileNotifier,
+      builder: (context, profileData, child) {
+        return ValueListenableBuilder<Map<String, Map<String, dynamic>>?>(
+          valueListenable: categoriesNotifier,
+          builder: (context, categoriesData, child) {
+            if (categoriesData != null && categoriesData.containsKey(widget.documentId)) {
+              final categoryDetails = categoriesData[widget.documentId]!;
+              final totalIncome = profileData != null && profileData['accounts'] != null && profileData['accounts'][widget.documentId] != null
+                  ? (profileData['accounts'][widget.documentId]['totalIncome'] ?? 0).toDouble()
+                  : 0.0;
+              final totalExpense = profileData != null && profileData['accounts'] != null && profileData['accounts'][widget.documentId] != null
+                  ? (profileData['accounts'][widget.documentId]['totalExpense'] ?? 0).toDouble()
+                  : 0.0;
+              final totalBalance = totalIncome - totalExpense;
+
+              return buildCard(categoryDetails, totalIncome, totalExpense, totalBalance);
+            } else {
+              // If no account data is available, display a message
+              return Center(child: Text('No accounts available.'));
+            }
+          },
+        );
+      },
+    );
+  }
+
+  Widget buildCard(Map<String, dynamic> category, double totalIncome, double totalExpense, double totalBalance) {
+
+    int? iconCodePoint = category[CategoriesDB.categoryIconCodePoint] as int?;
+    String? iconFontFamily = category[CategoriesDB.categoryIconFontFamily] as String?;
+    String? iconFontPackage = category[CategoriesDB.categoryIconFontPackage] as String?;
+
     IconData? iconData;
-    if (categoryDetails.containsKey(CategoriesDB.categoryIconCodePoint)) {
+    if (iconCodePoint != null && iconFontFamily != null) {
       iconData = IconData(
-        categoryDetails[CategoriesDB.categoryIconCodePoint],
-        fontFamily: categoryDetails[CategoriesDB.categoryIconFontFamily],
-        fontPackage: categoryDetails[CategoriesDB.categoryIconFontPackage],
+        iconCodePoint,
+        fontFamily: iconFontFamily,
+        fontPackage: iconFontPackage,
       );
+    } else {
+      // Default icon in case of null values
+      iconData = Icons.category_outlined;
     }
 
     Future<File?>? _imageFileFuture;
-    if (categoryDetails.containsKey(CategoriesDB.categorySelectedImageBlob) &&
-        categoryDetails[CategoriesDB.categorySelectedImageBlob] != null) {
+    if (category.containsKey(CategoriesDB.categorySelectedImageBlob) &&
+        category[CategoriesDB.categorySelectedImageBlob] != null) {
       _imageFileFuture = bytesToFile(
-        categoryDetails[CategoriesDB.categorySelectedImageBlob] as List<int>,
+        category[CategoriesDB.categorySelectedImageBlob] as List<int>,
       );
     }
 
-    String? categoryName = categoryDetails[CategoriesDB.categoryName];
+    String? categoryName = category[CategoriesDB.categoryName];
     Color? primaryColor;
-    if (categoryDetails[CategoriesDB.categoryColor] != null) {
-      primaryColor = Color(categoryDetails[CategoriesDB.categoryColor] as int);
+    if (category[CategoriesDB.categoryColor] != null) {
+      primaryColor = Color(category[CategoriesDB.categoryColor] as int);
     }
 
 
@@ -176,7 +209,7 @@ import '../../utils/image_utils.dart';
                               }
                             },
                           ),
-                          SizedBox(width: 16),
+                          const SizedBox(width: 16),
                           Expanded(
                             child: Text(
                               categoryName!,
@@ -190,7 +223,7 @@ import '../../utils/image_utils.dart';
                           ),
                           if (showMoreInfo)
                             IconButton(
-                              icon: Icon(
+                              icon: const Icon(
                                 Icons.arrow_upward,
                                 size: 20.0,
                               ),
@@ -203,7 +236,7 @@ import '../../utils/image_utils.dart';
                             ),
                           if (!showMoreInfo)
                             IconButton(
-                              icon: Icon(
+                              icon: const Icon(
                                 Icons.arrow_downward,
                                 size: 20.0,
                               ),
@@ -221,93 +254,90 @@ import '../../utils/image_utils.dart';
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            SizedBox(height: 20),
-                            Consumer<AccountsModel>(
-                            builder: (context, accountsModel, child) {
-                              // Ensure the accounts list is not empty
-                              if (accountsModel.accounts.isEmpty) {
-                                return Center(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.info_outline,
-                                        color: Colors.red,
-                                        size: 50.0,
-                                      ),
-                                      SizedBox(height: 10),
-                                      Text(
-                                        "No accounts are there",
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.blueGrey,
+                            const SizedBox(height: 20),
+                            ValueListenableBuilder<Map<String, Map<String, dynamic>>?>(
+                              valueListenable: accountsNotifier,
+                              builder: (context, accountsData, child) {
+                                // Ensure the accounts data is not null and not empty
+                                if (accountsData == null || accountsData.isEmpty) {
+                                  return const Center(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.info_outline,
+                                          color: Colors.red,
+                                          size: 50.0,
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              }
-
-
-                              List<Widget> accountWidgets = [];
-                              for (var account in accountsModel.accounts) {
-                                int? accountId = account['_id'];
-                                if (accountId == null) {
-                                  // Handle the null case
-                                  continue;
-                                }
-                                String accountName = account['name'];
-                                double income = accountIncome[accountId] ?? 0.0;
-                                double expense = accountExpense[accountId] ?? 0.0;
-                                Map<String, dynamic> currencyMap = jsonDecode(account[AccountsDB.accountCurrency]);
-
-                                // If both income and expense are zero, don't show this account
-                                if (income == 0.0 && expense == 0.0) {
-                                  continue;
-                                }
-
-                                accountWidgets.add(
-                                  accountInfoRow(accountName, "${income.toStringAsFixed(2)}", "${expense.toStringAsFixed(2)}", currencyMap),
-                                );
-                              }
-
-                              if (accountWidgets.isEmpty) {
-                                return Center(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.info_outline,
-                                        color: Colors.red,
-                                        size: 50.0,
-                                      ),
-                                      SizedBox(height: 10),
-                                      Text(
-                                        "No more info available",
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.blueGrey,
+                                        SizedBox(height: 10),
+                                        Text(
+                                          "No accounts are there",
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.blueGrey,
+                                          ),
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              }
+                                      ],
+                                    ),
+                                  );
+                                }
+                                return ValueListenableBuilder<Map<String, dynamic>?>(
+                                  valueListenable: profileNotifier,
+                                  builder: (context, profileData, child) {
 
-                              List<Widget> finalWidgets = [];
+
+                                    List<Widget> accountWidgets = [];
+                                    accountsData.forEach((documentId, account) {
+                                      // Fetch income and expense for each account from the category details
+                                      Map<String, dynamic> incomeExpenseData = ProfileDB().getIncomeExpenseForCategory(widget.documentId)[documentId] ?? {};
+                                      double income = (incomeExpenseData['totalIncome'] ?? 0).toDouble(); // Convert to double
+                                      double expense = (incomeExpenseData['totalExpense'] ?? 0).toDouble(); // Convert to double
+                                      Map<String, dynamic> currencyMap = jsonDecode(account[AccountsDB.accountCurrency]);
+
+                                      accountWidgets.add(
+                                        accountInfoRow(account['name'], income.toStringAsFixed(2), expense.toStringAsFixed(2), currencyMap),
+                                      );
+                                    });
+
+                                    if (accountWidgets.isEmpty) {
+                                      return const Center(
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(
+                                              Icons.info_outline,
+                                              color: Colors.red,
+                                              size: 50.0,
+                                            ),
+                                            SizedBox(height: 10),
+                                            Text(
+                                              "No more info available",
+                                              style: TextStyle(
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.blueGrey,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    }
+
+                                    /*List<Widget> finalWidgets = [];
                               for (int i = 0; i < accountWidgets.length; i++) {
                                 finalWidgets.add(accountWidgets[i]);
                                 if (i < accountWidgets.length - 1) {
                                   finalWidgets.add(Divider(color: Colors.grey));
                                 }
-                              }
+                              }*/
 
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: finalWidgets,
-                              );
+                                    return Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: accountWidgets,
+                                    );
+                                  }
+                                );
                             },
                           ),
                         ]),
@@ -375,4 +405,4 @@ import '../../utils/image_utils.dart';
       },
     );
   }
-}*/
+}

@@ -1,8 +1,5 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:expnz/models/TransactionsModel.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:expnz/utils/global.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../database/CategoriesDB.dart';
 import '../widgets/AppWidgets/CategoryCard.dart';
 
@@ -14,7 +11,6 @@ class CategoriesScreen extends StatefulWidget {
 class _CategoriesScreenState extends State<CategoriesScreen> with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _animation;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   @override
   void initState() {
@@ -39,50 +35,43 @@ class _CategoriesScreenState extends State<CategoriesScreen> with SingleTickerPr
   Widget build(BuildContext context) {
     return Container(
       color: Colors.blueGrey[900],
-      child: StreamBuilder<QuerySnapshot>(
-        stream: _firestore
-            .collection(CategoriesDB.collectionName)
-            .where(CategoriesDB.uid, isEqualTo: FirebaseAuth.instance.currentUser!.uid)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.data!.docs.isEmpty) {
-            return const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.category_outlined,
-                    color: Colors.grey,
-                    size: 64,
-                  ),
-                  SizedBox(height: 16),
-                  Text(
-                    'No categories available.',
-                    style: TextStyle(
+      child: ValueListenableBuilder<Map<String, Map<String, dynamic>>>(
+          valueListenable: categoriesNotifier, // The ValueNotifier for local accounts data
+          builder: (context, categoriesData, child) {
+            if (categoriesData.isEmpty) {
+              return const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.category_outlined,
                       color: Colors.grey,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w500,
+                      size: 64,
                     ),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          return ListView.builder(
-            itemCount: snapshot.data!.docs.length,
-            itemBuilder: (context, index) {
-              //final category = snapshot.data!.docs[index].data() as Map<String, dynamic>;
-              return buildAnimatedCategoryCard(
-                key: ValueKey(snapshot.data!.docs[index].id),
-                documentId: snapshot.data!.docs[index].id,
+                    SizedBox(height: 16),
+                    Text(
+                      'No categories available.',
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
               );
-            },
-          );
+            }
+            return ListView.builder(
+              itemCount: categoriesData.length,
+              itemBuilder: (context, index) {
+                final documentId = categoriesData.keys.elementAt(index);
+
+                return buildAnimatedCategoryCard(
+                  documentId: documentId,
+                );
+              },
+            );
         }
       ),
     );
@@ -103,11 +92,11 @@ class _CategoriesScreenState extends State<CategoriesScreen> with SingleTickerPr
             opacity: _animation.value,
             child: Transform.scale(
               scale: _animation.value,
-              /*child: CategoryCard(
+              child: CategoryCard(
                 key: key,
                 documentId: documentId,
                 animation: _animation,
-              ),*/
+              ),
             ),
           );
         },

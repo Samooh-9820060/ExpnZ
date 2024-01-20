@@ -1,6 +1,4 @@
 import 'dart:convert';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../database/AccountsDB.dart';
 import '../widgets/AppWidgets/AccountCard.dart';
@@ -15,7 +13,6 @@ class _AccountsScreenState extends State<AccountsScreen>
     with TickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _animation;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   @override
   void initState() {
@@ -69,7 +66,6 @@ class _AccountsScreenState extends State<AccountsScreen>
                 ),
               );
             }
-            print(accountsData);
             return ListView.builder(
               itemCount: accountsData.length,
               itemBuilder: (context, index) {

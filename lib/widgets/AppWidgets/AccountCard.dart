@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:expnz/database/ProfileDB.dart';
 import 'package:expnz/screens/AddAccount.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -24,7 +22,6 @@ class _ModernAccountCardState extends State<ModernAccountCard>
     with SingleTickerProviderStateMixin {
   late AnimationController _numberController;
   late Animation<double> _numberAnimation;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   @override
   void initState() {
