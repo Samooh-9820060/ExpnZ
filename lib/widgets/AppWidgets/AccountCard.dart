@@ -46,51 +46,26 @@ class _ModernAccountCardState extends State<ModernAccountCard>
 
   @override
   Widget build(BuildContext context) {
-
     return ValueListenableBuilder<Map<String, dynamic>?>(
       valueListenable: profileNotifier,
       builder: (context, profileData, child) {
-        double totalIncome = 0.0;
-        double totalExpense = 0.0;
-        if (profileData != null && profileData.containsKey('accounts') && profileData['accounts'] != null) {
-          Map<String, dynamic> accountsData = profileData['accounts'];
-          if (accountsData.containsKey(widget.documentId)) {
-            totalIncome = (accountsData[widget.documentId]['totalIncome'] ?? 0).toDouble();
-            totalExpense = (accountsData[widget.documentId]['totalExpense'] ?? 0).toDouble();
-          }
-        }
+        return ValueListenableBuilder<Map<String, Map<String, dynamic>>?>(
+          valueListenable: accountsNotifier,
+          builder: (context, accountsData, child) {
+            if (accountsData != null && accountsData.containsKey(widget.documentId)) {
+              final accountDetails = accountsData[widget.documentId]!;
+              final totalIncome = profileData != null && profileData['accounts'] != null && profileData['accounts'][widget.documentId] != null
+                  ? (profileData['accounts'][widget.documentId]['totalIncome'] ?? 0).toDouble()
+                  : 0.0;
+              final totalExpense = profileData != null && profileData['accounts'] != null && profileData['accounts'][widget.documentId] != null
+                  ? (profileData['accounts'][widget.documentId]['totalExpense'] ?? 0).toDouble()
+                  : 0.0;
+              final totalBalance = totalIncome - totalExpense;
 
-        return StreamBuilder<DocumentSnapshot>(
-          stream: _firestore.collection(AccountsDB.collectionName).doc(widget.documentId).snapshots(),
-          builder: (context, accountSnapshot) {
-            if (accountSnapshot.connectionState == ConnectionState.waiting) {
-              return Center(child: CircularProgressIndicator());
-            } else if (accountSnapshot.hasError || !accountSnapshot.data!.exists) {
-              return Text('Error fetching account details');
+              return buildCard(accountDetails, totalIncome, totalExpense, totalBalance);
             } else {
-              final account = accountSnapshot.data!.data() as Map<String, dynamic>;
-              // Use the local user data for total income and total expense
-              return FutureBuilder<Map<String, dynamic>?>(
-                future: ProfileDB().getLocalProfile(),
-                builder: (context, localDataSnapshot) {
-                  if (localDataSnapshot.hasData) {
-                    final userData = localDataSnapshot.data!;
-                    if (userData.containsKey('accounts') && userData['accounts'] != null) {
-                      Map<String, dynamic> accountsData = userData['accounts'];
-                      if (accountsData.containsKey(widget.documentId)) {
-                        double totalIncome = (accountsData[widget.documentId]['totalIncome'] ?? 0).toDouble();
-                        double totalExpense = (accountsData[widget.documentId]['totalExpense'] ?? 0).toDouble();
-                        double totalBalance = totalIncome - totalExpense;
-                        return buildCard(account, totalIncome, totalExpense, totalBalance);
-                      }
-                    }
-                    return buildCard(account, 0.0, 0.0, 0.0);
-                  } else {
-                    // Default to zero if local data is not available
-                    return buildCard(account, 0.0, 0.0, 0.0);
-                  }
-                },
-              );
+              // If no account data is available, display a message
+              return Center(child: Text('No accounts available.'));
             }
           },
         );
@@ -108,7 +83,7 @@ class _ModernAccountCardState extends State<ModernAccountCard>
       iconData = IconData(
         iconCodePoint,
         fontFamily: iconFontFamily,
-        fontPackage: iconFontPackage,  // Could be null, which is fine
+        fontPackage: iconFontPackage,
       );
     } else {
       // Default icon in case of null values

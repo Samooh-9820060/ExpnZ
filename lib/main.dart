@@ -1,3 +1,4 @@
+import 'package:expnz/database/AccountsDB.dart';
 import 'package:expnz/models/TempTransactionsModel.dart';
 import 'package:expnz/models/TransactionsModel.dart';
 import 'package:expnz/screens/SignInScreen.dart';
@@ -51,6 +52,7 @@ class _MyAppState extends State<MyApp> {
         user = currentUser;
         if (user != null) {
           ProfileDB().listenToProfileChanges(user!.uid);
+          AccountsDB().listenToAccountChanges(user!.uid);
         }
       });
     });

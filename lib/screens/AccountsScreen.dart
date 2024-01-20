@@ -2,10 +2,9 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../database/AccountsDB.dart';
-import '../models/TransactionsModel.dart';
 import '../widgets/AppWidgets/AccountCard.dart';
+import 'package:expnz/utils/global.dart';
 
 class AccountsScreen extends StatefulWidget {
   @override
@@ -43,15 +42,10 @@ class _AccountsScreenState extends State<AccountsScreen>
   Widget build(BuildContext context) {
     return Container(
       color: Colors.blueGrey[900],
-      child: StreamBuilder<QuerySnapshot>(
-          stream: _firestore
-              .collection(AccountsDB.collectionName)
-              .where(AccountsDB.uid, isEqualTo: FirebaseAuth.instance.currentUser!.uid) // Filter by user UID
-              .snapshots(),          builder: (context, snapshot) {
-            if (!snapshot.hasData) {
-              return Center(child: CircularProgressIndicator());
-            }
-            if (snapshot.data!.docs.isEmpty) {
+      child: ValueListenableBuilder<Map<String, Map<String, dynamic>>>(
+          valueListenable: accountsNotifier, // The ValueNotifier for local accounts data
+          builder: (context, accountsData, child) {
+            if (accountsData.isEmpty) {
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -75,17 +69,16 @@ class _AccountsScreenState extends State<AccountsScreen>
                 ),
               );
             }
+            print(accountsData);
             return ListView.builder(
-              itemCount: snapshot.data!.docs.length,
+              itemCount: accountsData.length,
               itemBuilder: (context, index) {
-                final account = snapshot.data!.docs[index];
-                Map<String, dynamic> accountData =
-                    account.data() as Map<String, dynamic>;
-                Map<String, dynamic> currencyMap =
-                    jsonDecode(accountData[AccountsDB.accountCurrency]);
+                final documentId = accountsData.keys.elementAt(index);
+                final accountData = accountsData[documentId]!;
+                final currencyMap = jsonDecode(accountData[AccountsDB.accountCurrency]);
 
                 return buildAnimatedAccountCard(
-                  documentId: account.id,
+                  documentId: documentId,
                   currencyMap: currencyMap,
                 );
               },

@@ -1,5 +1,9 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:expnz/utils/global.dart';
 
 class AccountsDB {
   static const String collectionName = 'accounts';
@@ -14,6 +18,43 @@ class AccountsDB {
   static const String accountCardNumber = 'card_number';
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  void listenToAccountChanges(String userUid) {
+    _firestore.collection(collectionName)
+        .where(uid, isEqualTo: userUid)
+        .snapshots()
+        .listen((snapshot) {
+      final Map<String, Map<String, dynamic>> newAccountsData = {};
+
+      // Add all existing accounts to the new map
+      for (var doc in snapshot.docs) {
+        newAccountsData[doc.id] = doc.data() as Map<String, dynamic>;
+      }
+
+      // Check and remove any deleted accounts from the local cache
+      final currentAccounts = accountsNotifier.value ?? {};
+      for (var docId in currentAccounts.keys) {
+        if (!newAccountsData.containsKey(docId)) {
+          newAccountsData.remove(docId);
+        }
+      }
+
+      cacheAccountsLocally(newAccountsData);
+    });
+  }
+
+  Future<void> cacheAccountsLocally(Map<String, Map<String, dynamic>> accountsData) async {
+    final prefs = await SharedPreferences.getInstance();
+    String encodedData = json.encode(accountsData);
+    await prefs.setString('userAccounts', encodedData);
+    accountsNotifier.value = accountsData;
+  }
+
+  Future<Map<String, Map<String, dynamic>>?> getLocalAccounts() async {
+    final prefs = await SharedPreferences.getInstance();
+    String? encodedData = prefs.getString('userAccounts');
+    return encodedData != null ? json.decode(encodedData) as Map<String, Map<String, dynamic>> : null;
+  }
 
   Future<DocumentReference> insertAccount(Map<String, dynamic> data) async {
     String userUid = FirebaseAuth.instance.currentUser!.uid;
