@@ -284,7 +284,58 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
 
       bool successFrom = false, successTo = false;
 
-      if (isUpdate && existingTransaction != null) {
+      try {
+        DocumentReference? idFrom;
+        DocumentReference? idTo;
+
+        if (isUpdate && existingTransaction != null) {
+          // Update existing transactions
+          await firestore.collection('transactions').doc(existingTransaction['from_id']).update(rowFrom);
+          await firestore.collection('transactions').doc(existingTransaction['to_id']).update(rowTo);
+        } else {
+          // Insert new transactions
+          idFrom = await firestore.collection('transactions').add(rowFrom);
+          idTo = await firestore.collection('transactions').add(rowTo);
+        }
+
+        // Check if both transactions were successful
+        if ((isUpdate && existingTransaction != null) || (idFrom != null && idTo != null)) {
+          // Both transactions were successful
+          await showModernSnackBar(
+            context: context,
+            message: isUpdate ? "Transfer transaction updated successfully!" : "Transfer transaction added successfully!",
+            backgroundColor: Colors.green,
+          );
+          setState(() {
+            isProcessing = false;
+          });
+          Navigator.pop(context, true);
+        } else {
+          // Handle failure
+          await showModernSnackBar(
+            context: context,
+            message: isUpdate ? "Transfer transaction was not updated" : "Transfer transaction was not added",
+            backgroundColor: Colors.redAccent,
+          );
+          setState(() {
+            isProcessing = false;
+          });
+        }
+      } catch (e) {
+        // Handle failure
+        await showModernSnackBar(
+          context: context,
+          message: isUpdate ? "Transfer transaction was not updated" : "Transfer transaction was not added",
+          backgroundColor: Colors.redAccent,
+        );
+        setState(() {
+          isProcessing = false;
+        });
+      }
+      setState(() {
+        isProcessing = false;
+      });
+      /*if (isUpdate && existingTransaction != null) {
         // Update the existing transactions (you need to manage IDs for both 'from' and 'to' transactions)
         final idFrom = await TransactionsDB().updateTransaction(existingTransaction['from_id'], rowFrom);
         final idTo = await TransactionsDB().updateTransaction(existingTransaction['to_id'], rowTo);
@@ -298,9 +349,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
 
         successFrom = idFrom;
         successTo = idTo;
-      }
+      }*/
 
-      if (successFrom && successTo) {
+      /*if (successFrom && successTo) {
         // Both transactions were successful
         await showModernSnackBar(
           context: context,
@@ -325,7 +376,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
 
       setState(() {
         isProcessing = false;
-      });
+      });*/
       return;
     }
     else {
@@ -360,27 +411,39 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
 
       bool success = false;
 
-      if (isUpdate && existingTransaction != null) {
-        // Update the existing transaction
-        final id = await TransactionsDB().updateTransaction(existingTransaction['_id'], row);
-        success = id;
-      } else {
-        // Insert a new transaction
-        final id = await TransactionsDB().insertTransaction(row);
-        success = id;
-      }
+      try {
+        DocumentReference? id;
 
-      if (success) {
-        await showModernSnackBar(
-          context: context,
-          message: isUpdate ? "Transaction updated successfully!" : "Transaction added successfully!",
-          backgroundColor: Colors.green,
-        );
-        setState(() {
-          isProcessing = false;
-        });
-        Navigator.pop(context, true);
-      } else {
+        if (isUpdate && existingTransaction != null) {
+          // Update existing transaction
+          await firestore.collection('transactions').doc(existingTransaction['_id']).update(row);
+        } else {
+          // Insert a new transaction
+          id = await firestore.collection('transactions').add(row);
+        }
+
+        // Check if the transaction was successful
+        if ((isUpdate && existingTransaction != null) || id != null) {
+          await showModernSnackBar(
+            context: context,
+            message: isUpdate ? "Transaction updated successfully!" : "Transaction added successfully!",
+            backgroundColor: Colors.green,
+          );
+          setState(() {
+            isProcessing = false;
+          });
+          Navigator.pop(context, true);
+        } else {
+          await showModernSnackBar(
+            context: context,
+            message: isUpdate ? "Transaction was not updated" : "Transaction was not added",
+            backgroundColor: Colors.redAccent,
+          );
+          setState(() {
+            isProcessing = false;
+          });
+        }
+      } catch (e) {
         await showModernSnackBar(
           context: context,
           message: isUpdate ? "Transaction was not updated" : "Transaction was not added",
@@ -391,6 +454,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
         });
       }
     }
+
+    setState(() {
+      isProcessing = false;
+    });
   }
 
 
