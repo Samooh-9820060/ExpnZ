@@ -1,7 +1,5 @@
 import 'package:expnz/database/CategoriesDB.dart';
 import 'package:flutter/material.dart';
-import 'dart:io';
-import 'package:provider/provider.dart';
 
 class CategoryChip extends StatefulWidget {
   final bool isSelected;
@@ -28,7 +26,7 @@ class _CategoryChipState extends State<CategoryChip>
     super.initState();
 
     _controller = AnimationController(
-      duration: Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 300),
       vsync: this,
     );
 
@@ -56,30 +54,39 @@ class _CategoryChipState extends State<CategoryChip>
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             // Show a loading indicator while waiting for data
-            return CircularProgressIndicator();
+            return const CircularProgressIndicator();
           }
 
           if (snapshot.hasError || snapshot.data == null) {
             // Handle error or null data
-            return SizedBox.shrink();
+            return const SizedBox.shrink();
           }
 
           // Extract details from the category
           var categoryDetails = snapshot.data!;
-          var iconData = IconData(
-            categoryDetails['iconCodePoint'],
-            fontFamily: categoryDetails['iconFontFamily'],
-            fontPackage: categoryDetails['iconFontPackage'],
-          );
           var label = categoryDetails['name'];
-          File? imageFile = categoryDetails['imageFile'];
+          String? imageUrl = categoryDetails['imageUrl'];
 
           _controller.forward();
 
-          if (categoryDetails == null) {
-            // Handle the case when the category is null (e.g., show a default widget)
-            return SizedBox.shrink();
+          // Check if imageUrl is not null and load the image
+          Widget leadingWidget;
+          if (imageUrl != null && imageUrl.isNotEmpty) {
+            leadingWidget = CircleAvatar(
+              backgroundColor: Colors.transparent,
+              radius: 12,
+              backgroundImage: NetworkImage(imageUrl),
+            );
+          } else {
+            // Load the icon if imageUrl is null
+            IconData iconData = IconData(
+              categoryDetails['iconCodePoint'],
+              fontFamily: categoryDetails['iconFontFamily'],
+              fontPackage: categoryDetails['iconFontPackage'],
+            );
+            leadingWidget = Icon(iconData, color: widget.isSelected ? Colors.blueAccent : Colors.grey, size: 24);
           }
+
 
           return GestureDetector(
             onTap: () => _animateAndRemove(),
@@ -91,15 +98,15 @@ class _CategoryChipState extends State<CategoryChip>
                   scale: _animation.value,
                   child: AnimatedOpacity(
                     opacity: _animation.value,
-                    duration: Duration(milliseconds: 100),
+                    duration: const Duration(milliseconds: 100),
                     child: child,
                   ),
                 );
               },
               child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 // Internal padding for the text and icon
-                margin: EdgeInsets.all(0),
+                margin: const EdgeInsets.all(0),
                 // Margin for external spacing
                 decoration: BoxDecoration(
                   border: Border.all(
@@ -107,7 +114,7 @@ class _CategoryChipState extends State<CategoryChip>
                         .transparent,
                     width: 1.0,
                   ),
-                  borderRadius: BorderRadius.all(
+                  borderRadius: const BorderRadius.all(
                     Radius.circular(16.0),
                   ),
                   boxShadow: [
@@ -123,28 +130,13 @@ class _CategoryChipState extends State<CategoryChip>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    CircleAvatar(
-                      backgroundColor: Colors.transparent,
-                      radius: 12,
-                      child: imageFile == null
-                          ? Icon(
-                        iconData,
-                        color: widget.isSelected ? Colors.blueAccent : Colors
-                            .grey,
-                        size: 24,
-                      )
-                          : null,
-                      backgroundImage: imageFile != null
-                          ? FileImage(imageFile!)
-                          : null,
-                    ),
-                    SizedBox(width: 4),
+                    leadingWidget,
+                    const SizedBox(width: 4),
                     Text(label),
-                    SizedBox(width: 4),
-                    InkWell( // Replacing IconButton with InkWell
+                    const SizedBox(width: 4),
+                    InkWell(
                       onTap: () => _animateAndRemove(),
-                      child: Icon(Icons.clear_sharp,
-                          size: 18), // You can choose an appropriate size
+                      child: const Icon(Icons.clear_sharp, size: 18),
                     ),
                   ],
                 ),
