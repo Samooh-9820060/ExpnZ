@@ -6,7 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class TransactionsDB {
-  static const String collectionName = 'categories';
+  static const String collectionName = 'transactions';
   static const String usersCollection = 'users';
 
   static const String uid = 'uid';

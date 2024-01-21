@@ -226,7 +226,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
 
     // Prepare Firestore reference
     FirebaseFirestore firestore = FirebaseFirestore.instance;
-    CollectionReference transactions = firestore.collection('transactions');
 
     if (_selectedType == TransactionType.transfer) {
       // Validate account selection
@@ -282,24 +281,23 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
         TransactionsDB.transactionCategoryIDs: categoryIds,
       };
 
-      bool successFrom = false, successTo = false;
-
       try {
-        DocumentReference? idFrom;
-        DocumentReference? idTo;
+        bool dataInserted = false;
 
         if (isUpdate && existingTransaction != null) {
           // Update existing transactions
-          await firestore.collection('transactions').doc(existingTransaction['from_id']).update(rowFrom);
-          await firestore.collection('transactions').doc(existingTransaction['to_id']).update(rowTo);
+          TransactionsDB().updateTransaction(existingTransaction['from_id'], rowFrom);
+          TransactionsDB().updateTransaction(existingTransaction['to_id'], rowTo);
+          dataInserted = true;
         } else {
           // Insert new transactions
-          idFrom = await firestore.collection('transactions').add(rowFrom);
-          idTo = await firestore.collection('transactions').add(rowTo);
+          TransactionsDB().insertTransaction(rowFrom);
+          TransactionsDB().insertTransaction(rowTo);
+          dataInserted = true;
         }
 
         // Check if both transactions were successful
-        if ((isUpdate && existingTransaction != null) || (idFrom != null && idTo != null)) {
+        if ((isUpdate && existingTransaction != null) || (dataInserted)) {
           // Both transactions were successful
           await showModernSnackBar(
             context: context,
@@ -335,48 +333,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
       setState(() {
         isProcessing = false;
       });
-      /*if (isUpdate && existingTransaction != null) {
-        // Update the existing transactions (you need to manage IDs for both 'from' and 'to' transactions)
-        final idFrom = await TransactionsDB().updateTransaction(existingTransaction['from_id'], rowFrom);
-        final idTo = await TransactionsDB().updateTransaction(existingTransaction['to_id'], rowTo);
-
-        successFrom = idFrom;
-        successTo = idTo;
-      } else {
-        // Insert new transactions
-        final idFrom = await TransactionsDB().insertTransaction(rowFrom);
-        final idTo = await TransactionsDB().insertTransaction(rowTo);
-
-        successFrom = idFrom;
-        successTo = idTo;
-      }*/
-
-      /*if (successFrom && successTo) {
-        // Both transactions were successful
-        await showModernSnackBar(
-          context: context,
-          message: isUpdate ? "Transfer transaction updated successfully!" : "Transfer transaction added successfully!",
-          backgroundColor: Colors.green,
-        );
-        setState(() {
-          isProcessing = false;
-        });
-        Navigator.pop(context, true);
-      } else {
-        // Handle failure
-        await showModernSnackBar(
-          context: context,
-          message: isUpdate ? "Transfer transaction was not updated" : "Transfer transaction was not added",
-          backgroundColor: Colors.redAccent,
-        );
-        setState(() {
-          isProcessing = false;
-        });
-      }
-
-      setState(() {
-        isProcessing = false;
-      });*/
       return;
     }
     else {
@@ -409,17 +365,15 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
         TransactionsDB.transactionCategoryIDs: categoryIds,
       };
 
-      bool success = false;
-
       try {
         DocumentReference? id;
 
         if (isUpdate && existingTransaction != null) {
           // Update existing transaction
-          await firestore.collection('transactions').doc(existingTransaction['_id']).update(row);
+          TransactionsDB().updateTransaction(existingTransaction['_id'], row);
         } else {
           // Insert a new transaction
-          id = await firestore.collection('transactions').add(row);
+          TransactionsDB().insertTransaction(row);
         }
 
         // Check if the transaction was successful
@@ -458,6 +412,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
     setState(() {
       isProcessing = false;
     });
+    return;
   }
 
 
@@ -1168,7 +1123,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                         ),
                         SizedBox(height: 20),
                         ExpnZButton(
-                          label: updateMode ? "Update" : "Add",
+                          label: isProcessing ? "Processing" : updateMode ? "Update" : "Add",
                           onPressed: _addUpdateTransaction,
                           primaryColor: Colors.blueAccent,  // Optional
                           textColor: Colors.white,  // Optional
