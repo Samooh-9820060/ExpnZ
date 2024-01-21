@@ -53,9 +53,9 @@ class CategoriesDB {
     categoriesNotifier.value = categoriesData;
   }
 
-  Future<Map<String, Map<String, dynamic>>?> getLocalAccounts() async {
+  Future<Map<String, Map<String, dynamic>>?> getLocalCategories() async {
     final prefs = await SharedPreferences.getInstance();
-    String? encodedData = prefs.getString('userAccounts');
+    String? encodedData = prefs.getString('userCategories');
     return encodedData != null ? json.decode(encodedData) as Map<String, Map<String, dynamic>> : null;
   }
 

@@ -1,9 +1,8 @@
 import 'package:expnz/screens/AddAccount.dart';
 import 'package:expnz/screens/AddCategory.dart';
+import 'package:expnz/screens/AddTransaction.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
-import '../models/TransactionsModel.dart';
 
 class FloatingActionMenu extends StatelessWidget {
   final bool isOpened;
@@ -32,7 +31,7 @@ class FloatingActionMenu extends StatelessWidget {
           onTap: () async {
             final result = await onPressed();
             if (result) {
-              Provider.of<TransactionsModel>(context, listen: false).fetchTransactions();
+              //Provider.of<TransactionsModel>(context, listen: false).fetchTransactions();
             }
             closeMenu(); // Close the menu
           },
@@ -82,7 +81,7 @@ class FloatingActionMenu extends StatelessWidget {
                     context,
                     MaterialPageRoute(
                         //builder: (context) => AddTransactionScreen()),
-                      builder: (context) => AddAccountScreen()),
+                      builder: (context) => AddTransactionScreen()),
                   );
                   return result != null && result == true;
                 },

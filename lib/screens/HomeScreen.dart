@@ -11,7 +11,6 @@ import 'package:provider/provider.dart';
 
 import '../database/AccountsDB.dart';
 import '../models/TempTransactionsModel.dart';
-import '../models/TransactionsModel.dart';
 import '../widgets/AppWidgets/FinanceCard.dart';
 import '../widgets/AppWidgets/NotificationsCard.dart';
 import '../widgets/AppWidgets/SummaryMonthCardWidget.dart';

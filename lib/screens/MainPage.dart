@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:expnz/models/TempTransactionsModel.dart';
-import 'package:expnz/models/TransactionsModel.dart';
 import 'package:expnz/screens/AccountsScreen.dart';
 import 'package:expnz/screens/CategoriesScreen.dart';
 import 'package:expnz/screens/OverviewScreen.dart';
@@ -50,7 +49,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin, Widg
     _fetchUserData();
     initializeApp(context);
     Future.delayed(Duration.zero, () {
-      Provider.of<TransactionsModel>(context, listen: false).fetchTransactions();
       Provider.of<TempTransactionsModel>(context, listen: false).fetchTransactions();
     });
     _animationController = AnimationController(

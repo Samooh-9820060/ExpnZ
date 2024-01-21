@@ -1,12 +1,14 @@
 import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:expnz/widgets/SimpleWidgets/ExpnZTextField.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../database/AccountsDB.dart';
 import '../database/TempTransactionsDB.dart';
 import '../database/TransactionsDB.dart';
-import '../models/TransactionsModel.dart';
+import '../utils/global.dart';
 import '../widgets/AppWidgets/BuildCategoriesDropdown.dart';
 import '../widgets/AppWidgets/CategoryChip.dart';
 import '../widgets/AppWidgets/SelectAccountCard.dart';
@@ -15,7 +17,7 @@ import '../widgets/SimpleWidgets/ModernSnackBar.dart';
 
 enum TransactionType { income, expense, transfer }
 
-/*class AddTransactionScreen extends StatefulWidget {
+class AddTransactionScreen extends StatefulWidget {
   final Map<String, dynamic>? transaction; // Nullable named parameter
   final int? tempTransactionId; // New nullable named parameter
 
@@ -31,9 +33,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
   int selectedFromAccountIndex = -1;
   int selectedToAccountIndex = -1;
   int selectedAccoutIndex = -1;
-  int selectedFromAccountId = -1;
-  int selectedToAccountId = -1;
-  int selectedAccoutId = -1;
+  String selectedFromAccountId = "-1";
+  String selectedToAccountId = "-1";
+  String selectedAccoutId = "-1";
 
   late TextEditingController _nameController;
   late TextEditingController _descriptionController;
@@ -61,8 +63,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
     _nameController = TextEditingController();
     _descriptionController = TextEditingController();
     _amountController = TextEditingController();
-    Provider.of<AccountsModel>(context, listen: false).fetchAccounts();
-    Provider.of<CategoriesModel>(context, listen: false).fetchCategories();
     if (widget.transaction != null) { updateMode = true; loadTransactionData(); }
     if (widget.tempTransactionId != null) { tempAdding = true; loadTempTransactionData(); }
   }
@@ -91,54 +91,64 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
   }
 
   void loadTransactionData() {
-    final String name = widget.transaction?['name'] ?? 'Unknown';
-    final String description = widget.transaction?['description'] ?? 'Unknown';
-    final int accountId = widget.transaction?['account_id'];
-    final String date = widget.transaction?['date'];
-    final String time = widget.transaction?['time'] ?? 'Unknown';
-    final double amount = widget.transaction?['amount'] ?? 0.0;
-    final String type = widget.transaction?['type'] ?? 'Unknown';
+    final transactionsData = transactionsNotifier.value;
 
-    if (type == 'expense') {
-      _selectedType = TransactionType.expense;
-    } else if (type == 'income') {
-      _selectedType = TransactionType.income;
-    }
-    _nameController.text = name;
-    _descriptionController.text = description;
-    _amountController.text = amount.toString();
-    if (date != null && time != null) {
-      // Combine the date and time into a single DateTime object
-      DateTime completeDateTime = DateTime.parse("$date $time");
-      selectedDate = DateTime.parse(date);
-      // Extract the time from the complete DateTime object
-      selectedTime = TimeOfDay.fromDateTime(completeDateTime);
-    }
+    // Extract the transaction data using the widget's transaction ID
+    final String transactionId = widget.transaction?['documentName'];
+    final transaction = transactionsData?[transactionId];
 
-    final accountsModel = Provider.of<AccountsModel>(context, listen: false);
-    if (accountId != null) {
-      selectedAccoutIndex = accountsModel.accounts.indexWhere((account) => account[AccountsDB.accountId] == accountId);
-      if (selectedAccoutIndex != -1) {
-        selectedAccoutId = accountId;
+    if (transaction != null) {
+      final String name = transaction[TransactionsDB.transactionName] ?? 'Unknown';
+      final String description = transaction[TransactionsDB.transactionDescription] ?? 'Unknown';
+      final String accountId = transaction[TransactionsDB.transactionAccountId];
+      final String date = transaction[TransactionsDB.transactionDate];
+      final String time = transaction[TransactionsDB.transactionTime] ?? 'Unknown';
+      final double amount = transaction[TransactionsDB.transactionAmount] ?? 0.0;
+      final String type = transaction[TransactionsDB.transactionType] ?? 'Unknown';
+
+      if (type == 'expense') {
+        _selectedType = TransactionType.expense;
+      } else if (type == 'income') {
+        _selectedType = TransactionType.income;
+      }
+
+      _nameController.text = name;
+      _descriptionController.text = description;
+      _amountController.text = amount.toString();
+
+      // Combine date and time...
+      if (date != null && time != null) {
+        DateTime completeDateTime = DateTime.parse("$date $time");
+        selectedDate = DateTime.parse(date);
+        selectedTime = TimeOfDay.fromDateTime(completeDateTime);
+      }
+
+      // Fetch account index using accountData
+      final accountData = accountsNotifier.value;
+      if (accountId != null && accountData != null) {
+        selectedAccoutIndex = accountData.entries
+            .toList()
+            .indexWhere((entry) => entry.key == accountId.toString());
+        if (selectedAccoutIndex != -1) {
+          selectedAccoutId = accountId;
+        }
+      }
+      // Processing categories...
+      final String? categoriesString = transaction[TransactionsDB.transactionCategoryIDs] ?? '';
+      if (categoriesString != null) {
+        final List<int> categoryIds = categoriesString
+            .split(',')
+            .map((e) => int.tryParse(e.trim()) ?? 0)
+            .toList();
+
+        selectedCategoriesList.clear();
+        for (int categoryId in categoryIds) {
+          selectedCategoriesList.add({
+            'id': categoryId,
+          });
+        }
       }
     }
-    final String? categoriesString = widget.transaction?['categories'] ?? '';
-
-    if (categoriesString != null) {
-      final List<int> categoryIds = categoriesString
-          .split(',')
-          .map((e) => int.tryParse(e.trim()) ?? 0)
-          .toList();
-
-      selectedCategoriesList.clear();  // Clear the list if you want to start fresh
-
-      for (int categoryId in categoryIds) {
-        selectedCategoriesList.add({
-          'id': categoryId,
-        });
-      }
-    }
-
   }
 
   @override
@@ -214,6 +224,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
       return;
     }
 
+    // Prepare Firestore reference
+    FirebaseFirestore firestore = FirebaseFirestore.instance;
+    CollectionReference transactions = firestore.collection('transactions');
+
     if (_selectedType == TransactionType.transfer) {
       // Validate account selection
       if (selectedFromAccountIndex < 0 || selectedToAccountIndex < 0) {
@@ -246,29 +260,28 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
 
       // Prepare data for "withdrawal" from the source account
       Map<String, dynamic> rowFrom = {
-        TransactionsDB.columnType: "expense",
-        TransactionsDB.columnName: name,
-        TransactionsDB.columnDescription: description,
-        TransactionsDB.columnAmount: amount,
-        TransactionsDB.columnDate: DateFormat('yyyy-MM-dd').format(selectedDate),
-        TransactionsDB.columnTime: selectedTime.format(context),
-        TransactionsDB.columnAccountId: selectedFromAccountId,
-        TransactionsDB.columnCategories: categoryIds,
+        TransactionsDB.transactionType: "expense",
+        TransactionsDB.transactionName: name,
+        TransactionsDB.transactionDescription: description,
+        TransactionsDB.transactionAmount: amount,
+        TransactionsDB.transactionDate: DateFormat('yyyy-MM-dd').format(selectedDate),
+        TransactionsDB.transactionTime: selectedTime.format(context),
+        TransactionsDB.transactionAccountId: selectedFromAccountId,
+        TransactionsDB.transactionCategoryIDs: categoryIds,
       };
 
       // Prepare data for "deposit" into the destination account
       Map<String, dynamic> rowTo = {
-        TransactionsDB.columnType: "income",
-        TransactionsDB.columnName: name,
-        TransactionsDB.columnDescription: description,
-        TransactionsDB.columnAmount: amount,
-        TransactionsDB.columnDate: DateFormat('yyyy-MM-dd').format(selectedDate),
-        TransactionsDB.columnTime: selectedTime.format(context),
-        TransactionsDB.columnAccountId: selectedToAccountId,
-        TransactionsDB.columnCategories: categoryIds,
+        TransactionsDB.transactionType: "income",
+        TransactionsDB.transactionName: name,
+        TransactionsDB.transactionDescription: description,
+        TransactionsDB.transactionAmount: amount,
+        TransactionsDB.transactionDate: DateFormat('yyyy-MM-dd').format(selectedDate),
+        TransactionsDB.transactionTime: selectedTime.format(context),
+        TransactionsDB.transactionAccountId: selectedToAccountId,
+        TransactionsDB.transactionCategoryIDs: categoryIds,
       };
 
-      final transactionsModel = Provider.of<TransactionsModel>(context, listen: false);
       bool successFrom = false, successTo = false;
 
       if (isUpdate && existingTransaction != null) {
@@ -276,20 +289,19 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
         final idFrom = await TransactionsDB().updateTransaction(existingTransaction['from_id'], rowFrom);
         final idTo = await TransactionsDB().updateTransaction(existingTransaction['to_id'], rowTo);
 
-        successFrom = idFrom != null && idFrom > 0;
-        successTo = idTo != null && idTo > 0;
+        successFrom = idFrom;
+        successTo = idTo;
       } else {
         // Insert new transactions
         final idFrom = await TransactionsDB().insertTransaction(rowFrom);
         final idTo = await TransactionsDB().insertTransaction(rowTo);
 
-        successFrom = idFrom != null && idFrom > 0;
-        successTo = idTo != null && idTo > 0;
+        successFrom = idFrom;
+        successTo = idTo;
       }
 
       if (successFrom && successTo) {
         // Both transactions were successful
-        transactionsModel.fetchTransactions();
         await showModernSnackBar(
           context: context,
           message: isUpdate ? "Transfer transaction updated successfully!" : "Transfer transaction added successfully!",
@@ -336,31 +348,29 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
 
       // Prepare the transaction data
       Map<String, dynamic> row = {
-        TransactionsDB.columnType: _selectedType.toString().split('.').last,  // income, expense or transfer
-        TransactionsDB.columnName: name,
-        TransactionsDB.columnDescription: description,
-        TransactionsDB.columnAmount: amount,
-        TransactionsDB.columnDate: DateFormat('yyyy-MM-dd').format(selectedDate),
-        TransactionsDB.columnTime: selectedTime.format(context),  // You might want to store this differently
-        TransactionsDB.columnAccountId: selectedAccoutId,
-        TransactionsDB.columnCategories: categoryIds,
+        TransactionsDB.transactionType: _selectedType.toString().split('.').last,  // income, expense or transfer
+        TransactionsDB.transactionName: name,
+        TransactionsDB.transactionDescription: description,
+        TransactionsDB.transactionAmount: amount,
+        TransactionsDB.transactionDate: DateFormat('yyyy-MM-dd').format(selectedDate),
+        TransactionsDB.transactionTime: selectedTime.format(context),  // You might want to store this differently
+        TransactionsDB.transactionAccountId: selectedAccoutId,
+        TransactionsDB.transactionCategoryIDs: categoryIds,
       };
 
-      final transactionsModel = Provider.of<TransactionsModel>(context, listen: false);
       bool success = false;
 
       if (isUpdate && existingTransaction != null) {
         // Update the existing transaction
         final id = await TransactionsDB().updateTransaction(existingTransaction['_id'], row);
-        success = id != null && id > 0;
+        success = id;
       } else {
         // Insert a new transaction
         final id = await TransactionsDB().insertTransaction(row);
-        success = id != null && id > 0;
+        success = id;
       }
 
       if (success) {
-        transactionsModel.fetchTransactions();
         await showModernSnackBar(
           context: context,
           message: isUpdate ? "Transaction updated successfully!" : "Transaction added successfully!",
@@ -454,8 +464,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
 
   @override
   Widget build(BuildContext context) {
-    final categoriesModel = Provider.of<CategoriesModel>(context);
-
     return WillPopScope(
       onWillPop: () async {
         Navigator.pop(context, false);
@@ -600,19 +608,23 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                             SizedBox(height: 10),
                             Container(
                               height: 150, // set the height
-                              child: Consumer<AccountsModel>(
-                                builder: (context, accountsModel, child) {
-                                  if (accountsModel.accounts.isEmpty) {
+                              child: ValueListenableBuilder<Map<String, Map<String, dynamic>>?>(
+                                valueListenable: accountsNotifier,
+                                builder: (context, accountsData, child) {
+                                  if (accountsData == null || accountsData.isEmpty) {
                                     return Center(
                                       child: Text('No accounts available.'),
                                     );
                                   } else {
+                                    List<String> accountIds = accountsData.keys.toList();
+
                                     return ListView.builder(
                                       padding: EdgeInsets.zero,
                                       scrollDirection: Axis.horizontal,
-                                      itemCount: accountsModel.accounts.length,
+                                      itemCount: accountIds.length,
                                       itemBuilder: (context, index) {
-                                        final account = accountsModel.accounts[index];
+                                        final String accountId = accountIds[index];
+                                        final account = accountsData[accountId]!;
                                         Map<String, dynamic> currencyMap = jsonDecode(account[AccountsDB.accountCurrency]);
                                         String currencyCode = currencyMap['code'] as String;
 
@@ -620,11 +632,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                           onTap: () {
                                             setState(() {
                                               selectedAccoutIndex = index;
-                                              selectedAccoutId = account[AccountsDB.accountId];
+                                              selectedAccoutId = accountId;
                                             });
                                           },
                                           child: AccountCard(
-                                            accountId: account[AccountsDB.accountId],
+                                            accountId: accountId,
                                             icon: IconData(
                                               account[AccountsDB.accountIconCodePoint],
                                               fontFamily: account[AccountsDB.accountIconFontFamily],
@@ -638,14 +650,14 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                       },
                                     );
                                   }
-                                }, // This is where the missing '}' should be placed.
+                                },
                               ),
                             ),
                           ],
                         ),
                         SizedBox(height: 16),
                         // Category Selector
-                        Column(
+                        /*Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             SizedBox(height: 10),
@@ -746,7 +758,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                               ],
                             ),
                           ],
-                        ),
+                        ),*/
                         SizedBox(height: 20),
                         ExpnZButton(
                           label: updateMode ? "Update" : "Add",
@@ -855,19 +867,23 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                             SizedBox(height: 10),
                             Container(
                               height: 150, // set the height
-                              child: Consumer<AccountsModel>(
-                                builder: (context, accountsModel, child) {
-                                  if (accountsModel.accounts.isEmpty) {
+                              child: ValueListenableBuilder<Map<String, Map<String, dynamic>>?>(
+                                valueListenable: accountsNotifier,
+                                builder: (context, accountsData, child) {
+                                  if (accountsData == null || accountsData.isEmpty) {
                                     return Center(
                                       child: Text('No accounts available.'),
                                     );
                                   } else {
+                                    List<String> accountIds = accountsData.keys.toList();
+
                                     return ListView.builder(
                                       padding: EdgeInsets.zero,
                                       scrollDirection: Axis.horizontal,
-                                      itemCount: accountsModel.accounts.length,
+                                      itemCount: accountIds.length,
                                       itemBuilder: (context, index) {
-                                        final account = accountsModel.accounts[index];
+                                        final String accountId = accountIds[index];
+                                        final account = accountsData[accountId]!;
                                         Map<String, dynamic> currencyMap = jsonDecode(account[AccountsDB.accountCurrency]);
                                         String currencyCode = currencyMap['code'] as String;
 
@@ -875,11 +891,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                           onTap: () {
                                             setState(() {
                                               selectedFromAccountIndex = index;
-                                              selectedFromAccountId = account[AccountsDB.accountId];
+                                              selectedFromAccountId = accountId;
                                             });
                                           },
                                           child: AccountCard(
-                                            accountId: account[AccountsDB.accountId],
+                                            accountId: accountId,
                                             icon: IconData(
                                               account[AccountsDB.accountIconCodePoint],
                                               fontFamily: account[AccountsDB.accountIconFontFamily],
@@ -913,19 +929,23 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                             SizedBox(height: 10),
                             Container(
                               height: 150, // set the height
-                              child: Consumer<AccountsModel>(
-                                builder: (context, accountsModel, child) {
-                                  if (accountsModel.accounts.isEmpty) {
+                              child: ValueListenableBuilder<Map<String, Map<String, dynamic>>?>(
+                                valueListenable: accountsNotifier,
+                                builder: (context, accountsData, child) {
+                                  if (accountsData == null || accountsData.isEmpty) {
                                     return Center(
                                       child: Text('No accounts available.'),
                                     );
                                   } else {
+                                    List<String> accountIds = accountsData.keys.toList();
+
                                     return ListView.builder(
                                       padding: EdgeInsets.zero,
                                       scrollDirection: Axis.horizontal,
-                                      itemCount: accountsModel.accounts.length,
+                                      itemCount: accountIds.length,
                                       itemBuilder: (context, index) {
-                                        final account = accountsModel.accounts[index];
+                                        final String accountId = accountIds[index];
+                                        final account = accountsData[accountId]!;
                                         Map<String, dynamic> currencyMap = jsonDecode(account[AccountsDB.accountCurrency]);
                                         String currencyCode = currencyMap['code'] as String;
 
@@ -933,11 +953,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                           onTap: () {
                                             setState(() {
                                               selectedToAccountIndex = index;
-                                              selectedToAccountId = account[AccountsDB.accountId];
+                                              selectedToAccountId = accountId;
                                             });
                                           },
                                           child: AccountCard(
-                                            accountId: account[AccountsDB.accountId],
+                                            accountId: accountId,
                                             icon: IconData(
                                               account[AccountsDB.accountIconCodePoint],
                                               fontFamily: account[AccountsDB.accountIconFontFamily],
@@ -1009,7 +1029,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                         borderRadius: BorderRadius.circular(25),
                                       ),
                                       color: Colors.blueGrey[700],
-                                      child: Container(
+                                      /*child: Container(
                                         width: MediaQuery.of(context).size.width, // Adjust as needed
                                         child: Consumer<CategoriesModel>(
                                           builder: (context, categoriesModel, child) {
@@ -1022,7 +1042,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                             );
                                           },
                                         ),
-                                      ),
+                                      ),*/
                                     ),
                                   ),
                                 SizedBox(height: 10),
@@ -1078,5 +1098,5 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
       ),
     );
   }
-}*/
+}
 

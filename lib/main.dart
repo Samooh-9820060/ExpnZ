@@ -1,7 +1,7 @@
 import 'package:expnz/database/AccountsDB.dart';
 import 'package:expnz/database/CategoriesDB.dart';
+import 'package:expnz/database/TransactionsDB.dart';
 import 'package:expnz/models/TempTransactionsModel.dart';
-import 'package:expnz/models/TransactionsModel.dart';
 import 'package:expnz/screens/SignInScreen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -20,7 +20,6 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (context) => TransactionsModel()),
         ChangeNotifierProvider(create: (context) => TempTransactionsModel()),
       ],
         child: const MyApp(),
@@ -45,6 +44,9 @@ class _MyAppState extends State<MyApp> {
     if (user != null) {
       // Start listening to profile changes if the user is logged in
       ProfileDB().listenToProfileChanges(user!.uid);
+      AccountsDB().listenToAccountChanges(user!.uid);
+      CategoriesDB().listenToCategoryChanges(user!.uid);
+      TransactionsDB().listenToTransactionChanges(user!.uid);
     }
 
     // Set up an auth state change listener
@@ -55,6 +57,7 @@ class _MyAppState extends State<MyApp> {
           ProfileDB().listenToProfileChanges(user!.uid);
           AccountsDB().listenToAccountChanges(user!.uid);
           CategoriesDB().listenToCategoryChanges(user!.uid);
+          TransactionsDB().listenToTransactionChanges(user!.uid);
         }
       });
     });

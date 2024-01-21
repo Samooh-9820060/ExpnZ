@@ -5,7 +5,7 @@ class AccountCard extends StatelessWidget {
   final String currency;
   final String accountName;
   final bool isSelected;
-  final int accountId;
+  final String accountId;
   double? verticalMargin;
   double? horizontalMargin;
 
