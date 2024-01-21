@@ -3,12 +3,15 @@ import 'dart:io';
 import 'package:expnz/screens/AddCategory.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../database/AccountsDB.dart';
 import '../../database/CategoriesDB.dart';
 import '../../database/ProfileDB.dart';
 import '../../utils/animation_utils.dart';
 import '../../utils/global.dart';
 import '../../utils/image_utils.dart';
+import 'package:http/http.dart' as http;
+
 
 class CategoryCard extends StatefulWidget {
   final Key? key;
@@ -108,12 +111,33 @@ class _CategoryCardState extends State<CategoryCard>
       iconData = Icons.category_outlined;
     }
 
+    String? imageUrl = category[CategoriesDB.categorySelectedImageBlob];
+    String fileName = imageUrl != null ? generateFileNameFromUrl(imageUrl) : 'default.jpg';
+
+    String? categoryName = category[CategoriesDB.categoryName];
+    Color? primaryColor = category[CategoriesDB.categoryColor] != null
+        ? Color(category[CategoriesDB.categoryColor] as int) : null;
+
+    /*Future<File?> downloadImage(String imageUrl) async {
+      try {
+        final response = await http.get(Uri.parse(imageUrl));
+        final documentDirectory = await getApplicationDocumentsDirectory();
+        final file = File('${documentDirectory.path}/tempImage');
+        file.writeAsBytesSync(response.bodyBytes);
+
+        return file;
+      } catch (e) {
+        // Handle exceptions
+        return null;
+      }
+    }
+
     Future<File?>? _imageFileFuture;
+
     if (category.containsKey(CategoriesDB.categorySelectedImageBlob) &&
         category[CategoriesDB.categorySelectedImageBlob] != null) {
-      _imageFileFuture = bytesToFile(
-        category[CategoriesDB.categorySelectedImageBlob] as List<int>,
-      );
+      String imageUrl = category[CategoriesDB.categorySelectedImageBlob];
+      _imageFileFuture = downloadImage(imageUrl);
     }
 
     String? categoryName = category[CategoriesDB.categoryName];
@@ -121,7 +145,7 @@ class _CategoryCardState extends State<CategoryCard>
     if (category[CategoriesDB.categoryColor] != null) {
       primaryColor = Color(category[CategoriesDB.categoryColor] as int);
     }
-
+*/
 
     return AnimatedBuilder(
       animation: _deleteController,
@@ -171,9 +195,26 @@ class _CategoryCardState extends State<CategoryCard>
                       Row(
                         children: [
                           FutureBuilder<File?>(
-                            future: _imageFileFuture,
+                            future: imageUrl != null ? getImageFile(imageUrl, fileName) : null,
                             builder: (context, snapshot) {
-                              if (_imageFileFuture == null) {
+                              if (snapshot.connectionState == ConnectionState.waiting) {
+                                return const CircularProgressIndicator(); // Show loading indicator
+                              } else if (snapshot.hasError || snapshot.data == null) {
+                                return CircleAvatar(
+                                  backgroundColor: primaryColor,
+                                  child: Icon(
+                                    iconData,
+                                    color: Colors.white,
+                                    size: 24,
+                                  ),
+                                );
+                              } else {
+                                return CircleAvatar(
+                                  backgroundColor: primaryColor,
+                                  backgroundImage: snapshot.data != null ? FileImage(snapshot.data!) : null,
+                                );
+                              }
+                              /*if (_imageFileFuture == null) {
                                 // _imageFileFuture is null, show the icon
                                 return CircleAvatar(
                                   backgroundColor: primaryColor,
@@ -206,7 +247,7 @@ class _CategoryCardState extends State<CategoryCard>
                               } else {
                                 // File still loading
                                 return CircularProgressIndicator();
-                              }
+                              }*/
                             },
                           ),
                           const SizedBox(width: 16),

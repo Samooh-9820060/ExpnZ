@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
-
+import 'package:http/http.dart' as http;
 import '../database/CategoriesDB.dart';
 
 Future<File> bytesToFile(List<int> bytes) async {
@@ -56,4 +56,33 @@ Widget getCategoryWidget(Map<String, dynamic>? category, {double? radius = 12.0}
     }
   }
   return const Icon(Icons.help_outline, size: 24); // Default icon if category is null
+}
+
+Future<File?> getImageFile(String imageUrl, String fileName) async {
+  final documentDirectory = await getApplicationDocumentsDirectory();
+  final file = File('${documentDirectory.path}/$fileName');
+
+  // Check if image already exists in local storage
+  if (await file.exists()) {
+    return file; // Image exists, return it
+  } else {
+    // Image does not exist, download and save it
+    try {
+      final response = await http.get(Uri.parse(imageUrl));
+      if (response.statusCode == 200) {
+        await file.writeAsBytes(response.bodyBytes);
+        return file; // Return the saved file
+      }
+    } catch (e) {
+      // Handle exceptions
+      print("Error downloading image: $e");
+      return null;
+    }
+  }
+  return null; // Return null if image not found and download fails
+}
+
+String generateFileNameFromUrl(String url) {
+  // Extract the file name from the URL
+  return url.split('/').last;
 }

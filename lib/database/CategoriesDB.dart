@@ -1,8 +1,11 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:expnz/utils/global.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CategoriesDB {
@@ -16,7 +19,7 @@ class CategoriesDB {
   static const String categoryIconCodePoint = 'iconCodePoint';
   static const String categoryIconFontFamily = 'iconFontFamily';
   static const String categoryIconFontPackage = 'iconFontPackage';
-  static const String categorySelectedImageBlob = 'selectedImageBlob';
+  static const String categorySelectedImageBlob = 'imageUrl';
   static const String totalIncome = 'totalIncome';
   static const String totalExpense = 'totalExpense';
 
@@ -113,7 +116,62 @@ class CategoriesDB {
     });
   }
 
-  Future<DocumentSnapshot> getSelectedCategory(String documentId) async {
-    return await _firestore.collection(collectionName).doc(documentId).get();
+  Future<Map<String, dynamic>?> getSelectedCategory(String documentId) async {
+    final prefs = await SharedPreferences.getInstance();
+    String? encodedData = prefs.getString('userCategories');
+
+    if (encodedData != null) {
+      Map<String, dynamic> categoriesData = json.decode(encodedData) as Map<String, dynamic>;
+
+      // Check if the category with the given documentId exists in the local data
+      if (categoriesData.containsKey(documentId)) {
+        return categoriesData[documentId] as Map<String, dynamic>;
+      }
+    }
+    // Return null if no matching category is found
+    return null;
+  }
+
+  Future<String> uploadImageToStorage(File imageFile) async {
+    String userId = FirebaseAuth.instance.currentUser!.uid;
+    String fileName = 'categories/${userId}/${DateTime.now().millisecondsSinceEpoch}'; // Unique file name
+    Reference storageRef = FirebaseStorage.instance.ref().child(fileName);
+
+    UploadTask uploadTask = storageRef.putFile(imageFile);
+    TaskSnapshot snapshot = await uploadTask;
+    String downloadUrl = await snapshot.ref.getDownloadURL();
+
+    return downloadUrl; // URL to the uploaded image
+  }
+
+  Future<void> saveImageUrlToFirestore(String imageUrl, String documentId) async {
+    var categoriesCollection = FirebaseFirestore.instance.collection('categories');
+    await categoriesCollection.doc(documentId).update({'imageUrl': imageUrl});
+  }
+
+  Future<String> saveImageLocally(File imageFile) async {
+    final directory = await getApplicationDocumentsDirectory();
+    final imagePath = '${directory.path}/images';
+    final imageDirectory = Directory(imagePath);
+
+    if (!imageDirectory.existsSync()) {
+      imageDirectory.createSync();
+    }
+
+    final fileName = 'image_${DateTime.now().millisecondsSinceEpoch}.png';
+    final file = File('${imageDirectory.path}/$fileName');
+
+    await file.writeAsBytes(await imageFile.readAsBytes());
+    return file.path;
+  }
+
+  Future<void> saveImagePathToSharedPreferences(String filePath) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('localImagePath', filePath);
+  }
+
+  Future<String?> getLocalImagePathFromSharedPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('localImagePath');
   }
 }

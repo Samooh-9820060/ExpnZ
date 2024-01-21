@@ -49,8 +49,7 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
   }
 
   void _loadExistingCategory(String documentId) async {
-    var snapshot = await CategoriesDB().getSelectedCategory(documentId);
-    var categoryData = snapshot.data() as Map<String, dynamic>?;
+    var categoryData = await CategoriesDB().getSelectedCategory(documentId);
 
     IconData? newSelectedIcon;
     File? newSelectedImage;
@@ -60,10 +59,10 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
       isModifyMode = true;
 
       if (categoryData[CategoriesDB.categorySelectedImageBlob] == null) {
-        String? iconFontPackage = categoryData[CategoriesDB.categoryIconFontPackage] as String?;
+        String? iconFontPackage = categoryData[CategoriesDB.categoryIconFontPackage];
         newSelectedIcon = IconData(
-          categoryData[CategoriesDB.categoryIconCodePoint] as int,
-          fontFamily: categoryData[CategoriesDB.categoryIconFontFamily] as String,
+          categoryData[CategoriesDB.categoryIconCodePoint],
+          fontFamily: categoryData[CategoriesDB.categoryIconFontFamily],
           fontPackage: iconFontPackage,
         );
       } else {
@@ -244,10 +243,11 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
       return;
     }
 
-    List<int>? imageBytes = null;
+    String imageUrl = '';
     if (selectedImage != null) {
-      imageBytes = await selectedImage!.readAsBytes();
+      imageUrl = await CategoriesDB().uploadImageToStorage(selectedImage!);
     }
+
     // Prepare data to insert or update
     Map<String, dynamic> row = {
       CategoriesDB.categoryName: _categoryController.text.trim(),
@@ -256,8 +256,7 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
       CategoriesDB.categoryIconCodePoint: selectedIcon.codePoint,
       CategoriesDB.categoryIconFontFamily: selectedIcon.fontFamily,
       CategoriesDB.categoryIconFontPackage: selectedIcon.fontPackage,
-      // Handle the image data as per your requirements
-      CategoriesDB.categorySelectedImageBlob: selectedImage != null ? await selectedImage!.readAsBytes() : null,
+      CategoriesDB.categorySelectedImageBlob: imageUrl,
     };
 
 

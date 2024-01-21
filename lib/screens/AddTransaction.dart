@@ -657,7 +657,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                         ),
                         SizedBox(height: 16),
                         // Category Selector
-                        /*Column(
+                        Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             SizedBox(height: 10),
@@ -710,15 +710,26 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                       color: Colors.blueGrey[700],
                                       child: Container(
                                         width: MediaQuery.of(context).size.width, // Adjust as needed
-                                        child: Consumer<CategoriesModel>(
-                                          builder: (context, categoriesModel, child) {
-                                            return buildCategoriesDropdown(
-                                              categoriesModel,
-                                              selectedCategoriesList,
-                                              _categorySearchController.text,
-                                              setState, // Assuming this is within a StatefulWidget and you have access to setState
-                                              _showDropdown,
-                                            );
+                                        child: ValueListenableBuilder<Map<String, Map<String, dynamic>>?>(
+                                          valueListenable: categoriesNotifier,
+                                          builder: (context, categoriesData, child) {
+                                            if (categoriesData != null && categoriesData.isNotEmpty) {
+                                              List<Map<String, dynamic>> categoriesList = categoriesData.entries.map((entry) {
+                                                return {
+                                                  'id': entry.key,
+                                                  ...entry.value as Map<String, dynamic>,
+                                                };
+                                              }).toList();
+
+                                              return buildCategoriesDropdown(
+                                                  selectedCategoriesList,
+                                                  _categorySearchController.text,
+                                                  setState, // Pass setState directly without invoking it
+                                                _showDropdown,
+                                              );
+                                            } else {
+                                              return const Center(child: Text('No categories available.'));
+                                            }
                                           },
                                         ),
                                       ),
@@ -733,11 +744,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                         (int index) {
                                       final category = selectedCategoriesList[index];
                                       dynamic categoryIdRaw = category['id'];
-                                      int categoryId = 0;
+                                      String categoryId = "";
 
                                       if (categoryIdRaw is String) {
-                                        categoryId = int.parse(categoryIdRaw);
-                                      } else if (categoryIdRaw is int) {
                                         categoryId = categoryIdRaw;
                                       } else {
                                         // Handle error: unknown type
@@ -758,7 +767,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                               ],
                             ),
                           ],
-                        ),*/
+                        ),
                         SizedBox(height: 20),
                         ExpnZButton(
                           label: updateMode ? "Update" : "Add",
@@ -985,7 +994,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
+                                const Text(
                                   'Select Category',
                                   style: TextStyle(
                                     color: Colors.white,
@@ -1029,20 +1038,32 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                         borderRadius: BorderRadius.circular(25),
                                       ),
                                       color: Colors.blueGrey[700],
-                                      /*child: Container(
+                                      child: Container(
                                         width: MediaQuery.of(context).size.width, // Adjust as needed
-                                        child: Consumer<CategoriesModel>(
-                                          builder: (context, categoriesModel, child) {
-                                            return buildCategoriesDropdown(
-                                              categoriesModel,
-                                              selectedCategoriesList,
-                                              _categorySearchController.text,
-                                              setState, // Assuming this is within a StatefulWidget and you have access to setState
-                                              _showDropdown,
-                                            );
+                                        child: ValueListenableBuilder<Map<String, dynamic>?>(
+                                          valueListenable: categoriesNotifier,
+                                          builder: (context, categoriesData, child) {
+                                            if (categoriesData != null && categoriesData.isNotEmpty) {
+                                              List<Map<String, dynamic>> categoriesList = categoriesData.entries.map((entry) {
+                                                // Cast the entry key to String and the value to Map<String, dynamic>
+                                                return {
+                                                  'id': entry.key, // Cast the key to a String
+                                                  ...entry.value as Map<String, dynamic>, // Cast the value to Map<String, dynamic>
+                                                };
+                                              }).toList();
+
+                                              return buildCategoriesDropdown(
+                                                  selectedCategoriesList,
+                                                  _categorySearchController.text,
+                                                setState,// Pass setState directly without invoking it
+                                                _showDropdown
+                                              );
+                                            } else {
+                                              return const Center(child: Text('No categories available.'));
+                                            }
                                           },
                                         ),
-                                      ),*/
+                                      ),
                                     ),
                                   ),
                                 SizedBox(height: 10),
@@ -1054,11 +1075,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                         (int index) {
                                       final category = selectedCategoriesList[index];
                                       dynamic categoryIdRaw = category['id']; // assuming category['id'] could be int or String
-                                      int categoryId = 0;
+                                      String categoryId = "";
 
                                       if (categoryIdRaw is String) {
-                                        categoryId = int.parse(categoryIdRaw);
-                                      } else if (categoryIdRaw is int) {
                                         categoryId = categoryIdRaw;
                                       } else {
                                         // Handle error: unknown type

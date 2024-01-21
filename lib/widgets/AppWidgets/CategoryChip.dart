@@ -1,3 +1,4 @@
+import 'package:expnz/database/CategoriesDB.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:provider/provider.dart';
@@ -5,7 +6,7 @@ import 'package:provider/provider.dart';
 class CategoryChip extends StatefulWidget {
   final bool isSelected;
   final Function onTap;
-  final int categoryId;
+  final String categoryId;
 
   CategoryChip({
     this.isSelected = true,
@@ -50,87 +51,107 @@ class _CategoryChipState extends State<CategoryChip>
 
   @override
   Widget build(BuildContext context) {
-    //var categoriesModel = Provider.of<CategoriesModel>(context);
-    //var categoryDetails = categoriesModel.getCategoryById(widget.categoryId);
-    var categoryDetails = null;
+    return FutureBuilder<Map<String, dynamic>?>(
+        future: CategoriesDB().getSelectedCategory(widget.categoryId),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            // Show a loading indicator while waiting for data
+            return CircularProgressIndicator();
+          }
 
-    if (categoryDetails == null) {
-      // Handle the case when the category is null (e.g., show a default widget)
-      return SizedBox.shrink();
-    }
-    // Extract details from the category
-    var iconData = IconData(
-      categoryDetails['iconCodePoint'],
-      fontFamily: categoryDetails['iconFontFamily'],
-      fontPackage: categoryDetails['iconFontPackage'],
-    );
-    var label = categoryDetails['name'];
-    File? imageFile = categoryDetails['imageFile'];
+          if (snapshot.hasError || snapshot.data == null) {
+            // Handle error or null data
+            return SizedBox.shrink();
+          }
 
-    _controller.forward();
+          // Extract details from the category
+          var categoryDetails = snapshot.data!;
+          var iconData = IconData(
+            categoryDetails['iconCodePoint'],
+            fontFamily: categoryDetails['iconFontFamily'],
+            fontPackage: categoryDetails['iconFontPackage'],
+          );
+          var label = categoryDetails['name'];
+          File? imageFile = categoryDetails['imageFile'];
 
-    return GestureDetector(
-      onTap: () => _animateAndRemove(),
+          _controller.forward();
 
-      child: AnimatedBuilder(
-        animation: _animation,
-        builder: (BuildContext context, Widget? child) {
-          return Transform.scale(
-            scale: _animation.value,
-            child: AnimatedOpacity(
-              opacity: _animation.value,
-              duration: Duration(milliseconds: 100),
-              child: child,
+          if (categoryDetails == null) {
+            // Handle the case when the category is null (e.g., show a default widget)
+            return SizedBox.shrink();
+          }
+
+          return GestureDetector(
+            onTap: () => _animateAndRemove(),
+
+            child: AnimatedBuilder(
+              animation: _animation,
+              builder: (BuildContext context, Widget? child) {
+                return Transform.scale(
+                  scale: _animation.value,
+                  child: AnimatedOpacity(
+                    opacity: _animation.value,
+                    duration: Duration(milliseconds: 100),
+                    child: child,
+                  ),
+                );
+              },
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                // Internal padding for the text and icon
+                margin: EdgeInsets.all(0),
+                // Margin for external spacing
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: widget.isSelected ? Colors.blueAccent : Colors
+                        .transparent,
+                    width: 1.0,
+                  ),
+                  borderRadius: BorderRadius.all(
+                    Radius.circular(16.0),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: widget.isSelected ? Colors.blueAccent.withOpacity(
+                          0.2) : Colors.transparent,
+                      blurRadius: 4.0,
+                    ),
+                  ],
+                  color: widget.isSelected ? Colors.blueGrey[700] : Colors
+                      .blueGrey[800],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: Colors.transparent,
+                      radius: 12,
+                      child: imageFile == null
+                          ? Icon(
+                        iconData,
+                        color: widget.isSelected ? Colors.blueAccent : Colors
+                            .grey,
+                        size: 24,
+                      )
+                          : null,
+                      backgroundImage: imageFile != null
+                          ? FileImage(imageFile!)
+                          : null,
+                    ),
+                    SizedBox(width: 4),
+                    Text(label),
+                    SizedBox(width: 4),
+                    InkWell( // Replacing IconButton with InkWell
+                      onTap: () => _animateAndRemove(),
+                      child: Icon(Icons.clear_sharp,
+                          size: 18), // You can choose an appropriate size
+                    ),
+                  ],
+                ),
+              ),
             ),
           );
-        },
-        child: Container(
-          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8), // Internal padding for the text and icon
-          margin: EdgeInsets.all(0), // Margin for external spacing
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: widget.isSelected ? Colors.blueAccent : Colors.transparent,
-              width: 1.0,
-            ),
-            borderRadius: BorderRadius.all(
-              Radius.circular(16.0),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: widget.isSelected ? Colors.blueAccent.withOpacity(0.2) : Colors.transparent,
-                blurRadius: 4.0,
-              ),
-            ],
-            color: widget.isSelected ? Colors.blueGrey[700] : Colors.blueGrey[800],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircleAvatar(
-                backgroundColor: Colors.transparent,
-                radius: 12,
-                child: imageFile == null
-                    ? Icon(
-                  iconData,
-                  color: widget.isSelected ? Colors.blueAccent : Colors.grey,
-                  size: 24,
-                )
-                    : null,
-                backgroundImage: imageFile != null
-                    ? FileImage(imageFile!)
-                    : null,
-              ),
-              SizedBox(width: 4),
-              Text(label),
-              SizedBox(width: 4),
-              InkWell(  // Replacing IconButton with InkWell
-                onTap: () => _animateAndRemove(),
-                child: Icon(Icons.clear_sharp, size: 18),  // You can choose an appropriate size
-              ),
-            ],
-          ),
-        ),
-      ),
+        }
     );
   }
 }

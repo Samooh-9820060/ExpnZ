@@ -1,109 +1,74 @@
 import 'package:flutter/material.dart';
-import '../../database/CategoriesDB.dart';
+import 'package:expnz/utils/global.dart';
 
-/*Widget buildCategoriesDropdown(
-    CategoriesModel categoriesModel,
+Widget buildCategoriesDropdown(
     List<Map<String, dynamic>> selectedCategoriesList,
     String searchText,
-    Function setStateCallback, // Add this
+    Function setStateCallback,
     bool showDropdown,
-    )
-{
+    ) {
+  return ValueListenableBuilder<Map<String, Map<String, dynamic>>?>(
+    valueListenable: categoriesNotifier,
+    builder: (context, categoriesData, child) {
+      if (categoriesData == null || categoriesData.isEmpty) {
+        return Center(
+          child: Text('No categories available.'),
+        );
+      } else {
+        List<Map<String, dynamic>> sortedData = categoriesData.entries.map((entry) {
+          return {
+            'id': entry.key,
+            ...entry.value
+          };
+        }).toList();
 
-  if (categoriesModel.categories.isEmpty) {
-    return Center(
-      child: Text('No categories available.'),
-    );
-  } else {
-    List<Map<String, dynamic>> sortedData = List.from(categoriesModel.categories);
-    sortedData = sortedData.where((category) {
-      int categoryId = category[CategoriesDB.columnId];
-      bool isAlreadySelected = selectedCategoriesList.any((selectedCategory) => int.parse(selectedCategory['id'].toString()) == categoryId);
+        sortedData = sortedData.where((category) {
+          bool isAlreadySelected = selectedCategoriesList.any((selectedCategory) => selectedCategory['id'] == category['id']);
+          return category['name']
+              .toLowerCase()
+              .contains(searchText.toLowerCase()) && !isAlreadySelected;
+        }).toList();
 
-      return category[CategoriesDB.columnName]
-          .toLowerCase()
-          .contains(searchText.toLowerCase()) && !isAlreadySelected;
-    }).toList();
-    sortedData.sort((a, b) => a[CategoriesDB.columnName].compareTo(b[CategoriesDB.columnName]));
+        sortedData.sort((a, b) => a['name'].compareTo(b['name']));
 
-    double itemHeight = 55.0; // Approximate height of one ListTile
-    double maxHeight = 200.0; // Maximum height you'd like to allow for dropdown
+        double itemHeight = 55.0;
+        double maxHeight = 200.0;
 
-    double calculatedHeight = sortedData.length * itemHeight;
-    calculatedHeight = calculatedHeight > maxHeight ? maxHeight : calculatedHeight;
+        double calculatedHeight = sortedData.length * itemHeight;
+        calculatedHeight = calculatedHeight > maxHeight ? maxHeight : calculatedHeight;
 
-    return Container(
-      height: calculatedHeight,
-      child: ListView.builder(
-        padding: EdgeInsets.zero,
-        itemCount: sortedData.length,
-        itemBuilder: (context, index) {
-          return Container(
-              height: calculatedHeight,
-              child: ListView.builder(
-                padding: EdgeInsets.zero,
-                itemCount: sortedData.length,
-                itemBuilder: (context, index) {
-                  final category = sortedData[index];
-                  IconData categoryIcon = IconData(
-                    category[CategoriesDB.columnIconCodePoint],
-                    fontFamily: category[CategoriesDB.columnIconFontFamily],
-                    fontPackage: category[CategoriesDB.columnIconFontPackage],
-                  );
-                  String categoryId = category[CategoriesDB.columnId].toString();
-                  String categoryName = category[CategoriesDB.columnName];
+        return Container(
+          height: calculatedHeight,
+          child: ListView.builder(
+            padding: EdgeInsets.zero,
+            itemCount: sortedData.length,
+            itemBuilder: (context, index) {
+              final category = sortedData[index];
+              IconData categoryIcon = IconData(
+                category['iconCodePoint'],
+                fontFamily: category['iconFontFamily'],
+                fontPackage: category['iconFontPackage'],
+              );
 
-                  BorderRadius borderRadius;
-
-                  // Top item
-                  if (index == 0) {
-                    borderRadius = BorderRadius.only(
-                      topLeft: Radius.circular(30),
-                      topRight: Radius.circular(30),
-                    );
-                  }
-                  // Bottom item
-                  else if (index == sortedData.length - 1) {
-                    borderRadius = BorderRadius.only(
-                      bottomLeft: Radius.circular(30),
-                      bottomRight: Radius.circular(30),
-                    );
-                  }
-                  // Middle items
-                  else {
-                    borderRadius = BorderRadius.zero;
-                  }
-
-                  return Material(
-                    type: MaterialType.transparency, // To make it transparent
-                    child: InkWell(
-                      onTap: () {
-                        setStateCallback(() { // Use the passed setStateCallback
-                          selectedCategoriesList.add({
-                            'id': categoryId,
-                          });
-                          showDropdown = false; // Use the passed showDropdown
-                        });
-                      },
-                      borderRadius: borderRadius, // Use the dynamic border radius
-                      splashColor: Colors.blue,
-                      highlightColor: Colors.blue.withOpacity(0.5),
-                      child: ListTile(
-                        title: Text(categoryName),
-                        leading: category['imageFile'] == null
-                            ? Icon(categoryIcon)
-                            : CircleAvatar(
-                          backgroundImage: FileImage(category['imageFile']),
-                          radius: 12,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              )
-          );
-        },
-      ),
-    );
-  }
-}*/
+              return Material(
+                type: MaterialType.transparency,
+                child: InkWell(
+                  onTap: () {
+                    setStateCallback(() {
+                      selectedCategoriesList.add({'id': category['id']});
+                      showDropdown = false;
+                    });
+                  },
+                  child: ListTile(
+                    title: Text(category['name']),
+                    leading: Icon(categoryIcon),
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      }
+    },
+  );
+}
