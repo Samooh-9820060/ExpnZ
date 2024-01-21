@@ -723,7 +723,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
 
                                               return buildCategoriesDropdown(
                                                   selectedCategoriesList,
-                                                  _categorySearchController.text,
+                                                  _categorySearchController,
                                                   setState, // Pass setState directly without invoking it
                                                 _showDropdown,
                                               );
@@ -1054,7 +1054,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
 
                                               return buildCategoriesDropdown(
                                                   selectedCategoriesList,
-                                                  _categorySearchController.text,
+                                                  _categorySearchController,
                                                 setState,// Pass setState directly without invoking it
                                                 _showDropdown
                                               );

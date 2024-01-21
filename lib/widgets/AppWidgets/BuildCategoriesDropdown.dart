@@ -3,7 +3,7 @@ import 'package:expnz/utils/global.dart';
 
 Widget buildCategoriesDropdown(
     List<Map<String, dynamic>> selectedCategoriesList,
-    String searchText,
+    TextEditingController categorySearchController,
     Function setStateCallback,
     bool showDropdown,
     ) {
@@ -11,7 +11,7 @@ Widget buildCategoriesDropdown(
     valueListenable: categoriesNotifier,
     builder: (context, categoriesData, child) {
       if (categoriesData == null || categoriesData.isEmpty) {
-        return Center(
+        return const Center(
           child: Text('No categories available.'),
         );
       } else {
@@ -26,7 +26,7 @@ Widget buildCategoriesDropdown(
           bool isAlreadySelected = selectedCategoriesList.any((selectedCategory) => selectedCategory['id'] == category['id']);
           return category['name']
               .toLowerCase()
-              .contains(searchText.toLowerCase()) && !isAlreadySelected;
+              .contains(categorySearchController.text.toLowerCase()) && !isAlreadySelected;
         }).toList();
 
         sortedData.sort((a, b) => a['name'].compareTo(b['name']));
@@ -37,18 +37,40 @@ Widget buildCategoriesDropdown(
         double calculatedHeight = sortedData.length * itemHeight;
         calculatedHeight = calculatedHeight > maxHeight ? maxHeight : calculatedHeight;
 
-        return Container(
+        return SizedBox(
           height: calculatedHeight,
           child: ListView.builder(
             padding: EdgeInsets.zero,
             itemCount: sortedData.length,
             itemBuilder: (context, index) {
               final category = sortedData[index];
-              IconData categoryIcon = IconData(
-                category['iconCodePoint'],
-                fontFamily: category['iconFontFamily'],
-                fontPackage: category['iconFontPackage'],
-              );
+              String? imageUrl = category['imageUrl']; // Get the imageUrl from the category data
+
+              Widget leadingWidget;
+              const double iconSize = 32.0; // Define a standard size for icons and images
+
+              if (imageUrl != null && imageUrl.isNotEmpty) {
+                leadingWidget = SizedBox(
+                  width: iconSize,
+                  height: iconSize,
+                  child: CircleAvatar(
+                    backgroundColor: Colors.transparent,
+                    backgroundImage: NetworkImage(imageUrl),
+                  ),
+                );
+              } else {
+                IconData categoryIcon = IconData(
+                  category['iconCodePoint'],
+                  fontFamily: category['iconFontFamily'],
+                  fontPackage: category['iconFontPackage'],
+                );
+                leadingWidget = SizedBox(
+                  width: iconSize,
+                  height: iconSize,
+                  child: Icon(categoryIcon, size: iconSize),
+                );
+              }
+
 
               return Material(
                 type: MaterialType.transparency,
@@ -56,12 +78,13 @@ Widget buildCategoriesDropdown(
                   onTap: () {
                     setStateCallback(() {
                       selectedCategoriesList.add({'id': category['id']});
+                      //categorySearchController.text = '';
                       showDropdown = false;
                     });
                   },
                   child: ListTile(
                     title: Text(category['name']),
-                    leading: Icon(categoryIcon),
+                    leading: leadingWidget,
                   ),
                 ),
               );
