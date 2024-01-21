@@ -1,7 +1,9 @@
 import 'package:expnz/widgets/SimpleWidgets/ExpnZButton.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_iconpicker/flutter_iconpicker.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_cropper/image_cropper.dart';
 import '../database/CategoriesDB.dart';
 import '../utils/image_utils.dart';
@@ -31,6 +33,8 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
   bool isProcessing = false;
   bool isModifyMode = false;
   File? selectedImage;
+  String? originalImageUrl;
+  bool imageHasChanged = false;
   XFile? _pickedFile;
 
   @override
@@ -58,7 +62,10 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
     if (categoryData != null) {
       isModifyMode = true;
 
-      if (categoryData[CategoriesDB.categorySelectedImageBlob] == null) {
+      String? imageUrl = categoryData[CategoriesDB.categorySelectedImageBlob];
+      String fileName = imageUrl != null ? generateFileNameFromUrl(imageUrl) : 'default.jpg';
+
+      if (imageUrl == null) {
         String? iconFontPackage = categoryData[CategoriesDB.categoryIconFontPackage];
         newSelectedIcon = IconData(
           categoryData[CategoriesDB.categoryIconCodePoint],
@@ -67,8 +74,7 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
         );
       } else {
         newSelectedIcon = Icons.search;
-        List<int> retrievedImageBytes = categoryData[CategoriesDB.categorySelectedImageBlob];
-        newSelectedImage = await bytesToFile(retrievedImageBytes);
+        newSelectedImage = await getImageFile(imageUrl, fileName);
       }
 
       int colorInt = categoryData[CategoriesDB.categoryColor] is String
@@ -82,6 +88,7 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
         selectedIcon = newSelectedIcon ?? Icons.search;
         selectedImage = newSelectedImage;
         selectedColor = newSelectedColor ?? Colors.blue;
+        originalImageUrl = categoryData[CategoriesDB.categorySelectedImageBlob];
       });
     } else {
       setState(() {
@@ -152,11 +159,41 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
         ],
       );
       if (croppedFile != null) {
+        final file = File(croppedFile.path);
+        final compressedFile = await _compressFile(file);
         setState(() {
-          selectedImage = File(croppedFile.path);
+          selectedImage = compressedFile ?? file;
+          imageHasChanged = true;
         });
       }
     }
+  }
+  Future<File?> _compressFile(File file) async {
+    try {
+      final filePath = file.absolute.path;
+
+      // Define the target path and file name
+      final lastIndex = filePath.lastIndexOf(new RegExp(r'\.png|\.jpg'));
+      final splitted = filePath.substring(0, lastIndex);
+      final outPath = "${splitted}_compressed.png";
+
+      final compressedImage = await FlutterImageCompress.compressAndGetFile(
+        filePath,
+        outPath,
+        quality: 50, // Adjust the quality as needed
+        minWidth: 1000, // Adjust the size as needed
+        minHeight: 1000,
+      );
+
+      if (compressedImage != null) {
+        return File(compressedImage.path);  // Convert to File type
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print(e);
+      }
+    }
+    return null; // Return null if compression fails or any exception occurs
   }
   void _pickIcon() async {
     IconData? icon = await FlutterIconPicker.showIconPicker(context,
@@ -244,7 +281,7 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
     }
 
     String imageUrl = '';
-    if (selectedImage != null) {
+    if (imageHasChanged && selectedImage != null) {
       imageUrl = await CategoriesDB().uploadImageToStorage(selectedImage!);
     }
 
@@ -256,7 +293,7 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
       CategoriesDB.categoryIconCodePoint: selectedIcon.codePoint,
       CategoriesDB.categoryIconFontFamily: selectedIcon.fontFamily,
       CategoriesDB.categoryIconFontPackage: selectedIcon.fontPackage,
-      CategoriesDB.categorySelectedImageBlob: imageUrl,
+      CategoriesDB.categorySelectedImageBlob: imageUrl.isEmpty ? originalImageUrl : imageUrl,
     };
 
 
