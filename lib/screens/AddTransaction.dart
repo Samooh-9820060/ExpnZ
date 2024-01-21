@@ -366,18 +366,20 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
       };
 
       try {
-        DocumentReference? id;
+        bool dataInserted = false;
 
         if (isUpdate && existingTransaction != null) {
           // Update existing transaction
           TransactionsDB().updateTransaction(existingTransaction['_id'], row);
+          dataInserted = true;
         } else {
           // Insert a new transaction
           TransactionsDB().insertTransaction(row);
+          dataInserted = true;
         }
 
         // Check if the transaction was successful
-        if ((isUpdate && existingTransaction != null) || id != null) {
+        if ((isUpdate && existingTransaction != null) || dataInserted == true) {
           await showModernSnackBar(
             context: context,
             message: isUpdate ? "Transaction updated successfully!" : "Transaction added successfully!",
@@ -400,7 +402,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
       } catch (e) {
         await showModernSnackBar(
           context: context,
-          message: isUpdate ? "Transaction was not updated" : "Transaction was not added",
+          message: isUpdate ? "Error Updating Transaction" : "Error adding transaction",
           backgroundColor: Colors.redAccent,
         );
         setState(() {

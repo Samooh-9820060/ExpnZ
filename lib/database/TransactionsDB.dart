@@ -62,22 +62,40 @@ class TransactionsDB {
     String userUid = FirebaseAuth.instance.currentUser!.uid;
     data[uid] = userUid;
 
-    // Add the new account to the accounts collection
-    try {
-      DocumentReference transactionsRef = await _firestore.collection(collectionName).add(data);
-      return true;
-      // Initialize account-specific aggregate data under the user's document
-      /*await _firestore.collection(usersCollection).doc(userUid).set({
-      'accounts': {
-        data.id: {
-          'totalIncome': 0.0,
-          'totalExpense': 0.0,
-        }
+    FirebaseFirestore firestore = FirebaseFirestore.instance;
+    DocumentReference userDocRef = firestore.collection(usersCollection).doc(userUid);
+
+    return firestore.runTransaction((transaction) async {
+      // Get the user's account data
+      DocumentSnapshot userSnapshot = await transaction.get(userDocRef);
+      Map<String, dynamic> userData = userSnapshot.data() as Map<String, dynamic>;
+
+      // Update totalIncome or totalExpense based on transaction type
+      String accountId = data[transactionAccountId];
+      double transactionAmountDouble = (data[transactionAmount] as num).toDouble();
+
+      double totalIncome = (userData['accounts'][accountId]['totalIncome'] ?? 0).toDouble();
+      double totalExpense = (userData['accounts'][accountId]['totalExpense'] ?? 0).toDouble();
+
+      if (data[transactionType] == "income") {
+        totalIncome += transactionAmountDouble;
+        userData['accounts'][accountId]['totalIncome'] = totalIncome;
+      } else if (data[transactionType] == "expense") {
+        totalExpense += transactionAmountDouble;
+        userData['accounts'][accountId]['totalExpense'] = totalExpense;
       }
-    }, SetOptions(merge: true));*/
-    } catch (e){
+
+      // Update the user's document
+      transaction.set(userDocRef, userData, SetOptions(merge: true));
+
+      // Add the new transaction
+      await firestore.collection(collectionName).add(data);
+
+      return true;
+    }).catchError((error) {
+      print("Transaction failed: $error");
       return false;
-    }
+    });
   }
 
   // Deletes all categories for the current user
