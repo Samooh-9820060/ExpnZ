@@ -13,9 +13,34 @@ class ProfileDB {
   void listenToProfileChanges(String uid) {
     _firestore.collection(collectionName).doc(uid).snapshots().listen((snapshot) {
       if (snapshot.exists) {
-        cacheProfileLocally(snapshot.data());
+        final Map<String, dynamic> profileData = snapshot.data() as Map<String, dynamic>;
+
+        // Handling categories data specifically if needed
+        final Map<String, dynamic> newCategoriesData = {};
+        if (profileData.containsKey('categories')) {
+          Map<String, dynamic> categories = profileData['categories'] as Map<String, dynamic>;
+          for (var categoryId in categories.keys) {
+            newCategoriesData[categoryId] = categories[categoryId] as Map<String, dynamic>;
+          }
+          // Update the categories part of the profile data
+          profileData['categories'] = newCategoriesData;
+        }
+
+        // Cache the updated profile data locally
+        cacheProfileLocally(profileData);
+        //cacheProfileLocally(snapshot.data() as Map<String, dynamic>);
+        //print(snapshot.data() as Map<String, dynamic>);
+      } else {
+        // Handle the case where the profile document does not exist
+        clearLocalProfileCache();
       }
     });
+  }
+
+  Future<void> clearLocalProfileCache() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('userProfile');
+    profileNotifier.value = null;
   }
 
   Future<void> cacheProfileLocally(Map<String, dynamic>? profileData) async {

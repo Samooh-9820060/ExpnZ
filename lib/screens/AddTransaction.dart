@@ -498,9 +498,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
         appBar: AppBar(
           elevation: 0,
           leading: BackButton(
-            color: Colors.white,
+            color: isProcessing ? Colors.grey : Colors.white,
             onPressed: () {
-              Navigator.pop(context, false);
+              isProcessing ? null : Navigator.pop(context, false);
             },
           ),
           title: Text(
