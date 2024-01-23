@@ -30,8 +30,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin, Widg
   String? _profileImageUrl;
 
   final List<Widget> _children = [
-    //HomeScreen(),
-    AccountsScreen(),
+    HomeScreen(),
     AccountsScreen(),
     CategoriesScreen(),
   ];

@@ -2,6 +2,7 @@ import 'package:expnz/screens/AddAccount.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../database/AccountsDB.dart';
+import '../../database/TransactionsDB.dart';
 import '../../utils/animation_utils.dart';
 import 'package:expnz/utils/global.dart';
 
@@ -43,32 +44,41 @@ class _ModernAccountCardState extends State<ModernAccountCard>
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<Map<String, dynamic>?>(
-      valueListenable: profileNotifier,
-      builder: (context, profileData, child) {
-        return ValueListenableBuilder<Map<String, Map<String, dynamic>>?>(
-          valueListenable: accountsNotifier,
-          builder: (context, accountsData, child) {
-            if (accountsData != null && accountsData.containsKey(widget.documentId)) {
-              final accountDetails = accountsData[widget.documentId]!;
-              final totalIncome = profileData != null && profileData['accounts'] != null && profileData['accounts'][widget.documentId] != null
-                  ? (profileData['accounts'][widget.documentId]['totalIncome'] ?? 0).toDouble()
-                  : 0.0;
-              final totalExpense = profileData != null && profileData['accounts'] != null && profileData['accounts'][widget.documentId] != null
-                  ? (profileData['accounts'][widget.documentId]['totalExpense'] ?? 0).toDouble()
-                  : 0.0;
-              final totalBalance = totalIncome - totalExpense;
+    return FutureBuilder<Map<String, double>>(
+      future: TransactionsDB().getTotalIncomeAndExpenseForAccount(widget.documentId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          // Show a loading indicator while the data is being fetched
+          return Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError) {
+          print(snapshot.error);
+          // Handle any errors here
+          return Center(child: Text('Error fetching data.'));
+        } else if (snapshot.hasData) {
+          final totalIncome = snapshot.data!['totalIncome'] ?? 0.0;
+          final totalExpense = snapshot.data!['totalExpense'] ?? 0.0;
+          final totalBalance = totalIncome - totalExpense;
 
-              return buildCard(accountDetails, totalIncome, totalExpense, totalBalance);
-            } else {
-              // If no account data is available, display a message
-              return Center(child: Text('No accounts available.'));
-            }
-          },
-        );
+          return ValueListenableBuilder<Map<String, Map<String, dynamic>>?>(
+            valueListenable: accountsNotifier,
+            builder: (context, accountsData, child) {
+              if (accountsData != null && accountsData.containsKey(widget.documentId)) {
+                final accountDetails = accountsData[widget.documentId]!;
+                return buildCard(accountDetails, totalIncome, totalExpense, totalBalance);
+              } else {
+                // If no account data is available, display a message
+                return Center(child: Text('No accounts available.'));
+              }
+            },
+          );
+        } else {
+          // Handle the case where there is no data
+          return Center(child: Text('No data available.'));
+        }
       },
     );
   }
+
 
   Widget buildCard(Map<String, dynamic> account, double totalIncome, double totalExpense, double totalBalance) {
     int? iconCodePoint = account[AccountsDB.accountIconCodePoint] as int?;

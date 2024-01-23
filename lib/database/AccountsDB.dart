@@ -76,6 +76,23 @@ class AccountsDB {
     return accountRef;
   }
 
+  // function to get unique currency codes
+  Future<Set<String>> getUniqueCurrencyCodes() async {
+    final accountsData = accountsNotifier.value ?? {};
+    Set<String> uniqueCurrencyCodes = {};
+
+    accountsData.forEach((accountId, accountInfo) {
+      if (accountInfo.containsKey(AccountsDB.accountCurrency)) {
+        var currencyData = jsonDecode(accountInfo[AccountsDB.accountCurrency]);
+        if (currencyData['code'] != null) {
+          uniqueCurrencyCodes.add(currencyData['code']);
+        }
+      }
+    });
+
+    return uniqueCurrencyCodes;
+  }
+
   Future<void> deleteAccount(String documentId) async {
     String userUid = FirebaseAuth.instance.currentUser!.uid;
 

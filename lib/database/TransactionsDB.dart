@@ -55,7 +55,26 @@ class TransactionsDB {
   Future<Map<String, Map<String, dynamic>>?> getLocalTransactions() async {
     final prefs = await SharedPreferences.getInstance();
     String? encodedData = prefs.getString('userTransactions');
-    return encodedData != null ? json.decode(encodedData) as Map<String, Map<String, dynamic>> : null;
+    if (encodedData != null) {
+      final decodedData = json.decode(encodedData);
+      if (decodedData is Map) {
+        return decodedData.map((key, value) {
+          if (value is Map) {
+            return MapEntry(key, value.cast<String, dynamic>());
+          } else {
+            // Handle the case where the value is not a Map
+            // Depending on your application's needs, you might log this, throw an exception, etc.
+            return MapEntry(key, <String, dynamic>{});
+          }
+        });
+      } else {
+        // Handle the case where decodedData is not a Map
+        // Log, throw an exception, etc.
+        return null;
+      }
+    } else {
+      return null;
+    }
   }
 
   Future<bool> insertTransaction(Map<String, dynamic> data) async {
@@ -168,5 +187,28 @@ class TransactionsDB {
 
   Future<DocumentSnapshot> getSelectedCategory(String documentId) async {
     return await _firestore.collection(collectionName).doc(documentId).get();
+  }
+
+  //Retrieve income expense functions
+  /****************************************************************************************/
+  // Function to calculate total income and expense for a given account ID
+  Future<Map<String, double>> getTotalIncomeAndExpenseForAccount(String accountId) async {
+    final transactions = await getLocalTransactions();
+    double totalIncome = 0.0;
+    double totalExpense = 0.0;
+
+    if (transactions != null) {
+      transactions.forEach((docId, data) {
+        if (data[transactionAccountId] == accountId) {
+          double amount = double.tryParse(data[transactionAmount].toString()) ?? 0.0;
+          if (data[transactionType] == 'income') {
+            totalIncome += amount;
+          } else if (data[transactionType] == 'expense') {
+            totalExpense += amount;
+          }
+        }
+      });
+    }
+    return {'totalIncome': totalIncome, 'totalExpense': totalExpense};
   }
 }
