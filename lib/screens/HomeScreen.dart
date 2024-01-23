@@ -76,8 +76,24 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    financialDataFetched = false; // Explicitly set loading state to false initially
+    _initializeDataAndControllers();
     fetchUserName();
-    _fetchData();
+    fetchAndUpdateFinancialData().then((_) {
+      setState(() {
+        financialDataFetched = true; // Set to true once data is fetched
+      });
+    }).catchError((error) {
+      // Handle any errors here
+      print("Error fetching financial data: $error");
+      setState(() {
+        financialDataFetched = false; // In case of error, reset loading state
+      });
+    });
+    setState(() {});
+  }
+
+  Future<void> _initializeDataAndControllers() async {
     _nameController = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
@@ -103,6 +119,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       vsync: this,
     );
 
+    // Fetch data
+    //fetchAndUpdateFinancialData();
+
+    // Start animations
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _nameController.forward();
       _cardController.forward();
@@ -113,7 +133,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   // Function to fetch user's name from Firestore
-  void fetchUserName() {
+  void fetchUserName() async {
     final profileData = profileNotifier.value;
     if (profileData != null) {
       final fetchedName = profileData['name'] ?? '';
@@ -121,86 +141,96 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         userName = fetchedName;
       });
     } else {
+      try {
+        final uid = FirebaseAuth.instance.currentUser?.uid;
+        if (uid != null) {
+          final userDoc =
+          await FirebaseFirestore.instance.collection('users').doc(uid).get();
+          if (userDoc.exists) {
+            final userData = userDoc.data() as Map<String, dynamic>;
+            final fetchedName = userData['name'] ?? '';
+            setState(() {
+              userName = fetchedName;
+            });
+          }
+        }
+      } catch (e) {
+        // Handle any errors while fetching the name
+        print(e.toString());
+      }
     }
   }
 
-  Future<void> _fetchData() async {
-    final accountsData = accountsNotifier.value;
+  Future<void> fetchAndUpdateFinancialData([String? currencyCode]) async {
+    var accountsData = accountsNotifier.value;
+
+    try {
+      await Future.delayed(Duration(milliseconds: 500)).timeout(
+        Duration(milliseconds: 500),
+        onTimeout: () {},
+      );
+
+      while (accountsData.isEmpty) {
+        accountsData = accountsNotifier.value;
+      }
+    } catch (e) {
+      print('Error: $e'); // Handle any exceptions that occur during the operation.
+    }
+
+    //final localAccountsData = await AccountsDB().getLocalAccounts();
+    //Map<String, Map<String, dynamic>> accountsData = localAccountsData ?? {};
+
     if (accountsData.isNotEmpty) {
       final account = accountsData.entries.first.value;
       currencyMap = jsonDecode(account[AccountsDB.accountCurrency]);
-      String currencyCode = currencyMap['code'];
-      currencyCodes = await AccountsDB().getUniqueCurrencyCodes();
+      String usedCurrencyCode = currencyCode ?? currencyMap['code'];
 
-      double totalIncome = await getTotalForCurrency(currencyCode, 'income');
-      double totalExpense = await getTotalForCurrency(currencyCode, 'expense');
-      double balance = totalIncome - totalExpense;
+      AccountsDB().getUniqueCurrencyCodes().then((codes) async {
+        currencyCodes = codes;
 
-      //populate start date and end date if they are not given
-      DateTime now = DateTime.now();
-      DateTime startDate = DateTime(now.year, now.month, 1);
-      DateTime firstDayNextMonth = DateTime(now.year, now.month + 1, 1);
-      DateTime endDate = firstDayNextMonth.subtract(const Duration(days: 1));
+        DateTime now = DateTime.now();
+        DateTime startDate = DateTime(now.year, now.month, 1);
+        DateTime firstDayNextMonth = DateTime(now.year, now.month + 1, 1);
+        DateTime endDate = firstDayNextMonth.subtract(const Duration(days: 1));
 
-      // Fetching total income and expense for the period
-      double periodIncome = await getTotalForCurrency(currencyCode, 'income', startDate: startDate, endDate: endDate);
-      double periodExpense = await getTotalForCurrency(currencyCode, 'expense', startDate: startDate, endDate: endDate);
+        List<dynamic> finalResults = await Future.wait([
+          getTotalForCurrency(usedCurrencyCode, 'income'),
+          getTotalForCurrency(usedCurrencyCode, 'expense'),
+          getTotalForCurrency(usedCurrencyCode, 'income', startDate: startDate, endDate: endDate),
+          getTotalForCurrency(usedCurrencyCode, 'expense', startDate: startDate, endDate: endDate),
+          generateGraphData(usedCurrencyCode, 'income', startDate, endDate),
+          generateGraphData(usedCurrencyCode, 'expense', startDate, endDate)
+        ]);
 
-      List<double> graphDataIncome =
-          await generateGraphData(currencyCode, 'income', startDate, endDate);
-      List<double> graphDataExpense =
-          await generateGraphData(currencyCode, 'expense', startDate, endDate);
-
+        setState(() {
+          financialData = {
+            'income': finalResults[0] as double,
+            'expense': finalResults[1] as double,
+            'balance': (finalResults[0] as double) - (finalResults[1] as double),
+            'periodIncome': finalResults[2] as double,
+            'periodExpense': finalResults[3] as double,
+            'graphDataIncome': finalResults[4] as List<double>,
+            'graphDataExpense': finalResults[5] as List<double>,
+          };
+          financialDataFetched = true;
+        });
+      }).catchError((error) {
+        // Handle any errors here
+        print("Error fetching financial data: $error");
+      });
+    } else {
       setState(() {
-        financialData = {
-          'income': totalIncome,
-          'expense': totalExpense,
-          'balance': balance,
-          'periodIncome': periodIncome,
-          'periodExpense': periodExpense,
-          'graphDataIncome': graphDataIncome,
-          'graphDataExpense': graphDataExpense,
-        };
-        financialDataFetched = true;
+        financialDataFetched = false;
       });
     }
-
-    setState(() {
-      // Update the state to trigger a rebuild
-    });
   }
 
-  Future<void> getFinancialData (String currencyCode) async {
-    double totalIncome = await getTotalForCurrency(currencyCode, 'income');
-    double totalExpense = await getTotalForCurrency(currencyCode, 'expense');
-    double balance = totalIncome - totalExpense;
-
-    //populate start date and end date if they are not given
-    DateTime now = DateTime.now();
-    DateTime startDate = DateTime(now.year, now.month, 1);
-    DateTime firstDayNextMonth = DateTime(now.year, now.month + 1, 1);
-    DateTime endDate = firstDayNextMonth.subtract(const Duration(days: 1));
-
-    List<double> graphDataIncome =
-    await generateGraphData(currencyCode, 'income', startDate, endDate);
-    List<double> graphDataExpense =
-    await generateGraphData(currencyCode, 'expense', startDate, endDate);
-
-    financialData = {
-      'income': totalIncome,
-      'expense': totalExpense,
-      'balance': balance,
-      'graphDataIncome': graphDataIncome,
-      'graphDataExpense': graphDataExpense,
-    };
-
-  }
 
   Future<void> updateFinancialData(String currencyCode) async {
     setState(()  {
       selectedCurrencyCode = currencyCode;
       Currency? currencyObj = currencyService.findByCode(currencyCode);
-      getFinancialData(currencyCode);
+      fetchAndUpdateFinancialData(currencyCode);
 
       if (currencyObj != null) {
         currencyMap = {
@@ -238,9 +268,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     if (!financialDataFetched) {
       return Center(child: CircularProgressIndicator());
     }
-    double cardWidth = MediaQuery.of(context).size.width /
-        2.25; // About half of the screen width, adjust the divisor as needed
-    // Build the UI with the loaded data
+
+    double cardWidth = MediaQuery.of(context).size.width / 2.25;
+    return buildFinancialUI(cardWidth);
+  }
+
+  Widget buildFinancialUI(double cardWidth) {
+    // Your existing UI building code goes here
     return ValueListenableBuilder<Map<String, Map<String, dynamic>>?>(
         valueListenable: accountsNotifier,
         builder: (context, accountsData, child) {
@@ -261,7 +295,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         builder: (context, child) {
                           return Transform.translate(
                             offset:
-                                Offset(-300 * (1 - _nameController.value), 0),
+                            Offset(-300 * (1 - _nameController.value), 0),
                             child: Opacity(
                               opacity: _nameController.value,
                               child: child,
@@ -270,7 +304,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         },
                         child: Padding(
                           padding:
-                              const EdgeInsets.fromLTRB(30.0, 10.0, 16.0, 0.0),
+                          const EdgeInsets.fromLTRB(30.0, 10.0, 16.0, 0.0),
                           // Reduced top padding to 50
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -311,13 +345,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
                       const SizedBox(height: 10),
                       // Add some space below the card
-
                       AnimatedBuilder(
                         animation: _nameController,
                         builder: (context, child) {
                           return Transform.translate(
                             offset:
-                                Offset(-300 * (1 - _nameController.value), 0),
+                            Offset(-300 * (1 - _nameController.value), 0),
                             child: Opacity(
                               opacity: _nameController.value,
                               child: child,
@@ -383,7 +416,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 width: cardWidth,
                                 title: 'Expense',
                                 total:
-                                    financialData['periodExpense'].toString(),
+                                financialData['periodExpense'].toString(),
                                 currencyMap: currencyMap,
                                 data: financialData['graphDataExpense'],
                                 graphLineColor: Colors.red,
@@ -421,7 +454,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               children: [
                                 const Padding(
                                   padding:
-                                      EdgeInsets.fromLTRB(30.0, 0.0, 0.0, 0.0),
+                                  EdgeInsets.fromLTRB(30.0, 0.0, 0.0, 0.0),
                                   child: Text(
                                     'Notifications',
                                     style: TextStyle(
@@ -439,23 +472,23 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         .map((transaction) {
                                       return NotificationCard(
                                         title: transaction[TempTransactionsDB
-                                                .columnTitle] ??
+                                            .columnTitle] ??
                                             'No Title',
                                         content: transaction[TempTransactionsDB
-                                                .columnContent] ??
+                                            .columnContent] ??
                                             'No Content',
                                         icon: getIconBasedOnType(transaction[
-                                            TempTransactionsDB.columnType]),
+                                        TempTransactionsDB.columnType]),
                                         color: getColorBasedOnType(transaction[
-                                            TempTransactionsDB.columnType]),
+                                        TempTransactionsDB.columnType]),
                                         date: transaction[TempTransactionsDB
-                                                .columnDate] ??
+                                            .columnDate] ??
                                             '',
                                         time: transaction[TempTransactionsDB
-                                                .columnTime] ??
+                                            .columnTime] ??
                                             '',
                                         transactionId: transaction[
-                                            TempTransactionsDB.columnId],
+                                        TempTransactionsDB.columnId],
                                         // set this appropriately
                                         onTap: (int transactionId) async {
                                           await _handleNotificationCardClick(
@@ -463,13 +496,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         },
                                         onDelete: (int transactionId) {
                                           Provider.of<TempTransactionsModel>(
-                                                  context,
-                                                  listen: false)
+                                              context,
+                                              listen: false)
                                               .deleteTransactions(
-                                                  transactionId, null, context);
+                                              transactionId, null, context);
                                           Provider.of<TempTransactionsModel>(
-                                                  context,
-                                                  listen: false)
+                                              context,
+                                              listen: false)
                                               .fetchTransactions();
                                         },
                                       );
@@ -484,7 +517,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       const Padding(
                         padding: EdgeInsets.only(
                             bottom:
-                                80.0), // Add 60.0 or whatever value that suits you
+                            80.0), // Add 60.0 or whatever value that suits you
                       ),
                     ],
                   ),
@@ -494,7 +527,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           } else {
             // No financial data available, show appropriate message or widget
             return Center(
-              child: Text("No financial data available."),
+              child: Text("No financial data available or there was an issue loading the data."),
             );
           }
           return Center(

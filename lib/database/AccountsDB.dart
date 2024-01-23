@@ -38,7 +38,6 @@ class AccountsDB {
           newAccountsData.remove(docId);
         }
       }
-
       cacheAccountsLocally(newAccountsData);
     });
   }

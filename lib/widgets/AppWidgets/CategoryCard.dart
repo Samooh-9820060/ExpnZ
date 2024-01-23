@@ -16,11 +16,13 @@ class CategoryCard extends StatefulWidget {
   final Key? key;
   final String documentId;
   final Animation<double> animation;
+  final int index;
 
   CategoryCard({
     this.key,
     required this.documentId,
     required this.animation,
+    required this.index,
   }) : super(key: key);
 
   @override
@@ -78,7 +80,7 @@ class _CategoryCardState extends State<CategoryCard>
                 future: TransactionsDB().getIncomeAndExpenseByAccountForCategory(widget.documentId),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return Center(child: CircularProgressIndicator());
+                    return widget.index == 0 ? const Center(child: CircularProgressIndicator()) : Container();
                   } else if (snapshot.hasError) {
                     return Center(child: Text('Error fetching data.'));
                   } else if (snapshot.hasData) {

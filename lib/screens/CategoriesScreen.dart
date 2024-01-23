@@ -69,6 +69,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> with SingleTickerPr
 
                 return buildAnimatedCategoryCard(
                   documentId: documentId,
+                  index: index,
                 );
               },
             );
@@ -80,6 +81,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> with SingleTickerPr
   Widget buildAnimatedCategoryCard({
     Key? key,
     required String documentId,
+    required int index,
   }) {
     return GestureDetector(
       onLongPress: () {
@@ -96,6 +98,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> with SingleTickerPr
                 key: key,
                 documentId: documentId,
                 animation: _animation,
+                index: index,
               ),
             ),
           );

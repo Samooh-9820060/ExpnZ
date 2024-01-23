@@ -9,10 +9,12 @@ import 'package:expnz/utils/global.dart';
 class ModernAccountCard extends StatefulWidget {
   final String documentId;
   final Map<String, dynamic> currencyMap;
+  final int index;
 
   ModernAccountCard({
     required this.documentId,
     required this.currencyMap,
+    required this.index,
   });
 
   @override
@@ -48,8 +50,7 @@ class _ModernAccountCardState extends State<ModernAccountCard>
       future: TransactionsDB().getTotalIncomeAndExpenseForAccount(widget.documentId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          // Show a loading indicator while the data is being fetched
-          return Center(child: CircularProgressIndicator());
+          return widget.index == 0 ? const Center(child: CircularProgressIndicator()) : Container();
         } else if (snapshot.hasError) {
           print(snapshot.error);
           // Handle any errors here

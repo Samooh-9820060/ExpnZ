@@ -76,6 +76,7 @@ class _AccountsScreenState extends State<AccountsScreen>
                 return buildAnimatedAccountCard(
                   documentId: documentId,
                   currencyMap: currencyMap,
+                  index: index,
                 );
               },
             );
@@ -86,6 +87,7 @@ class _AccountsScreenState extends State<AccountsScreen>
   Widget buildAnimatedAccountCard({
     required String documentId,
     required Map<String, dynamic> currencyMap,
+    required int index,
   }) {
     return GestureDetector(
       onLongPress: () {
@@ -101,6 +103,7 @@ class _AccountsScreenState extends State<AccountsScreen>
               child: ModernAccountCard(
                 documentId: documentId,
                 currencyMap: currencyMap,
+                index: index,
               ),
             ),
           );

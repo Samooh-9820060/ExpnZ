@@ -130,13 +130,7 @@ class _SummaryMonthCardWidgetState extends State<SummaryMonthCardWidget> with Si
                             minY: widget.data.reduce(min), // Use the minimum data value for minY
                             maxY: widget.data.reduce(max), // Use the maximum data value for maxY
                             lineTouchData: LineTouchData(
-                              touchTooltipData: LineTouchTooltipData(
-                                tooltipBgColor: Colors.transparent,
-                                getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
-                                  // Return an empty list to prevent the tooltip from appearing
-                                  return [];
-                                },
-                              ),
+                              enabled: false,
                             ),
                             lineBarsData: [
                               LineChartBarData(

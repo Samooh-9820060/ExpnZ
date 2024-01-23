@@ -85,67 +85,10 @@ class TransactionsDB {
     DocumentReference userDocRef = firestore.collection(usersCollection).doc(userUid);
 
     return firestore.runTransaction((transaction) async {
-      // Get the user's account data
-      DocumentSnapshot userSnapshot = await transaction.get(userDocRef);
-      Map<String, dynamic> userData = userSnapshot.data() as Map<String, dynamic>;
-
-      // Update totalIncome or totalExpense based on transaction type for the accounts
-      String accountId = data[transactionAccountId];
-      double transactionAmountDouble = (data[transactionAmount] as num).toDouble();
-
-      double totalIncome = (userData['accounts'][accountId]['totalIncome'] ?? 0).toDouble();
-      double totalExpense = (userData['accounts'][accountId]['totalExpense'] ?? 0).toDouble();
-
-      if (data[transactionType] == "income") {
-        totalIncome += transactionAmountDouble;
-        userData['accounts'][accountId]['totalIncome'] = totalIncome;
-      } else if (data[transactionType] == "expense") {
-        totalExpense += transactionAmountDouble;
-        userData['accounts'][accountId]['totalExpense'] = totalExpense;
-      }
-
-      // Update totalIncome or totalExpense based on transaction type for categories
-      List<String> categoryIds = data[transactionCategoryIDs].split(', ');
-      for (String categoryId in categoryIds) {
-        // Check if the category ID exists in user's data
-        if (!userData['categories'].containsKey(categoryId)) {
-          // Initialize the category with default values
-          userData['categories'][categoryId] = {
-            accountId: {'totalIncome': 0.0, 'totalExpense': 0.0}
-          };
-        }
-
-        Map<String, dynamic> categoryData = userData['categories'][categoryId];
-
-        // Check if the account ID exists within the category
-        if (!categoryData.containsKey(accountId)) {
-          categoryData[accountId] = {'totalIncome': 0.0, 'totalExpense': 0.0};
-        }
-
-        // Update totalIncome or totalExpense
-        double categoryTotalIncome = (categoryData[accountId]['totalIncome'] ?? 0).toDouble();
-        double categoryTotalExpense = (categoryData[accountId]['totalExpense'] ?? 0).toDouble();
-
-        if (data[TransactionsDB.transactionType] == "income") {
-          categoryTotalIncome += transactionAmountDouble;
-          categoryData[accountId]['totalIncome'] = categoryTotalIncome;
-        } else if (data[TransactionsDB.transactionType] == "expense") {
-          categoryTotalExpense += transactionAmountDouble;
-          categoryData[accountId]['totalExpense'] = categoryTotalExpense;
-        }
-
-        // Update the category data in userData
-        userData['categories'][categoryId] = categoryData;
-      }
-
-
-      // Update the user's document
-      transaction.set(userDocRef, userData, SetOptions(merge: true));
-
       // Add the new transaction
       await firestore.collection(collectionName).add(data);
-
       return true;
+
     }).catchError((error) {
       print("Transaction failed: $error");
       return false;
