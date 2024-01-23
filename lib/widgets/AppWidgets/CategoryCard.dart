@@ -3,14 +3,13 @@ import 'dart:io';
 import 'package:expnz/screens/AddCategory.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:path_provider/path_provider.dart';
 import '../../database/AccountsDB.dart';
 import '../../database/CategoriesDB.dart';
 import '../../database/ProfileDB.dart';
+import '../../database/TransactionsDB.dart';
 import '../../utils/animation_utils.dart';
 import '../../utils/global.dart';
 import '../../utils/image_utils.dart';
-import 'package:http/http.dart' as http;
 
 
 class CategoryCard extends StatefulWidget {
@@ -66,29 +65,43 @@ class _CategoryCardState extends State<CategoryCard>
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<Map<String, dynamic>?>(
-      valueListenable: profileNotifier,
-      builder: (context, profileData, child) {
-        return ValueListenableBuilder<Map<String, Map<String, dynamic>>?>(
-          valueListenable: categoriesNotifier,
-          builder: (context, categoriesData, child) {
-            if (categoriesData != null && categoriesData.containsKey(widget.documentId)) {
-              final categoryDetails = categoriesData[widget.documentId]!;
-              final totalIncome = profileData != null && profileData['accounts'] != null && profileData['accounts'][widget.documentId] != null
-                  ? (profileData['accounts'][widget.documentId]['totalIncome'] ?? 0).toDouble()
-                  : 0.0;
-              final totalExpense = profileData != null && profileData['accounts'] != null && profileData['accounts'][widget.documentId] != null
-                  ? (profileData['accounts'][widget.documentId]['totalExpense'] ?? 0).toDouble()
-                  : 0.0;
-              final totalBalance = totalIncome - totalExpense;
+    return ValueListenableBuilder<Map<String, Map<String, dynamic>>?>(
+      valueListenable: categoriesNotifier,
+      builder: (context, categoriesData, child) {
+        if (categoriesData != null && categoriesData.containsKey(widget.documentId)) {
+          final categoryDetails = categoriesData[widget.documentId]!;
 
-              return buildCard(categoryDetails, totalIncome, totalExpense, totalBalance);
-            } else {
-              // If no account data is available, display a message
-              return Center(child: Text('No accounts available.'));
-            }
-          },
-        );
+          return ValueListenableBuilder<Map<String, Map<String, dynamic>>?>(
+            valueListenable: accountsNotifier,
+            builder: (context, accountsData, child) {
+              return FutureBuilder<Map<String, Map<String, double>>>(
+                future: TransactionsDB().getIncomeAndExpenseByAccountForCategory(widget.documentId),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError) {
+                    return Center(child: Text('Error fetching data.'));
+                  } else if (snapshot.hasData) {
+                    double totalIncome = 0.0;
+                    double totalExpense = 0.0;
+
+                    snapshot.data!.forEach((accountId, totals) {
+                      totalIncome += totals['totalIncome'] ?? 0.0;
+                      totalExpense += totals['totalExpense'] ?? 0.0;
+                    });
+
+                    double totalBalance = totalIncome - totalExpense;
+                    return buildCard(categoryDetails, totalIncome, totalExpense, totalBalance);
+                  } else {
+                    return Center(child: Text('No data available.'));
+                  }
+                },
+              );
+            },
+          );
+        } else {
+          return Center(child: Text('Category details not available.'));
+        }
       },
     );
   }
@@ -323,61 +336,45 @@ class _CategoryCardState extends State<CategoryCard>
                                     ),
                                   );
                                 }
-                                return ValueListenableBuilder<Map<String, dynamic>?>(
-                                  valueListenable: profileNotifier,
-                                  builder: (context, profileData, child) {
+                                List<Widget> accountWidgets = [];
+                                accountsData.forEach((documentId, account) {
+                                  // Fetch income and expense for each account from the category details
+                                  Map<String, dynamic> incomeExpenseData = ProfileDB().getIncomeExpenseForCategory(widget.documentId)[documentId] ?? {};
+                                  double income = (incomeExpenseData['totalIncome'] ?? 0).toDouble(); // Convert to double
+                                  double expense = (incomeExpenseData['totalExpense'] ?? 0).toDouble(); // Convert to double
+                                  Map<String, dynamic> currencyMap = jsonDecode(account[AccountsDB.accountCurrency]);
 
+                                  accountWidgets.add(
+                                    accountInfoRow(account['name'], income.toStringAsFixed(2), expense.toStringAsFixed(2), currencyMap),
+                                  );
+                                });
 
-                                    List<Widget> accountWidgets = [];
-                                    accountsData.forEach((documentId, account) {
-                                      // Fetch income and expense for each account from the category details
-                                      Map<String, dynamic> incomeExpenseData = ProfileDB().getIncomeExpenseForCategory(widget.documentId)[documentId] ?? {};
-                                      double income = (incomeExpenseData['totalIncome'] ?? 0).toDouble(); // Convert to double
-                                      double expense = (incomeExpenseData['totalExpense'] ?? 0).toDouble(); // Convert to double
-                                      Map<String, dynamic> currencyMap = jsonDecode(account[AccountsDB.accountCurrency]);
-
-                                      accountWidgets.add(
-                                        accountInfoRow(account['name'], income.toStringAsFixed(2), expense.toStringAsFixed(2), currencyMap),
-                                      );
-                                    });
-
-                                    if (accountWidgets.isEmpty) {
-                                      return const Center(
-                                        child: Column(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            Icon(
-                                              Icons.info_outline,
-                                              color: Colors.red,
-                                              size: 50.0,
-                                            ),
-                                            SizedBox(height: 10),
-                                            Text(
-                                              "No more info available",
-                                              style: TextStyle(
-                                                fontSize: 18,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.blueGrey,
-                                              ),
-                                            ),
-                                          ],
+                                if (accountWidgets.isEmpty) {
+                                  return const Center(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.info_outline,
+                                          color: Colors.red,
+                                          size: 50.0,
                                         ),
-                                      );
-                                    }
-
-                                    /*List<Widget> finalWidgets = [];
-                              for (int i = 0; i < accountWidgets.length; i++) {
-                                finalWidgets.add(accountWidgets[i]);
-                                if (i < accountWidgets.length - 1) {
-                                  finalWidgets.add(Divider(color: Colors.grey));
+                                        SizedBox(height: 10),
+                                        Text(
+                                          "No more info available",
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.blueGrey,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
                                 }
-                              }*/
-
-                                    return Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: accountWidgets,
-                                    );
-                                  }
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: accountWidgets,
                                 );
                             },
                           ),

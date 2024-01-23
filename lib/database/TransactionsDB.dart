@@ -211,4 +211,31 @@ class TransactionsDB {
     }
     return {'totalIncome': totalIncome, 'totalExpense': totalExpense};
   }
+
+  Future<Map<String, Map<String, double>>> getIncomeAndExpenseByAccountForCategory(String categoryId) async {
+    final transactions = await getLocalTransactions();
+
+    Map<String, Map<String, double>> accountTotals = {};
+
+    if (transactions != null) {
+      transactions.forEach((docId, data) {
+        var transactionCategories = data[transactionCategoryIDs];
+        String accountId = data[transactionAccountId];
+
+        if (transactionCategories != null && transactionCategories.contains(categoryId)) {
+          double amount = double.tryParse(data[transactionAmount].toString()) ?? 0.0;
+
+          accountTotals.putIfAbsent(accountId, () => {'totalIncome': 0.0, 'totalExpense': 0.0});
+
+          if (data[transactionType] == 'income') {
+            accountTotals[accountId]!['totalIncome'] = (accountTotals[accountId]!['totalIncome'] ?? 0.0) + amount;
+          } else if (data[transactionType] == 'expense') {
+            accountTotals[accountId]!['totalExpense'] = (accountTotals[accountId]!['totalExpense'] ?? 0.0) + amount;
+          }
+        }
+      });
+    }
+
+    return accountTotals;
+  }
 }
