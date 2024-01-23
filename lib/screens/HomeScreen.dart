@@ -113,23 +113,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   // Function to fetch user's name from Firestore
-  void fetchUserName() async {
-    try {
-      final uid = FirebaseAuth.instance.currentUser?.uid;
-      if (uid != null) {
-        final userDoc =
-        await FirebaseFirestore.instance.collection('users').doc(uid).get();
-        if (userDoc.exists) {
-          final userData = userDoc.data() as Map<String, dynamic>;
-          final fetchedName = userData['name'] ?? '';
-          setState(() {
-            userName = fetchedName;
-          });
-        }
-      }
-    } catch (e) {
-      // Handle any errors while fetching the name
-      print(e.toString());
+  void fetchUserName() {
+    final profileData = profileNotifier.value;
+    if (profileData != null) {
+      final fetchedName = profileData['name'] ?? '';
+      setState(() {
+        userName = fetchedName;
+      });
+    } else {
     }
   }
 

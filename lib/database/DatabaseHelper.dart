@@ -27,6 +27,7 @@ class DatabaseHelper {
   }
 
   Future _onCreate(Database db, int version) async {
+    //await _createTempTransactionsTable(db);
   }
 
 
