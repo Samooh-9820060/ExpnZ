@@ -68,30 +68,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       0.0
     ],
   };
+  bool financialDataFetched = false;
   Map<String, dynamic> currencyMap = {};
   Set<String> currencyCodes = {};
   String userName = '';
-
-  // Function to fetch user's name from Firestore
-  void fetchUserName() async {
-    try {
-      final uid = FirebaseAuth.instance.currentUser?.uid;
-      if (uid != null) {
-        final userDoc =
-            await FirebaseFirestore.instance.collection('users').doc(uid).get();
-        if (userDoc.exists) {
-          final userData = userDoc.data() as Map<String, dynamic>;
-          final fetchedName = userData['name'] ?? '';
-          setState(() {
-            userName = fetchedName;
-          });
-        }
-      }
-    } catch (e) {
-      // Handle any errors while fetching the name
-      print(e.toString());
-    }
-  }
 
   @override
   void initState() {
@@ -132,6 +112,27 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     });
   }
 
+  // Function to fetch user's name from Firestore
+  void fetchUserName() async {
+    try {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid != null) {
+        final userDoc =
+        await FirebaseFirestore.instance.collection('users').doc(uid).get();
+        if (userDoc.exists) {
+          final userData = userDoc.data() as Map<String, dynamic>;
+          final fetchedName = userData['name'] ?? '';
+          setState(() {
+            userName = fetchedName;
+          });
+        }
+      }
+    } catch (e) {
+      // Handle any errors while fetching the name
+      print(e.toString());
+    }
+  }
+
   Future<void> _fetchData() async {
     final accountsData = accountsNotifier.value;
     if (accountsData.isNotEmpty) {
@@ -150,6 +151,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       DateTime firstDayNextMonth = DateTime(now.year, now.month + 1, 1);
       DateTime endDate = firstDayNextMonth.subtract(const Duration(days: 1));
 
+      // Fetching total income and expense for the period
+      double periodIncome = await getTotalForCurrency(currencyCode, 'income', startDate: startDate, endDate: endDate);
+      double periodExpense = await getTotalForCurrency(currencyCode, 'expense', startDate: startDate, endDate: endDate);
+
       List<double> graphDataIncome =
           await generateGraphData(currencyCode, 'income', startDate, endDate);
       List<double> graphDataExpense =
@@ -160,9 +165,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           'income': totalIncome,
           'expense': totalExpense,
           'balance': balance,
+          'periodIncome': periodIncome,
+          'periodExpense': periodExpense,
           'graphDataIncome': graphDataIncome,
           'graphDataExpense': graphDataExpense,
         };
+        financialDataFetched = true;
       });
     }
 
@@ -236,6 +244,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    if (!financialDataFetched) {
+      return Center(child: CircularProgressIndicator());
+    }
     double cardWidth = MediaQuery.of(context).size.width /
         2.25; // About half of the screen width, adjust the divisor as needed
     // Build the UI with the loaded data
@@ -243,7 +254,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         valueListenable: accountsNotifier,
         builder: (context, accountsData, child) {
           if (accountsData != null && accountsData.isNotEmpty) {
-            print(currencyCodes.isNotEmpty);
             if (financialData.isNotEmpty &&
                 currencyMap.isNotEmpty &&
                 currencyCodes.isNotEmpty) {
@@ -353,7 +363,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   ),
                                 );
                               },
-                              /*child: SummaryMonthCardWidget(
+                              child: SummaryMonthCardWidget(
                                 width: cardWidth,
                                 title: 'Income',
                                 total: financialData['periodIncome'].toString(),
@@ -361,7 +371,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 data: financialData['graphDataIncome'],
                                 graphLineColor: Colors.green,
                                 iconData: Icons.arrow_upward,
-                              ),*/
+                              ),
                             ),
 
                             // Expense Card
@@ -378,7 +388,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   ),
                                 );
                               },
-                              /*child: SummaryMonthCardWidget(
+                              child: SummaryMonthCardWidget(
                                 width: cardWidth,
                                 title: 'Expense',
                                 total:
@@ -387,7 +397,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 data: financialData['graphDataExpense'],
                                 graphLineColor: Colors.red,
                                 iconData: Icons.arrow_downward,
-                              ),*/
+                              ),
                             ),
                           ],
                         ),
@@ -502,7 +512,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         });
   }
 
-  Future<double> getTotalForCurrency(String currencyCode, String type) async {
+  Future<double> getTotalForCurrency(String currencyCode, String type, {DateTime? startDate, DateTime? endDate}) async {
     final transactionsData = transactionsNotifier.value;
     final accountsData = accountsNotifier.value;
     double total = 0.0;
@@ -511,16 +521,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       if (transaction['type'] == type) {
         String accountId = transaction['account_id'];
         if (accountsData.containsKey(accountId)) {
-          String accountCurrencyCode =
-              jsonDecode(accountsData[accountId]?['currency'])['code'];
+          String accountCurrencyCode = jsonDecode(accountsData[accountId]?['currency'])['code'];
           if (accountCurrencyCode == currencyCode) {
-            total += transaction['amount'];
+            DateTime transactionDate = DateTime.parse(transaction['date']);
+            bool isWithinRange = (startDate == null || transactionDate.isAfter(startDate) || transactionDate.isAtSameMomentAs(startDate)) &&
+                (endDate == null || transactionDate.isBefore(endDate) || transactionDate.isAtSameMomentAs(endDate));
+
+            if (isWithinRange) {
+              total += transaction['amount'];
+            }
           }
         }
       }
     });
     return total;
   }
+
 
   Future<List<double>> generateGraphData(String currencyCode, String type,
       DateTime startDate, DateTime endDate) async {
@@ -539,14 +555,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               Duration(days: (totalDays / intervals * (i + 1)).round() - 1));
 
       double totalForInterval = 0.0;
-      transactionsData?.forEach((transactionId, transaction) {
+      transactionsData.forEach((transactionId, transaction) {
         if (transaction['type'] == type) {
           String accountId = transaction['account_id'];
           if (accountsData.containsKey(accountId)) {
             String accountCurrencyCode =
                 jsonDecode(accountsData[accountId]?['currency'])['code'];
             if (accountCurrencyCode == currencyCode) {
-              DateTime transactionDate = DateTime.parse(transaction['date']);
+              String dateTimeString = '${transaction['date']} ${transaction['time']}';
+              DateTime transactionDate = DateTime.parse(dateTimeString);
               if (transactionDate.isAfter(intervalStart) &&
                   transactionDate.isBefore(intervalEnd)) {
                 totalForInterval += transaction['amount'];
@@ -665,11 +682,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       ),
     );
 
-    if (result == true) {
+    /*if (result == true) {
       Provider.of<TempTransactionsModel>(context, listen: false)
           .deleteTransactions(transactionId, null, context);
       Provider.of<TempTransactionsModel>(context, listen: false)
           .fetchTransactions();
-    }
+    }*/
   }
 }
