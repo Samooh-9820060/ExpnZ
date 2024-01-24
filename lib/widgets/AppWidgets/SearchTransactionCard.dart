@@ -94,7 +94,7 @@ class TransactionCard extends StatelessWidget {
             onLongPress: () => showDeleteDialog(context),
             onTap: () => onUpdate(),
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 5),
               child: Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(18.0),

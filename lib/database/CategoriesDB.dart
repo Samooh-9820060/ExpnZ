@@ -73,22 +73,17 @@ class CategoriesDB {
   }
 
   Future<bool> checkIfCategoryExists(String name) async {
-    String userUid = FirebaseAuth.instance.currentUser!.uid;
-    final querySnapshot = await _firestore.collection(collectionName)
-        .where(uid, isEqualTo: userUid)
-        .where(categoryName, isEqualTo: name)
-        .limit(1)
-        .get();
+    final categoriesData = categoriesNotifier.value;
 
-    return querySnapshot.docs.isNotEmpty;
+    for (var category in categoriesData.values) {
+      if (category['name'].toString().toLowerCase() == name.toLowerCase()) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
-  Stream<QuerySnapshot> getAllCategories() {
-    String userUid = FirebaseAuth.instance.currentUser!.uid;
-    return _firestore.collection(collectionName)
-        .where(uid, isEqualTo: userUid)
-        .snapshots();
-  }
 
   Future<void> updateCategory(String documentId, Map<String, dynamic> data) async {
     await _firestore.collection(collectionName).doc(documentId).update(data);

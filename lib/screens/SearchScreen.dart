@@ -89,20 +89,28 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   void _filterTransactions() {
     String searchText = _searchController.text.toLowerCase();
 
-    // Signal to cancel any ongoing filtering operation
-    _cancelOngoingFiltering = true;
+    if (searchText.length > 3) {
+      // Signal to cancel any ongoing filtering operation
+      _cancelOngoingFiltering = true;
 
-    // Delay to ensure any ongoing operation has time to stop
-    Future.delayed(const Duration(milliseconds: 100), () async {
-      // Reset the flag and start new filtering
-      _cancelOngoingFiltering = false;
-      filteredConditionalTransactions = await TransactionsDB().filterTransactions(searchText, selectedAccounts);
+      // Delay to ensure any ongoing operation has time to stop
+      Future.delayed(const Duration(milliseconds: 100), () async {
+        // Reset the flag and start new filtering
+        _cancelOngoingFiltering = false;
+        filteredConditionalTransactions = await TransactionsDB().filterTransactions(searchText, selectedAccounts);
 
-      // Check if the operation should be canceled at significant steps
-      if (_cancelOngoingFiltering) return;
 
-      setState(() {}); // Trigger a rebuild to update the UI with filtered data
-    });
+        // Check if the operation should be canceled at significant steps
+        if (_cancelOngoingFiltering) return;
+
+        setState(() {}); // Trigger a rebuild to update the UI with filtered data
+      });
+    } else {
+      filteredConditionalTransactions.clear();
+      setState(() {
+
+      });
+    }
   }
 
   @override
@@ -697,9 +705,9 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
           ),
           SizedBox(height: 10),
           Text(
-            _searchController.text.isNotEmpty
+            _searchController.text.length > 3
                 ? 'No transactions available'
-                : 'Enter something to search or use the filter button',
+                : 'Enter more than 3 letters to search or use the filter button',
             style: TextStyle(color: Colors.white),
           ),
         ],

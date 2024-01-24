@@ -126,7 +126,14 @@ class AccountsDB {
     await _firestore.collection(collectionName).doc(documentId).update(data);
   }
 
-  Future<DocumentSnapshot> getSelectedAccount(String documentId) async {
-    return await _firestore.collection(collectionName).doc(documentId).get();
+  Future<Map<String, dynamic>?> getSelectedAccount(String documentId) async {
+    final accountsData = accountsNotifier.value;
+
+    // Check if the account data is available in the notifier
+    if (accountsData.containsKey(documentId)) {
+      return accountsData[documentId];
+    }
+
+    return null;
   }
 }

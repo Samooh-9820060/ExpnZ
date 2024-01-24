@@ -68,7 +68,7 @@ class _SignUpScreenState extends State<SignUpScreen> with SingleTickerProviderSt
         final uid = userCredential.user?.uid;
         if (uid != null && user != null) {
           // User successfully registered, now insert details into Firestore
-          await ProfileDB().createUserProfileWithAggregates(uid, {
+          await ProfileDB().createUserProfile(uid, {
             'name': _nameController.text,
             'phoneNumber': _mobileNumberController.text,
             'profileImageUrl': null,

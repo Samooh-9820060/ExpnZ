@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:expnz/widgets/SimpleWidgets/ExpnZTextField.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -228,8 +227,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
     }
 
     // Prepare Firestore reference
-    FirebaseFirestore firestore = FirebaseFirestore.instance;
-
     if (_selectedType == TransactionType.transfer) {
       // Validate account selection
       if (selectedFromAccountIndex < 0 || selectedToAccountIndex < 0) {

@@ -136,7 +136,6 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
       AccountsDB.accountCardNumber: _cardNumberController.text.trim(),
     };
 
-    // Firestore document ID (null for new accounts, existing ID for updates)
     String? documentId;
 
     // Check if modifying an existing account

@@ -129,9 +129,9 @@ class TransactionsDB {
   }
 
 
-  Future<DocumentSnapshot> getSelectedCategory(String documentId) async {
+  /*Future<DocumentSnapshot> getSelectedCategory(String documentId) async {
     return await _firestore.collection(collectionName).doc(documentId).get();
-  }
+  }*/
 
   //Retrieve income expense functions
   /****************************************************************************************/
@@ -186,11 +186,31 @@ class TransactionsDB {
   // Function to filter transactions on search screen
   Future<List<Map<String, dynamic>>> filterTransactions(String searchText, [List<String>? accountIds]) async {
     final transactionsData = transactionsNotifier.value ?? {};
+    final categoriesData = categoriesNotifier.value ?? {};
     List<Map<String, dynamic>> filteredTransactions = [];
 
+    String lowerCaseSearchText = searchText.toLowerCase();
+
     transactionsData.forEach((docId, transaction) {
+      bool matchesSearchText = transaction['name'].toString().toLowerCase().contains(lowerCaseSearchText) ||
+          transaction['description'].toString().toLowerCase().contains(lowerCaseSearchText) ||
+          transaction['amount'].toString().contains(searchText);
+
+      // Check if any category associated with the transaction matches the search text
+      bool matchesCategory = false;
+      if (transaction.containsKey('categories')) {
+        List<String> categoryIds = transaction['categories'].split(',');
+        for (var categoryId in categoryIds) {
+          var categoryName = categoriesData[categoryId]?['name'] ?? '';
+          if (categoryName.toLowerCase().contains(lowerCaseSearchText)) {
+            matchesCategory = true;
+            break;
+          }
+        }
+      }
+
       if ((accountIds == null || accountIds.contains(transaction['account_id'])) &&
-          transaction['name'].toString().toLowerCase().contains(searchText.toLowerCase())) {
+          (matchesSearchText || matchesCategory)) {
         // Create a new map for the transaction and include the document ID
         Map<String, dynamic> transactionWithId = Map.from(transaction);
         transactionWithId['documentId'] = docId; // Add the document ID

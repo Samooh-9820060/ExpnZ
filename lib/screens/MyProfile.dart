@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as Path;
 
+import '../utils/global.dart';
 import 'ChangePassword.dart';
 
 class MyProfileScreen extends StatefulWidget {
@@ -45,14 +46,18 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
   Future<void> _fetchUserData() async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      DocumentSnapshot userData = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-      setState(() {
-        _nameController.text = userData['name'] ?? ''; // Add null check
-        _mobileNumberController.text = userData['phoneNumber'] ?? ''; // Add null check
-        if (userData['profileImageUrl'] is String) {
-          _profileImageUrl = userData['profileImageUrl']; // Ensure it's a String
-        }
-      });
+      // Fetch user data from profileNotifier
+      final profileData = profileNotifier.value;
+      if (profileData != null) {
+        setState(() {
+          _nameController.text = profileData['name'] ?? ''; // Use the name from the profile data
+          _mobileNumberController.text = profileData['phoneNumber'] ?? ''; // Use the phone number from the profile data
+
+          if (profileData.containsKey('profileImageUrl') && profileData['profileImageUrl'] is String) {
+            _profileImageUrl = profileData['profileImageUrl']; // Use the profile image URL from the profile data
+          }
+        });
+      }
     }
   }
 

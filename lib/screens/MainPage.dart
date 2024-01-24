@@ -45,7 +45,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin, Widg
   void initState() {
     super.initState();
     appNotificationListener = AppNotificationListener();
-    _fetchUserData();
+    //_fetchUserData();
     initializeApp(context);
     Future.delayed(Duration.zero, () {
       Provider.of<TempTransactionsModel>(context, listen: false).fetchTransactions();

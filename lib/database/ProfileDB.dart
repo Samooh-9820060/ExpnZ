@@ -1,9 +1,12 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:expnz/utils/global.dart';
+import 'package:http/http.dart' as http;
 
 class ProfileDB {
   static const String collectionName = 'users'; // or 'profiles'
@@ -11,30 +14,42 @@ class ProfileDB {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   void listenToProfileChanges(String uid) {
-    _firestore.collection(collectionName).doc(uid).snapshots().listen((snapshot) {
+    _firestore.collection(collectionName).doc(uid).snapshots().listen((snapshot) async {
       if (snapshot.exists) {
         final Map<String, dynamic> profileData = snapshot.data() as Map<String, dynamic>;
 
-        // Handling categories data specifically if needed
-        final Map<String, dynamic> newCategoriesData = {};
-        if (profileData.containsKey('categories')) {
-          Map<String, dynamic> categories = profileData['categories'] as Map<String, dynamic>;
-          for (var categoryId in categories.keys) {
-            newCategoriesData[categoryId] = categories[categoryId] as Map<String, dynamic>;
-          }
-          // Update the categories part of the profile data
-          profileData['categories'] = newCategoriesData;
+        // Check if profileImageUrl has changed
+        if (profileData.containsKey('profileImageUrl')) {
+          String imageUrl = profileData['profileImageUrl'];
+          await downloadAndSaveImage(imageUrl, uid);
         }
 
         // Cache the updated profile data locally
         cacheProfileLocally(profileData);
-        //cacheProfileLocally(snapshot.data() as Map<String, dynamic>);
-        //print(snapshot.data() as Map<String, dynamic>);
       } else {
-        // Handle the case where the profile document does not exist
         clearLocalProfileCache();
       }
     });
+  }
+
+  Future<void> downloadAndSaveImage(String imageUrl, String uid) async {
+    try {
+      final response = await http.get(Uri.parse(imageUrl));
+      final directory = await getApplicationDocumentsDirectory();
+      final filePath = '${directory.path}/$uid-profile-image.jpg';
+      final file = File(filePath);
+      file.writeAsBytesSync(response.bodyBytes);
+      // Optionally, save the local path in shared preferences or some local database
+    } catch (e) {
+      print('Error downloading or saving image: $e');
+    }
+  }
+
+  Future<File?> getLocalProfileImage(String uid) async {
+    final directory = await getApplicationDocumentsDirectory();
+    final filePath = '${directory.path}/$uid-profile-image.jpg';
+    final file = File(filePath);
+    return file.existsSync() ? file : null;
   }
 
   Future<void> clearLocalProfileCache() async {
@@ -58,19 +73,10 @@ class ProfileDB {
     return encodedData != null ? json.decode(encodedData) as Map<String, dynamic> : null;
   }
 
-  Future<void> createUserProfileWithAggregates(String uid, Map<String, dynamic> profileData) async {
-    // Adding default aggregate data
-    profileData.addAll({
-      'accounts': {},
-      'categories': {},
-    });
-
+  Future<void> createUserProfile(String uid, Map<String, dynamic> profileData) async {
     await _firestore.collection(collectionName).doc(uid).set(profileData);
   }
 
-  Future<DocumentSnapshot> getProfile(String uid) async {
-    return await _firestore.collection(collectionName).doc(uid).get();
-  }
 
   // Method to fetch income and expense for each account in a specific category
   Map<String, dynamic> getIncomeExpenseForCategory(String categoryId) {
