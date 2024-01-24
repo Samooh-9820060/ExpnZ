@@ -1,7 +1,6 @@
 import 'package:expnz/utils/animation_utils.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'dart:math';
 
 class SummaryMonthCardWidget extends StatefulWidget {
@@ -13,7 +12,7 @@ class SummaryMonthCardWidget extends StatefulWidget {
   final String total;
   final double width;
 
-  SummaryMonthCardWidget({
+  const SummaryMonthCardWidget({super.key,
     required this.data,
     required this.graphLineColor,
     required this.currencyMap,
@@ -86,25 +85,25 @@ class _SummaryMonthCardWidgetState extends State<SummaryMonthCardWidget> with Si
                               Icon(widget.iconData, color: Colors.white, size: 24),
                             ],
                           ),
-                          SizedBox(width: 8),
+                          const SizedBox(width: 8),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
                                 widget.title,
-                                style: TextStyle(
+                                style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
-                              SizedBox(height: 4),
+                              const SizedBox(height: 4),
                               Text(
                                 animatedNumberString(_numberAnimation.value, widget.total, widget.currencyMap),
-                                style: TextStyle(
+                                style: const TextStyle(
                                   color: Colors.white,
-                                  fontSize: 14,
+                                  fontSize: 10,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -115,21 +114,21 @@ class _SummaryMonthCardWidgetState extends State<SummaryMonthCardWidget> with Si
                     ],
                   ),
                   Expanded(
-                    child: Container(
+                    child: SizedBox(
                       width: double.infinity,
                       child: Align(
                         alignment: Alignment.center,
                         child: LineChart(
                           LineChartData(
-                            gridData: FlGridData(show: false),
-                            titlesData: FlTitlesData(show: false),
+                            gridData: const FlGridData(show: false),
+                            titlesData: const FlTitlesData(show: false),
                             borderData: FlBorderData(show: false),
-                            clipData: FlClipData.none(), // Set clip behavior
+                            clipData: const FlClipData.none(), // Set clip behavior
                             minX: widget.data.asMap().keys.first.toDouble(), // Use your data for min and max X values
                             maxX: widget.data.asMap().keys.last.toDouble(),
                             minY: widget.data.reduce(min), // Use the minimum data value for minY
                             maxY: widget.data.reduce(max), // Use the maximum data value for maxY
-                            lineTouchData: LineTouchData(
+                            lineTouchData: const LineTouchData(
                               enabled: false,
                             ),
                             lineBarsData: [
@@ -140,7 +139,7 @@ class _SummaryMonthCardWidgetState extends State<SummaryMonthCardWidget> with Si
                                     .map((e) => FlSpot(e.key.toDouble(), e.value))
                                     .toList(),
                                 isCurved: true, // You can adjust the curve's smoothness
-                                dotData: FlDotData(show: false),
+                                dotData: const FlDotData(show: false),
                                 belowBarData: BarAreaData(show: false),
                                 /*belowBarData: BarAreaData(
                                   show: true,

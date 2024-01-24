@@ -587,12 +587,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     List<double> graphData = List.generate(intervals, (_) => 0.0);
 
     for (int i = 0; i < intervals; i++) {
-      DateTime intervalStart =
-          startDate.add(Duration(days: (totalDays / intervals * i).round()));
-      DateTime intervalEnd = i == intervals - 1
-          ? endDate
-          : startDate.add(
-              Duration(days: (totalDays / intervals * (i + 1)).round() - 1));
+      DateTime intervalStart = i == 0 ? startDate : startDate.add(Duration(days: (totalDays / intervals * i).round()));
+      DateTime intervalEnd = i == intervals - 1 ? endDate : startDate.add(Duration(days: (totalDays / intervals * (i + 1)).round() - 1));
 
       double totalForInterval = 0.0;
       transactionsData.forEach((transactionId, transaction) {
@@ -604,8 +600,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             if (accountCurrencyCode == currencyCode) {
               String dateTimeString = '${transaction['date']} ${transaction['time']}';
               DateTime transactionDate = DateTime.parse(dateTimeString);
-              if (transactionDate.isAfter(intervalStart) &&
-                  transactionDate.isBefore(intervalEnd)) {
+
+              if (transactionDate.isAfter(intervalStart.subtract(Duration(days: 1))) &&
+                  transactionDate.isBefore(intervalEnd.add(Duration(days: 1)))) {
                 totalForInterval += transaction['amount'];
               }
             }
