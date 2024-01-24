@@ -94,7 +94,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
     final transactionsData = transactionsNotifier.value;
 
     // Extract the transaction data using the widget's transaction ID
-    final String transactionId = widget.transaction?['documentName'];
+    final String transactionId = widget.transaction?['documentId'];
     final transaction = transactionsData?[transactionId];
 
     if (transaction != null) {
@@ -103,7 +103,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
       final String accountId = transaction[TransactionsDB.transactionAccountId];
       final String date = transaction[TransactionsDB.transactionDate];
       final String time = transaction[TransactionsDB.transactionTime] ?? 'Unknown';
-      final double amount = transaction[TransactionsDB.transactionAmount] ?? 0.0;
+      final double amount = (transaction[TransactionsDB.transactionAmount] ?? 0).toDouble(); // Cast to double
       final String type = transaction[TransactionsDB.transactionType] ?? 'Unknown';
 
       if (type == 'expense') {
@@ -133,21 +133,24 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
           selectedAccoutId = accountId;
         }
       }
+
       // Processing categories...
       final String? categoriesString = transaction[TransactionsDB.transactionCategoryIDs] ?? '';
-      if (categoriesString != null) {
-        final List<int> categoryIds = categoriesString
+      if (categoriesString != null && categoriesString.isNotEmpty) {
+        final List<String> categoryIds = categoriesString
             .split(',')
-            .map((e) => int.tryParse(e.trim()) ?? 0)
+            .map((e) => e.trim())
+            .where((id) => id.isNotEmpty) // Filter out any empty strings
             .toList();
 
         selectedCategoriesList.clear();
-        for (int categoryId in categoryIds) {
+        for (String categoryId in categoryIds) {
           selectedCategoriesList.add({
             'id': categoryId,
           });
         }
       }
+
     }
   }
 
@@ -370,13 +373,14 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
 
         if (isUpdate && existingTransaction != null) {
           // Update existing transaction
-          TransactionsDB().updateTransaction(existingTransaction['_id'], row);
+          TransactionsDB().updateTransaction(existingTransaction['documentId'], row);
           dataInserted = true;
         } else {
           // Insert a new transaction
           TransactionsDB().insertTransaction(row);
           dataInserted = true;
         }
+
 
         // Check if the transaction was successful
         if ((isUpdate && existingTransaction != null) || dataInserted == true) {

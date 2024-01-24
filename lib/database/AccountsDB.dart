@@ -52,7 +52,26 @@ class AccountsDB {
   Future<Map<String, Map<String, dynamic>>?> getLocalAccounts() async {
     final prefs = await SharedPreferences.getInstance();
     String? encodedData = prefs.getString('userAccounts');
-    return encodedData != null ? json.decode(encodedData) as Map<String, Map<String, dynamic>> : null;
+    if (encodedData != null) {
+      final decodedData = json.decode(encodedData);
+      if (decodedData is Map) {
+        return decodedData.map((key, value) {
+          if (value is Map) {
+            return MapEntry(key, value.cast<String, dynamic>());
+          } else {
+            // In case the value is not a Map, handle it appropriately
+            // You can return an empty map or throw an error based on your app's needs
+            return MapEntry(key, <String, dynamic>{});
+          }
+        });
+      } else {
+        // Handle the case where decodedData is not a Map
+        // You can return null or throw an error based on your app's needs
+        return null;
+      }
+    } else {
+      return null;
+    }
   }
 
   Future<DocumentReference> insertAccount(Map<String, dynamic> data) async {

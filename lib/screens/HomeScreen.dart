@@ -8,6 +8,7 @@ import 'package:expnz/screens/AddTransaction.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../database/AccountsDB.dart';
 import '../models/TempTransactionsModel.dart';
@@ -135,12 +136,27 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   // Function to fetch user's name from Firestore
   void fetchUserName() async {
     final profileData = profileNotifier.value;
+    final prefs = await SharedPreferences.getInstance();
+    String? encodedProfileData = prefs.getString('userProfile');
+
     if (profileData != null) {
       final fetchedName = profileData['name'] ?? '';
       setState(() {
         userName = fetchedName;
       });
-    } else {
+    } else if (encodedProfileData != null) {
+      try {
+        Map<String, dynamic> profileData = json.decode(encodedProfileData);
+        String fetchedName = profileData['name'] ?? '';
+        setState(() {
+          userName = fetchedName;
+        });
+      } catch (e) {
+        // Handle any errors during JSON parsing
+        print('Error parsing user profile data: $e');
+      }
+    }
+    else {
       try {
         final uid = FirebaseAuth.instance.currentUser?.uid;
         if (uid != null) {

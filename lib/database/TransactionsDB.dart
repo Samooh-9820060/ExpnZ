@@ -108,13 +108,14 @@ class TransactionsDB {
   }
 
   Future<void> deleteTransaction(String documentId) async {
-    String userUid = FirebaseAuth.instance.currentUser!.uid;
     await _firestore.collection(collectionName).doc(documentId).delete();
 
-    // Update the user's document to remove the account's aggregate data
-    /*await _firestore.collection(usersCollection).doc(userUid).update({
-      'categories.$documentId': FieldValue.delete(),
-    });*/
+    // Update the local cache by removing the deleted transaction
+    final currentTransactions = transactionsNotifier.value ?? {};
+    if (currentTransactions.containsKey(documentId)) {
+      currentTransactions.remove(documentId);
+      transactionsNotifier.value = currentTransactions;
+    }
   }
 
   //method to update transaction by its id
@@ -180,5 +181,23 @@ class TransactionsDB {
     }
 
     return accountTotals;
+  }
+
+  // Function to filter transactions on search screen
+  Future<List<Map<String, dynamic>>> filterTransactions(String searchText, [List<String>? accountIds]) async {
+    final transactionsData = transactionsNotifier.value ?? {};
+    List<Map<String, dynamic>> filteredTransactions = [];
+
+    transactionsData.forEach((docId, transaction) {
+      if ((accountIds == null || accountIds.contains(transaction['account_id'])) &&
+          transaction['name'].toString().toLowerCase().contains(searchText.toLowerCase())) {
+        // Create a new map for the transaction and include the document ID
+        Map<String, dynamic> transactionWithId = Map.from(transaction);
+        transactionWithId['documentId'] = docId; // Add the document ID
+        filteredTransactions.add(transactionWithId);
+      }
+    });
+
+    return filteredTransactions;
   }
 }

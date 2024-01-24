@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../database/AccountsDB.dart';
 import '../../utils/currency_utils.dart';
+import '../../utils/global.dart';
 import '../../utils/image_utils.dart';
 
 class TransactionCard extends StatelessWidget {
@@ -48,52 +49,28 @@ class TransactionCard extends StatelessWidget {
         ? transaction['date'].split('T')[0]
         : 'Unknown';
     final String time = transaction['time'] ?? 'Unknown';
-    final double amount = transaction['amount'] ?? 0.0;
+    final dynamic rawAmount = transaction['amount'] ?? 0.0;
+    final double amount = rawAmount is int ? rawAmount.toDouble() : (rawAmount as double);
     final String type = transaction['type'] ?? 'Unknown';
     final String categoriesString = transaction['categories'] ?? '';
-    final List<int> categoryIds = categoriesString
-        .split(',')
-        .map((e) => int.tryParse(e.trim()) ?? 0)
-        .toList();
-
-    //final categoriesModel = Provider.of<CategoriesModel>(context);
-    final int firstCategoryId = categoryIds.isNotEmpty ? categoryIds.first : 0;
-    //final Map<String, dynamic>? firstCategory = categoriesModel.getCategoryById(firstCategoryId);
-    //final Widget categoryWidget = getCategoryWidget(firstCategory);
-
+    final List<String> categoryIds = categoriesString.split(',');
 
     // Determine color based on transaction type
     final Color? amountColor = type == 'income'
         ? Colors.greenAccent[400]
         : (type == 'expense' ? Colors.redAccent[100] : Colors.white);
 
-    return Container();
-    /*return FutureBuilder<Object>(
-      future: Provider.of<AccountsModel>(context, listen: false)
-          .getAccountDetailsById(transaction['account_id']),
+    return FutureBuilder<Object>(
+      future: _fetchAccountDetails(transaction['account_id']),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Container();
         } else if (snapshot.hasError) {
           return Text('Error: ${snapshot.error}');
         } else {
-          final account = snapshot.data;
-          String accountName;
-          String currencySymbol;
-          Map<String, dynamic> currencyMap = new Map<String, dynamic>();
-
-          if (account is Map<String, dynamic>) {
-            accountName = account[AccountsDB.accountName] ?? 'Unknown';
-            currencyMap =
-                jsonDecode(account[AccountsDB.accountCurrency]);
-            currencySymbol = currencyMap['symbol'] ?? 'Unknown';
-            if (currencyMap['spaceBetweenAmountAndSymbol'] == true) {
-              currencySymbol = currencySymbol+" ";
-            }
-          } else {
-            accountName = 'Unknown';
-            currencySymbol = 'Unknown';
-          }
+          final Map<String, dynamic> account = snapshot.data as Map<String, dynamic>;
+          final String accountName = account['name'] ?? 'Unknown';
+          final Map<String, dynamic> currencyMap = jsonDecode(account['currency'] ?? '{}');
 
           // Use the utility functions to get the formatted symbol and amount
           String formattedSymbol = formatCurrencySymbol(
@@ -108,6 +85,10 @@ class TransactionCard extends StatelessWidget {
               currencyMap['decimalDigits'] ?? 2
           );
 
+          // Build category widgets
+          List<Widget> categoryWidgets = categoryIds.map((categoryId) {
+            return _buildCategoryWidget(categoryId);
+          }).toList();
 
           return GestureDetector(
             onLongPress: () => showDeleteDialog(context),
@@ -126,34 +107,28 @@ class TransactionCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
+                        ...categoryWidgets,
+                        SizedBox(width: 8),
                         Expanded(
-                          child: Row(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              categoryWidget,
-                              SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      name,
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                      maxLines: 1,
-                                    ),
-                                    SizedBox(height: 2),
-                                    Text(
-                                      "$accountName • $date",
-                                      style: TextStyle(
-                                        color: Colors.white.withOpacity(0.7),
-                                        fontSize: 10,
-                                      ),
-                                    ),
-                                  ],
+                              Text(
+                                name,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                              SizedBox(height: 2),
+                              Text(
+                                "$accountName • $date",
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.7),
+                                  fontSize: 10,
                                 ),
                               ),
                             ],
@@ -192,6 +167,42 @@ class TransactionCard extends StatelessWidget {
           );
         }
       },
-    );*/
+    );
+  }
+
+  Future<Map<String, dynamic>> _fetchAccountDetails(String accountId) async {
+    // Implementation to fetch account details either from the notifier or database
+    final accountsData = accountsNotifier.value ?? {};
+    return accountsData[accountId] ?? {};
+  }
+
+  Widget _buildCategoryWidget(String categoryId) {
+    // Retrieve the category's details
+    final categoryDetails = categoriesNotifier.value?[categoryId] ?? {};
+
+    // Check if the categoryDetails is not empty
+    if (categoryDetails.isNotEmpty) {
+      IconData? iconData;
+
+      if (categoryDetails.containsKey('iconCodePoint') && categoryDetails['iconCodePoint'] != null) {
+        int? iconCodePoint = int.tryParse(categoryDetails['iconCodePoint'].toString());
+        String? iconFontFamily = categoryDetails['iconFontFamily'] as String?;
+        String? iconFontPackage = categoryDetails['iconFontPackage'] as String?;
+
+        if (iconCodePoint != null && iconFontFamily != null) {
+          iconData = IconData(iconCodePoint, fontFamily: iconFontFamily, fontPackage: iconFontPackage);
+        }
+      }
+
+      iconData ??= Icons.category;
+
+      return Container(
+        alignment: Alignment.center, // Center the icon vertically and horizontally
+        child: Icon(iconData, size: 20),
+      );
+    } else {
+      // Return an empty container or a placeholder if categoryDetails is empty
+      return Container();
+    }
   }
 }

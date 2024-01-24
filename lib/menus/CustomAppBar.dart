@@ -89,8 +89,8 @@ class _CustomAppBarState extends State<CustomAppBar> {
                   PageRouteBuilder(
                     transitionDuration: const Duration(milliseconds: 500),
                     pageBuilder: (BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation) {
-                      //return SearchScreen();
-                      return AccountsScreen();
+                      return SearchScreen();
+                      //return AccountsScreen();
                     },
                     transitionsBuilder: (BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation, Widget child) {
                       return SlideTransition(
