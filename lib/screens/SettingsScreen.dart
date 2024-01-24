@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:excel/excel.dart';
 import 'package:expnz/database/AccountsDB.dart';
 import 'package:expnz/database/CategoriesDB.dart';
@@ -7,6 +8,7 @@ import 'package:expnz/database/TransactionsDB.dart';
 import 'package:expnz/utils/NotificationListener.dart';
 import 'package:expnz/widgets/AppWidgets/SelectAccountCard.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -15,9 +17,10 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:notifications/notifications.dart';
 
+import '../utils/global.dart';
 import 'MainPage.dart';
 
-/*class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends StatefulWidget {
   @override
   _SettingsScreenState createState() => _SettingsScreenState();
 }
@@ -27,7 +30,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _showExportOptions = false;
   bool _showDeleteOptions = false;
   int selectedAccoutIndex = -1;
-  int selectedAccoutId = -1;
+  String selectedAccoutId = "";
   bool _allowNotificationReading = false;
   final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
   final AppNotificationListener _notificationListener = AppNotificationListener();
@@ -170,7 +173,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           title: Text('Import Transactions (Select an account)', style: TextStyle(color: Colors.white70)),
           leading: Icon(Icons.arrow_right, color: Colors.white70),
           onTap: () {
-
+            // Add your onTap logic here
           },
         ),
         Column(
@@ -178,19 +181,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             Container(
               height: 150, // set the height
-              child: Consumer<AccountsModel>(
-                builder: (context, accountsModel, child) {
-                  if (accountsModel.accounts.isEmpty) {
+              child: ValueListenableBuilder<Map<String, Map<String, dynamic>>>(
+                valueListenable: accountsNotifier,
+                builder: (context, accountsData, child) {
+                  if (accountsData.isEmpty) {
                     return Center(
                       child: Text('No accounts available.'),
                     );
                   } else {
+                    List<String> accountIds = accountsData.keys.toList();
+
                     return ListView.builder(
                       padding: EdgeInsets.zero,
                       scrollDirection: Axis.horizontal,
-                      itemCount: accountsModel.accounts.length,
+                      itemCount: accountIds.length,
                       itemBuilder: (context, index) {
-                        final account = accountsModel.accounts[index];
+                        final accountId = accountIds[index];
+                        final account = accountsData[accountId]!;
                         Map<String, dynamic> currencyMap = jsonDecode(account[AccountsDB.accountCurrency]);
                         String currencyCode = currencyMap['code'] as String;
 
@@ -198,12 +205,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           onTap: () {
                             setState(() {
                               selectedAccoutIndex = index;
-                              selectedAccoutId = account[AccountsDB.accountId];
+                              selectedAccoutId = accountId; // Using the document ID as account ID
                               _showImportTemplateDialog(account[AccountsDB.accountName], selectedAccoutId);
                             });
                           },
                           child: AccountCard(
-                            accountId: account[AccountsDB.accountId],
+                            accountId: accountId,
                             icon: IconData(
                               account[AccountsDB.accountIconCodePoint],
                               fontFamily: account[AccountsDB.accountIconFontFamily],
@@ -217,7 +224,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       },
                     );
                   }
-                }, // This is where the missing '}' should be placed.
+                },
               ),
             ),
           ],
@@ -267,7 +274,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _clearData(BuildContext context, {bool clearAll = false, bool clearTransactions = false, bool clearAccounts = false, bool clearCategories = false}) async {
     // Show confirmation dialog before clearing data
-    bool confirm = await _showConfirmationDialog(context);
+    /*bool confirm = await _showConfirmationDialog(context);
     if (!confirm) return;
 
     if (clearAll || clearTransactions) {
@@ -290,10 +297,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     // Show success message
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Data cleared successfully')),
-    );
+    );*/
   }
 
-  void _showImportTemplateDialog(String selectedAccountName, int selectedAccountId) {
+  void _showImportTemplateDialog(String selectedAccountName, String selectedAccountId) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -378,7 +385,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     List<String> categoriesToCreate = [];
     List<Map<String, dynamic>> transactionsToCreate = [];
 
-    var categoriesModel = Provider.of<CategoriesModel>(context, listen: false);
+    var categoriesData = categoriesNotifier.value ?? {};
 
     for (int i = 1; i < rows.length; i++) { // Start from 1 to skip the header row
       var row = rows[i];
@@ -419,11 +426,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
         errorsInRow = true;
       }
 
-      //check if existing categories
+      // Check if existing categories
       var categoryList = categoriesCell.split(',');
-      for (var category in categoryList) {
-        if (categoriesModel.getCategoryByName(category) == null && !categoriesToCreate.contains(category)) {
-          categoriesToCreate.add(category.trim());
+      for (var categoryName in categoryList) {
+        var categoryExists = categoriesData.values.any((category) => category['name'].toString().trim().toLowerCase() == categoryName.trim().toLowerCase());
+
+        if (!categoryExists && !categoriesToCreate.contains(categoryName.trim())) {
+          categoriesToCreate.add(categoryName.trim());
         }
       }
 
@@ -436,14 +445,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
         var parsedTime = TimeOfDay(hour: int.parse(timeParts[0]), minute: int.parse(timeParts[1]));
 
         Map<String, dynamic> row = {
-          TransactionsDB.columnType: typeCell.toLowerCase(),  // income, expense or transfer
-          TransactionsDB.columnName: nameCell,
-          TransactionsDB.columnDescription: descriptionCell,
-          TransactionsDB.columnAmount: amountCell,
-          TransactionsDB.columnDate: DateFormat('yyyy-MM-dd').format(parsedDate),
-          TransactionsDB.columnTime: parsedTime.format(context),
-          TransactionsDB.columnAccountId: selectedAccoutId,
-          TransactionsDB.columnCategories: categoriesCell,
+          TransactionsDB.transactionType: typeCell.toLowerCase(),  // income, expense or transfer
+          TransactionsDB.transactionName: nameCell,
+          TransactionsDB.transactionDescription: descriptionCell,
+          TransactionsDB.transactionAmount: double.tryParse(amountCell) ?? 0.0, // Convert to double
+          TransactionsDB.transactionDate: DateFormat('yyyy-MM-dd').format(parsedDate),
+          TransactionsDB.transactionTime: parsedTime.format(context),
+          TransactionsDB.transactionAccountId: selectedAccoutId,
+          TransactionsDB.transactionCategoryIDs: categoriesCell,
         };
         transactionsToCreate.add(row);
       }
@@ -455,9 +464,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       //if there are uncreated categories
       _showCreateCategoriesDialog(context, categoriesToCreate, () async {
         // Refresh categories model to include newly created categories
-        await categoriesModel.fetchCategories();
+        //await categoriesModel.fetchCategories();
         // Update category IDs in transactions
-        _updateCategoryIdsInTransactions(transactionsToCreate, categoriesModel);
+        _updateCategoryIdsInTransactions(transactionsToCreate);
         // Create transactions
         _createTransactions(transactionsToCreate, context);
         Navigator.of(context).pop();
@@ -473,7 +482,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return DateTime.tryParse(date) != null;
   }
   Future<void> _createCategories(List<String> categoriesToCreate, BuildContext context) async {
-    final categoriesModel = Provider.of<CategoriesModel>(context, listen: false);
+    String userUid = FirebaseAuth.instance.currentUser!.uid;
+    var batch = FirebaseFirestore.instance.batch();
+
     for (var categoryName in categoriesToCreate) {
       // Default values for icon, color, and description
       final defaultIcon = Icons.category;
@@ -481,7 +492,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final description = categoryName;
 
       // Prepare data to insert
-      Map<String, dynamic> row = {
+      Map<String, dynamic> data = {
+        'uid': userUid,
         'name': categoryName,
         'description': description,
         'color': defaultColor.value,
@@ -491,42 +503,78 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'selectedImageBlob': null, // No image
       };
 
-      // Insert new category
-      final int? id = await CategoriesDB().insertCategory(row);
-      if (id != null && id > 0) {
-        // Category added successfully
-        print("Category '$categoryName' added successfully.");
-      } else {
-        // Error handling if needed
-        print("Failed to add category '$categoryName'.");
+      // Generate a new document reference
+      var categoryRef = FirebaseFirestore.instance.collection('categories').doc();
+      batch.set(categoryRef, data);
+    }
+
+    try {
+      await batch.commit();
+      print("All categories added successfully.");
+    } catch (e) {
+      print("Failed to add categories: $e");
+    }
+
+    // Refresh the categories list in the UI
+    categoriesNotifier.value = (await CategoriesDB().getLocalCategories())!;
+  }
+  void _updateCategoryIdsInTransactions(List<Map<String, dynamic>> transactions) {
+    final categoriesData = categoriesNotifier.value ?? {};
+
+    for (var transaction in transactions) {
+      var categoryNames = (transaction[TransactionsDB.transactionCategoryIDs] as String).split(',');
+      var updatedCategoryIds = _getCategoryIdsFromNames(categoryNames, categoriesData);
+      transaction[TransactionsDB.transactionCategoryIDs] = updatedCategoryIds.join(',');
+    }
+  }
+
+  List<String> _getCategoryIdsFromNames(List<String> categoryNames, Map<String, Map<String, dynamic>> categoriesData) {
+    List<String> categoryIds = [];
+
+    for (var name in categoryNames) {
+      var foundEntry = categoriesData.entries.firstWhere(
+              (entry) => entry.value['name'].toString().toLowerCase() == name.toLowerCase(),
+          orElse: () => MapEntry<String, Map<String, dynamic>>("_noKeyFound", {}) // Return a placeholder MapEntry if not found
+      );
+
+      if (foundEntry.key != "_noKeyFound") {
+        categoryIds.add(foundEntry.key);
       }
     }
 
-    // Refresh the categories list
-    return categoriesModel.fetchCategories();
+    return categoryIds;
   }
-  void _updateCategoryIdsInTransactions(List<Map<String, dynamic>> transactions, CategoriesModel categoriesModel) {
-    for (var transaction in transactions) {
-      var categoryNames = (transaction[TransactionsDB.columnCategories] as String).split(',');
-      var updatedCategoryIds = categoriesModel.getCategoryIdsFromNames(categoryNames);
-      transaction[TransactionsDB.columnCategories] = updatedCategoryIds;
-    }
-  }
+
+
   Future<void> _createTransactions(List<Map<String, dynamic>> transactionsData, BuildContext context) async {
-    await _showLoadingDialog(context, "Processing transactions...");
-    final transactionsModel = Provider.of<TransactionsModel>(context, listen: false);
-    for (var transactionData in transactionsData) {
-      // You can modify this to suit your transaction creation logic
-      final id = await TransactionsDB().insertTransaction(transactionData);
-      if (id != null && id > 0) {
-        print("Transaction added successfully.");
-      } else {
-        print("Failed to add transaction.");
-      }
+    int processedCount = 0;
+    int total = transactionsData.length;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text("Processing transactions..."),
+              SizedBox(height: 15),
+              LinearProgressIndicator(value: processedCount / total),
+              Text("$processedCount of $total processed"),
+            ],
+          ),
+        );
+      },
+    );
+
+    bool result = await TransactionsDB().insertTransactions(transactionsData);
+    if (result) {
+      _showSuccessPrompt(transactionsData.length);
+    } else {
+      _showErrorDialog(context, "Could not insert transactions");
     }
-    Navigator.of(context).pop(); // Dismiss the loading dialog
-    transactionsModel.fetchTransactions();
-    _showSuccessPrompt(transactionsData.length);
+
+    Navigator.of(context).pop();
   }
 
   Future<void> _showLoadingDialog(BuildContext context, String message) async {
@@ -602,11 +650,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text("Create Categories"),
+          title: const Text("Create Categories"),
           content: SingleChildScrollView(
             child: ListBody(
               children: <Widget>[
-                Text('The following categories do not exist and need to be created:'),
+                const Text('The following categories do not exist and need to be created:'),
                 for (var category in categoriesToCreate)
                   Padding(
                     padding: const EdgeInsets.all(8.0),
@@ -617,11 +665,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           actions: <Widget>[
             TextButton(
-              child: Text('Cancel'),
+              child: const Text('Cancel'),
               onPressed: () => Navigator.of(context).pop(),
             ),
             TextButton(
-              child: Text('Create'),
+              child: const Text('Create'),
               onPressed: () {
                 _createCategories(categoriesToCreate, context).then((_) {
                   Navigator.of(context).pop();
@@ -655,4 +703,4 @@ class _SettingsScreenState extends State<SettingsScreen> {
       },
     ) ?? false;
   }
-}*/
+}

@@ -80,17 +80,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     financialDataFetched = false; // Explicitly set loading state to false initially
     _initializeDataAndControllers();
     fetchUserName();
-    fetchAndUpdateFinancialData().then((_) {
-      setState(() {
-        financialDataFetched = true; // Set to true once data is fetched
-      });
-    }).catchError((error) {
-      // Handle any errors here
-      print("Error fetching financial data: $error");
-      setState(() {
-        financialDataFetched = false; // In case of error, reset loading state
-      });
-    });
+    fetchAndUpdateFinancialData();
     setState(() {});
   }
 
@@ -201,6 +191,45 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       currencyMap = jsonDecode(account[AccountsDB.accountCurrency]);
       String usedCurrencyCode = currencyCode ?? currencyMap['code'];
 
+      currencyCodes = await AccountsDB().getUniqueCurrencyCodes();
+
+      DateTime now = DateTime.now();
+      DateTime startDate = DateTime(now.year, now.month, 1);
+      DateTime firstDayNextMonth = DateTime(now.year, now.month + 1, 1);
+      DateTime endDate = firstDayNextMonth.subtract(const Duration(days: 1));
+
+      List<dynamic> finalResults = await Future.wait([
+        getTotalForCurrency(usedCurrencyCode, 'income'),
+        getTotalForCurrency(usedCurrencyCode, 'expense'),
+        getTotalForCurrency(usedCurrencyCode, 'income', startDate: startDate, endDate: endDate),
+        getTotalForCurrency(usedCurrencyCode, 'expense', startDate: startDate, endDate: endDate),
+        generateGraphData(usedCurrencyCode, 'income', startDate, endDate),
+        generateGraphData(usedCurrencyCode, 'expense', startDate, endDate)
+      ]);
+
+      setState(() {
+        financialData = {
+          'income': finalResults[0] as double,
+          'expense': finalResults[1] as double,
+          'balance': (finalResults[0] as double) - (finalResults[1] as double),
+          'periodIncome': finalResults[2] as double,
+          'periodExpense': finalResults[3] as double,
+          'graphDataIncome': finalResults[4] as List<double>,
+          'graphDataExpense': finalResults[5] as List<double>,
+        };
+        financialDataFetched = true;
+      });
+    } else {
+      setState(() {
+        financialDataFetched = false;
+      });
+    }
+
+    /*if (accountsData.isNotEmpty) {
+      final account = accountsData.entries.first.value;
+      currencyMap = jsonDecode(account[AccountsDB.accountCurrency]);
+      String usedCurrencyCode = currencyCode ?? currencyMap['code'];
+
       AccountsDB().getUniqueCurrencyCodes().then((codes) async {
         currencyCodes = codes;
 
@@ -238,7 +267,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       setState(() {
         financialDataFetched = false;
       });
-    }
+    }*/
   }
 
 
@@ -568,7 +597,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 (endDate == null || transactionDate.isBefore(endDate) || transactionDate.isAtSameMomentAs(endDate));
 
             if (isWithinRange) {
-              total += transaction['amount'];
+              double amount = (transaction['amount'] as num).toDouble();
+              total += amount;
             }
           }
         }

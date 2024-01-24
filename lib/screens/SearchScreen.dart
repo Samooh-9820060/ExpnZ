@@ -668,7 +668,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
           return TransactionCard(
             transaction: transaction,
             onDelete: () {
-              TransactionsDB().deleteTransaction(transaction['id']);
+              TransactionsDB().deleteTransaction(transaction['documentId']);
               _filterTransactions();
             },
             onUpdate: () async {

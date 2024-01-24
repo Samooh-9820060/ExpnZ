@@ -65,6 +65,28 @@ class _CategoryCardState extends State<CategoryCard>
     super.dispose();
   }
 
+  Future<List<Widget>> _fetchAccountWidgets(String categoryId) async {
+    final accountsData = accountsNotifier.value ?? {};
+    Map<String, Map<String, double>> accountIncomeExpenses = await TransactionsDB().getIncomeExpenseForAccountsInCategory(categoryId);
+
+    List<Widget> accountWidgets = [];
+    for (var entry in accountsData.entries) {
+      String documentId = entry.key;
+      Map<String, dynamic> account = entry.value;
+      Map<String, dynamic> currencyMap = jsonDecode(account[AccountsDB.accountCurrency]);
+
+      // Fetching income and expense for the account
+      double totalIncome = accountIncomeExpenses[documentId]?['totalIncome'] ?? 0.0;
+      double totalExpense = accountIncomeExpenses[documentId]?['totalExpense'] ?? 0.0;
+
+      accountWidgets.add(
+        accountInfoRow(account['name'], totalIncome.toStringAsFixed(2), totalExpense.toStringAsFixed(2), currencyMap),
+      );
+    }
+    return accountWidgets;
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<Map<String, Map<String, dynamic>>?>(
@@ -307,80 +329,41 @@ class _CategoryCardState extends State<CategoryCard>
                         ],
                       ),
                       if (showMoreInfo)
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: 20),
-                            ValueListenableBuilder<Map<String, Map<String, dynamic>>?>(
-                              valueListenable: accountsNotifier,
-                              builder: (context, accountsData, child) {
-                                // Ensure the accounts data is not null and not empty
-                                if (accountsData == null || accountsData.isEmpty) {
-                                  return const Center(
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          Icons.info_outline,
-                                          color: Colors.red,
-                                          size: 50.0,
-                                        ),
-                                        SizedBox(height: 10),
-                                        Text(
-                                          "No accounts are there",
-                                          style: TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.blueGrey,
-                                          ),
-                                        ),
-                                      ],
+                        FutureBuilder<List<Widget>>(
+                          future: _fetchAccountWidgets(widget.documentId),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState == ConnectionState.waiting) {
+                              return const Center(child: CircularProgressIndicator());
+                            }
+                            if (snapshot.hasError) {
+                              return Center(
+                                child: Text(
+                                  "Error loading data: ${snapshot.error}",
+                                  style: TextStyle(color: Colors.red, fontSize: 18),
+                                ),
+                              );
+                            }
+                            if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                              return const Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.info_outline, color: Colors.red, size: 50.0),
+                                    SizedBox(height: 10),
+                                    Text(
+                                      "No more info available",
+                                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blueGrey),
                                     ),
-                                  );
-                                }
-                                List<Widget> accountWidgets = [];
-                                accountsData.forEach((documentId, account) {
-                                  // Fetch income and expense for each account from the category details
-                                  Map<String, dynamic> incomeExpenseData = ProfileDB().getIncomeExpenseForCategory(widget.documentId)[documentId] ?? {};
-                                  double income = (incomeExpenseData['totalIncome'] ?? 0).toDouble(); // Convert to double
-                                  double expense = (incomeExpenseData['totalExpense'] ?? 0).toDouble(); // Convert to double
-                                  Map<String, dynamic> currencyMap = jsonDecode(account[AccountsDB.accountCurrency]);
-
-                                  accountWidgets.add(
-                                    accountInfoRow(account['name'], income.toStringAsFixed(2), expense.toStringAsFixed(2), currencyMap),
-                                  );
-                                });
-
-                                if (accountWidgets.isEmpty) {
-                                  return const Center(
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          Icons.info_outline,
-                                          color: Colors.red,
-                                          size: 50.0,
-                                        ),
-                                        SizedBox(height: 10),
-                                        Text(
-                                          "No more info available",
-                                          style: TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.blueGrey,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                }
-                                return Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: accountWidgets,
-                                );
-                            },
-                          ),
-                        ]),
+                                  ],
+                                ),
+                              );
+                            }
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: snapshot.data!,
+                            );
+                          },
+                        ),
                     ]),
               ),
             ]),

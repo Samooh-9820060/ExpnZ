@@ -82,7 +82,6 @@ class TransactionsDB {
     data[uid] = userUid;
 
     FirebaseFirestore firestore = FirebaseFirestore.instance;
-    DocumentReference userDocRef = firestore.collection(usersCollection).doc(userUid);
 
     return firestore.runTransaction((transaction) async {
       // Add the new transaction
@@ -94,6 +93,33 @@ class TransactionsDB {
       return false;
     });
   }
+
+  Future<bool> insertTransactions(List<Map<String, dynamic>> transactions) async {
+    String userUid = FirebaseAuth.instance.currentUser!.uid;
+    FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+    // Create a write batch
+    WriteBatch batch = firestore.batch();
+
+    for (var data in transactions) {
+      // Set user UID for each transaction
+      data[uid] = userUid;
+
+      // Create a new document reference for each transaction
+      DocumentReference docRef = firestore.collection(collectionName).doc();
+      batch.set(docRef, data);
+    }
+
+    // Commit the batch
+    return batch.commit().then((_) {
+      print("Batch write successful");
+      return true;
+    }).catchError((error) {
+      print("Batch write failed: $error");
+      return false;
+    });
+  }
+
 
   // Deletes all categories for the current user
   Future<void> deleteAllTransactions() async {
@@ -167,6 +193,7 @@ class TransactionsDB {
         String accountId = data[transactionAccountId];
 
         if (transactionCategories != null && transactionCategories.contains(categoryId)) {
+
           double amount = double.tryParse(data[transactionAmount].toString()) ?? 0.0;
 
           accountTotals.putIfAbsent(accountId, () => {'totalIncome': 0.0, 'totalExpense': 0.0});
@@ -182,6 +209,54 @@ class TransactionsDB {
 
     return accountTotals;
   }
+
+
+  Future<Map<String, Map<String, double>>> getIncomeExpenseForAccountsInCategory(String categoryId) async {
+    final transactionsData = transactionsNotifier.value;
+    Map<String, Map<String, double>> accountTotals = {};
+
+    if (transactionsData != null) {
+      for (var transaction in transactionsData.values) {
+        var transactionCategories = transaction[transactionCategoryIDs];
+        if (transactionCategories != null && transactionCategories.contains(categoryId)) {
+          String accountId = transaction[transactionAccountId];
+          double amount = double.tryParse(transaction[transactionAmount].toString()) ?? 0.0;
+
+          accountTotals.putIfAbsent(accountId, () => {'totalIncome': 0.0, 'totalExpense': 0.0});
+
+          if (transaction[transactionType] == 'income') {
+            accountTotals[accountId]!['totalIncome'] =
+                (accountTotals[accountId]!['totalIncome'] ?? 0.0) + amount;
+          } else if (transaction[transactionType] == 'expense') {
+            accountTotals[accountId]!['totalExpense'] =
+                (accountTotals[accountId]!['totalExpense'] ?? 0.0) + amount;
+          }
+        }
+      }
+    }
+
+    return accountTotals;
+  }
+
+  Future<double> getTotalExpenseForCategory(String categoryId) async {
+    final transactionsData = transactionsNotifier.value;
+    double totalExpense = 0.0;
+
+    if (transactionsData != null) {
+      transactionsData.forEach((docId, transaction) {
+        var transactionCategories = transaction[transactionCategoryIDs];
+        if (transactionCategories != null && transactionCategories.contains(categoryId)) {
+          if (transaction[transactionType] == 'expense') {
+            double amount = double.tryParse(transaction[transactionAmount].toString()) ?? 0.0;
+            totalExpense += amount;
+          }
+        }
+      });
+    }
+
+    return totalExpense;
+  }
+
 
   // Function to filter transactions on search screen
   Future<List<Map<String, dynamic>>> filterTransactions(String searchText, [List<String>? accountIds]) async {

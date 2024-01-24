@@ -59,7 +59,25 @@ class CategoriesDB {
   Future<Map<String, Map<String, dynamic>>?> getLocalCategories() async {
     final prefs = await SharedPreferences.getInstance();
     String? encodedData = prefs.getString('userCategories');
-    return encodedData != null ? json.decode(encodedData) as Map<String, Map<String, dynamic>> : null;
+    if (encodedData != null) {
+      final decodedData = json.decode(encodedData);
+      if (decodedData is Map) {
+        // Safely cast each value to Map<String, dynamic>
+        return decodedData.map<String, Map<String, dynamic>>((key, value) {
+          if (value is Map) {
+            return MapEntry(key, value.cast<String, dynamic>());
+          } else {
+            // Handle the case where the value is not a Map
+            // Return an empty Map or handle this case as needed
+            return MapEntry(key, <String, dynamic>{});
+          }
+        });
+      } else {
+        // Handle the case where decodedData is not a Map
+        return null;
+      }
+    }
+    return null;
   }
 
   Future<DocumentReference> insertCategory(Map<String, dynamic> data) async {
