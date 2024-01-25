@@ -87,9 +87,16 @@ class _CategoryCardState extends State<CategoryCard>
       double totalIncome = accountIncomeExpenses[documentId]?['totalIncome'] ?? 0.0;
       double totalExpense = accountIncomeExpenses[documentId]?['totalExpense'] ?? 0.0;
 
-      accountWidgets.add(
-        accountInfoRow(account['name'], totalIncome.toStringAsFixed(2), totalExpense.toStringAsFixed(2), currencyMap),
-      );
+      // Extracting currency symbol or code from currencyMap
+      String currencyCode = currencyMap['code'];
+
+      String accountNameWithCurrency = '${account['name']} ($currencyCode)';
+
+      if (totalIncome != 0.0 || totalExpense != 0.0) {
+        accountWidgets.add(
+          accountInfoRow(accountNameWithCurrency, totalIncome.toStringAsFixed(2), totalExpense.toStringAsFixed(2), currencyMap),
+        );
+      }
     }
     return accountWidgets;
   }
@@ -268,6 +275,9 @@ class _CategoryCardState extends State<CategoryCard>
         String animatedIncome = animatedNumberString(_numberAnimation.value, income, currencyMap);
         String animatedExpense = animatedNumberString(_numberAnimation.value, expense, currencyMap);
 
+        // Define a fixed width for the amount containers
+        final double amountWidth = 70.0; // You can adjust this value as needed
+
         return Container(
           margin: EdgeInsets.symmetric(vertical: 4),
           padding: EdgeInsets.symmetric(horizontal: 8),
@@ -289,23 +299,29 @@ class _CategoryCardState extends State<CategoryCard>
                 children: [
                   Icon(Icons.arrow_upward, color: Colors.green, size: 16),
                   SizedBox(width: 4),
-                  Text(
-                    animatedIncome,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.green,
-                      fontWeight: FontWeight.bold,
+                  Container(
+                    width: amountWidth,
+                    child: Text(
+                      animatedIncome,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.green,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   SizedBox(width: 16),
                   Icon(Icons.arrow_downward, color: Colors.red, size: 16),
                   SizedBox(width: 4),
-                  Text(
-                    animatedExpense,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.red,
-                      fontWeight: FontWeight.bold,
+                  Container(
+                    width: amountWidth,
+                    child: Text(
+                      animatedExpense,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.red,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ],
