@@ -4,8 +4,6 @@ import 'package:expnz/screens/AddCategory.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../database/AccountsDB.dart';
-import '../../database/CategoriesDB.dart';
-import '../../database/ProfileDB.dart';
 import '../../database/TransactionsDB.dart';
 import '../../utils/animation_utils.dart';
 import '../../utils/global.dart';
@@ -216,6 +214,8 @@ class _CategoryCardState extends State<CategoryCard>
                             ),
                         ],
                       ),
+                      if (showMoreInfo)
+                        const SizedBox(height: 10),
                       if (showMoreInfo)
                         FutureBuilder<List<Widget>>(
                           future: _fetchAccountWidgets(widget.documentId),
