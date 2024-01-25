@@ -19,9 +19,8 @@ class AppNotificationListener {
       _subscription = _notifications!.notificationStream!.listen(_processNotification);
       started = true;
       _controller.sink.add(true);
-    } on NotificationException catch (exception) {
+    } on NotificationException {
       _controller.sink.add(false);
-      print(exception);
     }
   }
 
@@ -43,22 +42,19 @@ class AppNotificationListener {
 
   void _processNotification(NotificationEvent event) {
     // Add the event to the log
-    if (!_isSimilarNotificationExists(event, Duration(minutes: 1))) {
+    if (!_isSimilarNotificationExists(event, const Duration(minutes: 1))) {
       log.add(event);
-
-      print(event);
 
       TempTransactionsDB tempTransDB = TempTransactionsDB();
 
       //BML Funds Received Notification
       if (event.packageName == "mv.com.bml.mib" && event.title == "Funds Received") {
-        final match = BMLFundsReceivedRegex.firstMatch(event.message ?? "");
-        print("Funds Received");
-        print(match);
+        final match = bMLFundsReceivedRegex.firstMatch(event.message ?? "");
         if (match != null) {
-          String amountReceived = match.group(1) ?? "";
-          String senderName = match.group(2) ?? "";
-          String accountNumber = match.group(3) ?? "";
+          String currencyCode = match.group(1) ?? "";
+          String amountReceived = match.group(2) ?? "";
+          String senderName = match.group(3) ?? "";
+          String accountNumber = match.group(4) ?? "";
           DateTime? timeStamp = event.timeStamp;
           String date = timeStamp != null ? "${timeStamp.year}-${timeStamp.month}-${timeStamp.day}" : "";
           String time = timeStamp != null ? "${timeStamp.hour}:${timeStamp.minute}:${timeStamp.second}" : "";
@@ -76,19 +72,17 @@ class AppNotificationListener {
 
           // Insert the transaction into the database
           tempTransDB.insertTransaction(row);
-          print("Amount Received: $amountReceived, Sender: $senderName, Account Number: $accountNumber, Date: $date, Time: $time");
         }
       }
 
       //BML Funds Transferred Notification
       if (event.packageName == "mv.com.bml.mib" && event.title == "Funds Transferred") {
-        final match = BMLFundsTransferredRegex.firstMatch(event.message ?? "");
-        print("Funds Transferred");
-        print(match);
+        final match = bMLFundsTransferredRegex.firstMatch(event.message ?? "");
         if (match != null) {
-          String amountSent = match.group(1) ?? "";
-          String accountNumber = match.group(2) ?? "";
-          String senderName = match.group(3) ?? "";
+          String currencyCode = match.group(1) ?? "";
+          String amountSent = match.group(2) ?? "";
+          String accountNumber = match.group(3) ?? "";
+          String recipientName = match.group(4) ?? "";
           DateTime? timeStamp = event.timeStamp;
           String date = timeStamp != null ? "${timeStamp.year}-${timeStamp.month}-${timeStamp.day}" : "";
           String time = timeStamp != null ? "${timeStamp.hour}:${timeStamp.minute}:${timeStamp.second}" : "";
@@ -97,7 +91,7 @@ class AppNotificationListener {
             TempTransactionsDB.columnTitle: event.title,
             TempTransactionsDB.columnContent: event.message,
             TempTransactionsDB.columnType: TransactionType.expense.toString().split('.').last,
-            TempTransactionsDB.columnName: senderName,
+            TempTransactionsDB.columnName: recipientName,
             TempTransactionsDB.columnAmount: double.tryParse(amountSent) ?? 0.0,
             TempTransactionsDB.columnDate: date,
             TempTransactionsDB.columnTime: time,
@@ -106,22 +100,21 @@ class AppNotificationListener {
 
           // Insert the transaction into the database
           tempTransDB.insertTransaction(row);
-          print("Amount Received: $amountSent, Sender: $senderName, Account Number: $accountNumber, Date: $date, Time: $time");
         }
       }
 
       if (event.packageName == "com.google.android.apps.messaging" &&
           (event.title == "455" || event.title == "+455")) {
         final match = transactionRegex.firstMatch(event.message ?? "");
-        print(match);
         if (match != null) {
           String cardDigits = match.group(1) ?? "";
           String date = match.group(2) ?? "";
           String time = match.group(3) ?? "";
-          String amount = match.group(4) ?? "";
-          String placeName = match.group(5) ?? "";
-          String referenceNo = match.group(6) ?? "";
-          String approvalCode = match.group(7) ?? "";
+          String currencyCode = match.group(4) ?? "";
+          String amount = match.group(5) ?? "";
+          String placeName = match.group(6) ?? "";
+          String referenceNo = match.group(7) ?? "";
+          String approvalCode = match.group(8) ?? "";
 
 
           Map<String, dynamic> row = {
@@ -139,7 +132,6 @@ class AppNotificationListener {
           // Insert the transaction into the database
           tempTransDB.insertTransaction(row);
           // Now you can use these extracted details
-          print("Card Digits: $cardDigits, Date: $date, Time: $time, Amount: $amount, Place: $placeName, Reference No: $referenceNo, Approval Code: $approvalCode");
         }
       }
     }
@@ -148,12 +140,13 @@ class AppNotificationListener {
 
   //regexes
   final RegExp transactionRegex = RegExp(
-      r"Transaction from (\d{4}) on (\d{2}/\d{2}/\d{2}) at (\d{2}:\d{2}:\d{2}) for MVR(\d+\.\d{2}) at ([^ ]+) was processed\. Reference No: (\d+), Approval Code:(\d+)"
+      r"Transaction from (\d{4}) on (\d{2}/\d{2}/\d{2}) at (\d{2}:\d{2}:\d{2}) for ([A-Z]{3}\d+(\.\d{1,2})?) at (.+?) was processed\. Reference No:(\d+), Approval Code:(\d+)"
   );
-  final RegExp BMLFundsReceivedRegex = RegExp(
-      r"You have received MVR (\d+\.\d{2}) from ([A-Z .]+) to (\d+\*\d+)"
+  final RegExp bMLFundsReceivedRegex = RegExp(
+      r"You have received ([A-Z]{3})\s(\d+\.\d{1,2}) from ([A-Z .]+) to (\d+\*\d+)"
   );
-  final RegExp BMLFundsTransferredRegex = RegExp(
-      r"You have sent MVR (\d+\.\d{1,2}) from (\d+\*\d+) to ([A-Z\\. ]+)"
+
+  final RegExp bMLFundsTransferredRegex = RegExp(
+      r"You have sent ([A-Z]{3})\s(\d+\.\d{1,2}) from (\d+\*\d+) to ([A-Z0-9\\.* ]+)"
   );
 }

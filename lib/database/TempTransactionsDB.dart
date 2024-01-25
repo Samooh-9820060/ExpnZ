@@ -38,7 +38,7 @@ class TempTransactionsDB {
     ];
 
     for (var row in tempData) {
-      //await insertTransaction(row);
+      await insertTransaction(row);
     }
   }
 
@@ -47,19 +47,13 @@ class TempTransactionsDB {
     return await db!.insert(tableName, row);
   }
 
-  // method to fetch all transactions from the database
-  /*Future<List<Map<String, dynamic>>> getAllTransaction() async {
-    final db = await DatabaseHelper.instance.database;
-    return await db!.query(tableName);
-  }*/
-
   Future<List<Map<String, dynamic>>> getAllTransaction() async {
     final db = await DatabaseHelper.instance.database;
     List<Map<String, dynamic>> transactions = await db!.query(tableName);
 
     // Check if the table is empty and insert temporary data if it is
     if (transactions.isEmpty) {
-      await addTempData();
+      //await addTempData();
       // Re-query the database after inserting temporary data
       transactions = await db.query(tableName);
     }

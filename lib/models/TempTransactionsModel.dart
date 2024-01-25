@@ -7,8 +7,8 @@ class TempTransactionsModel extends ChangeNotifier {
   List<Map<String, dynamic>> filteredTransactions = [];
 
   Future<void> fetchTransactions() async {
-    //transactions = await db.getAllTransaction();
-    //notifyListeners();
+    transactions = await db.getAllTransaction();
+    notifyListeners();
   }
 
   Future<void> clearTransactions() async {

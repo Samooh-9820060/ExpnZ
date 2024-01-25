@@ -85,7 +85,7 @@ class FinancialDataNotifier extends ChangeNotifier {
         };
         setFinancialData(financialData);
       } catch (error) {
-        print("Error fetching financial data: $error");
+        //print("Error fetching financial data: $error");
       }
       // After loading data, remove the listener
       //accountsNotifier.removeListener(loadData);

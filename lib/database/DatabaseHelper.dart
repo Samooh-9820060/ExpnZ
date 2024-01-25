@@ -14,10 +14,12 @@ class DatabaseHelper {
 
   static Database? _database;
   Future<Database?> get database async {
+    //await createTempTransactionsTable(_database!);
     if (_database != null) return _database;
     _database = await _initDatabase();
     return _database;
   }
+
 
   _initDatabase() async {
     Directory documentsDirectory = await getApplicationDocumentsDirectory();
@@ -27,11 +29,11 @@ class DatabaseHelper {
   }
 
   Future _onCreate(Database db, int version) async {
-    //await _createTempTransactionsTable(db);
+    await createTempTransactionsTable(db);
   }
 
 
-  Future _createTempTransactionsTable(Database db) async {
+  Future createTempTransactionsTable(Database db) async {
     await db.execute('''
     CREATE TABLE ${TempTransactionsDB.tableName} (
       ${TempTransactionsDB.columnId} INTEGER PRIMARY KEY,
@@ -44,7 +46,7 @@ class DatabaseHelper {
       ${TempTransactionsDB.columnDate} TEXT,
       ${TempTransactionsDB.columnTime} TEXT,
       ${TempTransactionsDB.columnCategories} TEXT,
-      ${TempTransactionsDB.columnCardDigits} TEXT,
+      ${TempTransactionsDB.columnCardDigits} TEXT
     )
   ''');
   }

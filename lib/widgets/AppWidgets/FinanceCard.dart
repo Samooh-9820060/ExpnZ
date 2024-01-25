@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
 import '../../utils/animation_utils.dart';
 import 'FinanceInfoCard.dart';
 
@@ -133,7 +132,7 @@ class _FinanceCardState extends State<FinanceCard> with SingleTickerProviderStat
                                       mainAxisAlignment:
                                           MainAxisAlignment.spaceBetween,
                                       children: [
-                                        Text(
+                                        const Text(
                                           'Total Balance',
                                           style: TextStyle(
                                             color: Colors.white70, // Soft white color for the text
@@ -144,11 +143,11 @@ class _FinanceCardState extends State<FinanceCard> with SingleTickerProviderStat
                                         DropdownButtonHideUnderline(
                                           child: DropdownButton<String>(
                                             value: selectedCurrencyCode,
-                                            icon: Icon(Icons.arrow_drop_down, color: Colors.white),
+                                            icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
                                             iconSize: 24,
                                             elevation: 16,
                                             dropdownColor: Colors.transparent,
-                                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                                             onChanged: (String? newValue) {
                                               if (newValue != null) {
                                                 _handleCurrencyChange(newValue);
@@ -158,14 +157,14 @@ class _FinanceCardState extends State<FinanceCard> with SingleTickerProviderStat
                                               return DropdownMenuItem<String>(
                                                 value: value,
                                                 child: Container(
-                                                  padding: EdgeInsets.symmetric(vertical: 10, horizontal: 15),
+                                                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
                                                   decoration: BoxDecoration(
                                                     color: Colors.grey[850],
                                                     borderRadius: BorderRadius.circular(5),
                                                   ),
                                                   child: Text(
                                                     value,
-                                                    style: TextStyle(color: Colors.white), // Text style of each item
+                                                    style: const TextStyle(color: Colors.white), // Text style of each item
                                                   ),
                                                 ),
                                               );
@@ -174,24 +173,24 @@ class _FinanceCardState extends State<FinanceCard> with SingleTickerProviderStat
                                         ),
                                       ],
                                     ),
-                                    SizedBox(height: 10),
+                                    const SizedBox(height: 10),
                                     // Total Balance
                                     Text(
                                       animatedNumberString(_numberAnimation.value,
                                            widget.totalBalance, widget.currencyMap),
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         color: Colors.white70,
                                         fontSize: 28,
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
-                                    SizedBox(height: 20),
+                                    const SizedBox(height: 20),
                                     // Divider
-                                    Divider(
+                                    const Divider(
                                       color: Colors.white30,
                                       thickness: 0.5,
                                     ),
-                                    SizedBox(height: 20),
+                                    const SizedBox(height: 20),
                                     // Income and Expense Cards
                                     Row(
                                       mainAxisAlignment:
@@ -217,7 +216,6 @@ class _FinanceCardState extends State<FinanceCard> with SingleTickerProviderStat
                                 ),
                               ),
                             ),
-                            // Dropdown for currency selection
                           ],
                         ),
                       ),
