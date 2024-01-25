@@ -1,6 +1,7 @@
 import 'package:expnz/database/AccountsDB.dart';
 import 'package:expnz/database/CategoriesDB.dart';
 import 'package:expnz/database/TransactionsDB.dart';
+import 'package:expnz/models/FinancialDataNotifier.dart';
 import 'package:expnz/models/TempTransactionsModel.dart';
 import 'package:expnz/screens/SignInScreen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -21,6 +22,7 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context) => TempTransactionsModel()),
+        ChangeNotifierProvider(create: (context) => FinancialDataNotifier()),
       ],
         child: const MyApp(),
     ),

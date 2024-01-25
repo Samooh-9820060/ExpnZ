@@ -13,7 +13,7 @@ class FinanceCard extends StatefulWidget {
   final String expense;
   final IconData? optionalIcon;
   final Map<String, dynamic> currencyMap;
-  final Set<String> currencyCodes;
+  final List<String> currencyCodes;
   final Function(String) onCurrencyChange;
 
 
@@ -136,36 +136,41 @@ class _FinanceCardState extends State<FinanceCard> with SingleTickerProviderStat
                                         Text(
                                           'Total Balance',
                                           style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white70, // Soft white color for the text
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.w600, // Slightly less bold than before
                                           ),
                                         ),
-                                        /*widget.optionalIcon == null
-                                            ? Container()
-                                            : Icon(widget.optionalIcon,
-                                            color: Colors.white),*/
-                                        DropdownButton<String>(
-                                          value: selectedCurrencyCode,
-                                          icon: const Icon(Icons.arrow_downward, color: Colors.white),
-                                          iconSize: 24,
-                                          elevation: 16,
-                                          style: const TextStyle(color: Colors.white),
-                                          underline: Container(
-                                            height: 2,
-                                            color: Colors.white,
+                                        DropdownButtonHideUnderline(
+                                          child: DropdownButton<String>(
+                                            value: selectedCurrencyCode,
+                                            icon: Icon(Icons.arrow_drop_down, color: Colors.white),
+                                            iconSize: 24,
+                                            elevation: 16,
+                                            dropdownColor: Colors.transparent,
+                                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                            onChanged: (String? newValue) {
+                                              if (newValue != null) {
+                                                _handleCurrencyChange(newValue);
+                                              }
+                                            },
+                                            items: widget.currencyCodes.map<DropdownMenuItem<String>>((String value) {
+                                              return DropdownMenuItem<String>(
+                                                value: value,
+                                                child: Container(
+                                                  padding: EdgeInsets.symmetric(vertical: 10, horizontal: 15),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.grey[850],
+                                                    borderRadius: BorderRadius.circular(5),
+                                                  ),
+                                                  child: Text(
+                                                    value,
+                                                    style: TextStyle(color: Colors.white), // Text style of each item
+                                                  ),
+                                                ),
+                                              );
+                                            }).toList(),
                                           ),
-                                          onChanged: (String? newValue) {
-                                            if (newValue != null) {
-                                              _handleCurrencyChange(newValue);
-                                            }
-                                          },
-                                          items: widget.currencyCodes.map<DropdownMenuItem<String>>((String value) {
-                                            return DropdownMenuItem<String>(
-                                              value: value,
-                                              child: Text(value),
-                                            );
-                                          }).toList(),
                                         ),
                                       ],
                                     ),
@@ -175,15 +180,16 @@ class _FinanceCardState extends State<FinanceCard> with SingleTickerProviderStat
                                       animatedNumberString(_numberAnimation.value,
                                            widget.totalBalance, widget.currencyMap),
                                       style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 32,
-                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white70,
+                                        fontSize: 28,
+                                        fontWeight: FontWeight.w500,
                                       ),
                                     ),
                                     SizedBox(height: 20),
                                     // Divider
                                     Divider(
-                                      color: Colors.white.withOpacity(0.5),
+                                      color: Colors.white30,
+                                      thickness: 0.5,
                                     ),
                                     SizedBox(height: 20),
                                     // Income and Expense Cards
@@ -195,14 +201,14 @@ class _FinanceCardState extends State<FinanceCard> with SingleTickerProviderStat
                                           title: 'Income',
                                           amount: animatedNumberString(_numberAnimation.value,
                                               widget.income, widget.currencyMap),
-                                          color: Colors.green[400]!,
+                                          color: Colors.lightGreenAccent[100]!,
                                           icon: Icons.arrow_upward,
                                         ),
                                         FinanceInfoCard(
                                           title: 'Expense',
                                           amount: animatedNumberString(_numberAnimation.value,
                                               widget.expense, widget.currencyMap),
-                                          color: Colors.red[400]!,
+                                          color: Colors.redAccent[100]!,
                                           icon: Icons.arrow_downward,
                                         ),
                                       ],

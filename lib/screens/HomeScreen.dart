@@ -3,7 +3,6 @@ import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:currency_picker/currency_picker.dart';
-import 'package:expnz/database/TempTransactionsDB.dart';
 import 'package:expnz/screens/AddTransaction.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -11,7 +10,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../database/AccountsDB.dart';
-import '../models/TempTransactionsModel.dart';
+import '../models/FinancialDataNotifier.dart';
 import '../utils/global.dart';
 import '../widgets/AppWidgets/FinanceCard.dart';
 import '../widgets/AppWidgets/NotificationsCard.dart';
@@ -30,53 +29,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late AnimationController _notificationCardController;
   late String selectedCurrencyCode;
   static final CurrencyService currencyService = CurrencyService();
-  /*Map<String, dynamic> financialData = {
-    'balance': 0.0,
-    'income': 0.0,
-    'expense': 0.0,
-    'graphDataIncome': [
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0
-    ],
-    'graphDataExpense': [
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0
-    ],
-  };*/
-  bool financialDataFetched = false;
-  Map<String, dynamic> currencyMap = {};
-  Set<String> currencyCodes = {};
   String userName = '';
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final financialDataNotifier = Provider.of<FinancialDataNotifier>(context, listen: false);
+      financialDataNotifier.loadFinancialData();
+    });
     _initializeDataAndControllers();
     fetchUserName();
     setState(() {});
@@ -108,9 +69,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       vsync: this,
     );
 
-    // Fetch data
-    //fetchAndUpdateFinancialData();
-
     // Start animations
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _nameController.forward();
@@ -141,7 +99,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         });
       } catch (e) {
         // Handle any errors during JSON parsing
-        print('Error parsing user profile data: $e');
+        //print('Error parsing user profile data: $e');
       }
     }
     else {
@@ -160,61 +118,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         }
       } catch (e) {
         // Handle any errors while fetching the name
-        print(e.toString());
+        //print(e.toString());
       }
     }
   }
 
-  Future<Map<String, dynamic>?> fetchAndUpdateFinancialData([String? currencyCode]) async {
-    var accountsData = accountsNotifier.value;
 
-    if (accountsData.isNotEmpty) {
-      final account = accountsData.entries.first.value;
-      currencyMap = jsonDecode(account[AccountsDB.accountCurrency]);
-      String usedCurrencyCode = currencyCode ?? currencyMap['code'];
-
-      currencyCodes = await AccountsDB().getUniqueCurrencyCodes();
-
-      DateTime now = DateTime.now();
-      DateTime startDate = DateTime(now.year, now.month, 1);
-      DateTime firstDayNextMonth = DateTime(now.year, now.month + 1, 1);
-      DateTime endDate = firstDayNextMonth.subtract(const Duration(days: 1));
-
-      Map<String, dynamic> financialData = {};
-      try {
-        List<dynamic> finalResults = await Future.wait([
-          getTotalForCurrency(usedCurrencyCode, 'income'),
-          getTotalForCurrency(usedCurrencyCode, 'expense'),
-          getTotalForCurrency(usedCurrencyCode, 'income', startDate: startDate, endDate: endDate),
-          getTotalForCurrency(usedCurrencyCode, 'expense', startDate: startDate, endDate: endDate),
-          generateGraphData(usedCurrencyCode, 'income', startDate, endDate),
-          generateGraphData(usedCurrencyCode, 'expense', startDate, endDate)
-        ]);
-
-        financialData = {
-          'income': finalResults[0] as double,
-          'expense': finalResults[1] as double,
-          'balance': (finalResults[0] as double) - (finalResults[1] as double),
-          'periodIncome': finalResults[2] as double,
-          'periodExpense': finalResults[3] as double,
-          'graphDataIncome': finalResults[4] as List<double>,
-          'graphDataExpense': finalResults[5] as List<double>,
-        };
-        return financialData;
-      } catch (error) {
-        print("Error fetching financial data: $error");
-        return null;
-      }
-    }
-
-    // Return null if accountsData is empty or any other conditions that mean "no data"
-    return null;
-  }
-
-
-
-
-  Future<void> updateFinancialData(String currencyCode) async {
+  /*Future<void> updateFinancialData(String currencyCode) async {
     setState(()  {
       selectedCurrencyCode = currencyCode;
       Currency? currencyObj = currencyService.findByCode(currencyCode);
@@ -240,6 +150,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       }
     });
   }
+*/
 
   @override
   void dispose() {
@@ -254,36 +165,98 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     double cardWidth = MediaQuery.of(context).size.width / 2.25;
-
-    return ValueListenableBuilder<Map<String, Map<String, dynamic>>?>(
-      valueListenable: accountsNotifier,
-      builder: (context, accountsData, child) {
-        if (accountsData == null || accountsData.isEmpty) {
-          // If accountsData is not loaded yet, show a loading indicator
-          return const Center(child: CircularProgressIndicator());
-        } else {
-          // Once accountsData is available, build the UI using FutureBuilder
-          return FutureBuilder(
-            future: fetchAndUpdateFinancialData(),
-            builder: (BuildContext context, AsyncSnapshot snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              } else if (snapshot.hasError) {
-                return Center(child: Text("Error fetching data: ${snapshot.error}"));
-              } else if (snapshot.hasData) {
-                return buildFinancialUI(cardWidth, snapshot.data!);
-              } else {
-                return const Center(child: Text("No financial data available."));
-              }
-            },
-          );
-        }
-      },
+    return Container(
+      color: Colors.blueGrey[900],
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Animated "Name" and "Welcome Back!" section
+            AnimatedBuilder(
+              animation: _nameController,
+              builder: (context, child) {
+                return Transform.translate(
+                  offset: Offset(-300 * (1 - _nameController.value), 0),
+                  child: Opacity(
+                    opacity: _nameController.value,
+                    child: child,
+                  ),
+                );
+              },
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(30.0, 10.0, 16.0, 0.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      userName,
+                      style: const TextStyle(
+                        fontSize: 25,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Welcome Back!',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w400,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            // Replace the ValueListenableBuilder and FutureBuilder with a Consumer
+            Consumer<FinancialDataNotifier>(
+              builder: (context, financialDataNotifier, child) {
+                var financialData = financialDataNotifier.financialData;
+                if (financialData.isEmpty) {
+                  return const Center(child: CircularProgressIndicator());
+                } else {
+                  return buildFinanceCard(cardWidth, financialData, financialDataNotifier.currencyMap, financialDataNotifier.currencyCodes);
+                }
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 
+  Widget buildFinanceCard(double cardWidth, Map<String, dynamic> financialData, Map<String, dynamic> currencyMap, List<String> currencyCodes) {
+    if (financialData.isNotEmpty &&
+        currencyMap.isNotEmpty &&
+        currencyCodes.isNotEmpty) {
+      return Container(
+        color: Colors.blueGrey[900],
+        child: FinanceCard(
+          cardController: _cardController,
+          totalBalance: financialData['balance'].toString(),
+          income: financialData['income'].toString(),
+          expense: financialData['expense'].toString(),
+          optionalIcon: Icons.credit_card,
+          currencyMap: currencyMap,
+          currencyCodes: currencyCodes,
+          onCurrencyChange: (selectedCurrency) {
+            final financialDataNotifier = Provider.of<FinancialDataNotifier>(context, listen: false);
+            financialDataNotifier.loadFinancialData(selectedCurrency);
+          },
+        ),
+      );
+    } else {
+      // Handle the case when data is not available
+      return const Center(
+        child: Text("No financial data available or there was an issue loading the data."),
+      );
+    }
+  }
 
-  Widget buildFinancialUI(double cardWidth, Map<String, dynamic> financialData) {
+
+  /*Widget buildFinancialUI(double cardWidth, Map<String, dynamic> financialData) {
     if (financialData.isNotEmpty &&
         currencyMap.isNotEmpty &&
         currencyCodes.isNotEmpty) {
@@ -535,139 +508,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       );
     }
   }
-
-  Future<double> getTotalForCurrency(String currencyCode, String type, {DateTime? startDate, DateTime? endDate}) async {
-    final transactionsData = transactionsNotifier.value;
-    final accountsData = accountsNotifier.value;
-    double total = 0.0;
-
-    transactionsData.forEach((transactionId, transaction) {
-      if (transaction['type'] == type) {
-        String accountId = transaction['account_id'];
-        if (accountsData.containsKey(accountId)) {
-          String accountCurrencyCode = jsonDecode(accountsData[accountId]?['currency'])['code'];
-          if (accountCurrencyCode == currencyCode) {
-            DateTime transactionDate = DateTime.parse(transaction['date']);
-            bool isWithinRange = (startDate == null || transactionDate.isAfter(startDate) || transactionDate.isAtSameMomentAs(startDate)) &&
-                (endDate == null || transactionDate.isBefore(endDate) || transactionDate.isAtSameMomentAs(endDate));
-
-            if (isWithinRange) {
-              double amount = (transaction['amount'] as num).toDouble();
-              total += amount;
-            }
-          }
-        }
-      }
-    });
-    return total;
-  }
-
-
-  Future<List<double>> generateGraphData(String currencyCode, String type,
-      DateTime startDate, DateTime endDate) async {
-    final transactionsData = transactionsNotifier.value;
-    final accountsData = accountsNotifier.value;
-    int totalDays = endDate.difference(startDate).inDays + 1;
-    int intervals = totalDays > 15 ? 15 : totalDays;
-    List<double> graphData = List.generate(intervals, (_) => 0.0);
-
-    for (int i = 0; i < intervals; i++) {
-      DateTime intervalStart = i == 0 ? startDate : startDate.add(Duration(days: (totalDays / intervals * i).round()));
-      DateTime intervalEnd = i == intervals - 1 ? endDate : startDate.add(Duration(days: (totalDays / intervals * (i + 1)).round() - 1));
-
-      double totalForInterval = 0.0;
-      transactionsData.forEach((transactionId, transaction) {
-        if (transaction['type'] == type) {
-          String accountId = transaction['account_id'];
-          if (accountsData.containsKey(accountId)) {
-            String accountCurrencyCode =
-                jsonDecode(accountsData[accountId]?['currency'])['code'];
-            if (accountCurrencyCode == currencyCode) {
-              String dateTimeString = '${transaction['date']} ${transaction['time']}';
-              DateTime transactionDate = DateTime.parse(dateTimeString);
-
-              if (transactionDate.isAfter(intervalStart.subtract(Duration(days: 1))) &&
-                  transactionDate.isBefore(intervalEnd.add(Duration(days: 1)))) {
-                totalForInterval += transaction['amount'];
-              }
-            }
-          }
-        }
-      });
-
-      graphData[i] =
-          totalForInterval / (intervalEnd.difference(intervalStart).inDays + 1);
-    }
-
-    return graphData;
-  }
-
-  /*Future<Map<String, dynamic>> fetchFinancialData(
-    String currencyCode,
-      Map<String, Map<String, dynamic>> accountsData, {
-    DateTime? startDate,
-    DateTime? endDate,
-  }) async {
-    final transactionsModel =
-        Provider.of<TransactionsModel>(context, listen: false);
-
-
-
-    double totalIncome =
-        await transactionsModel.getTotalIncomeForCurrency(currencyCode);
-    double totalExpense =
-        await transactionsModel.getTotalExpenseForCurrency(currencyCode);
-    double balance = totalIncome - totalExpense;
-
-    double periodIncome = await transactionsModel.getTotalIncomeForCurrency(
-        currencyCode,
-        startDate: startDate,
-        endDate: endDate);
-    double periodExpense = await transactionsModel.getTotalExpenseForCurrency(
-        currencyCode,
-        startDate: startDate,
-        endDate: endDate);
-
-    // Graph data generation
-    int totalDays = endDate.difference(startDate).inDays + 1;
-    int intervals = totalDays > 15 ? 15 : totalDays; // Max 15 intervals
-    List<double> graphDataExpense = List.generate(intervals, (_) => 0.0);
-    List<double> graphDataIncome = List.generate(intervals, (_) => 0.0);
-
-    for (int i = 0; i < intervals; i++) {
-      DateTime intervalStart =
-          startDate.add(Duration(days: (totalDays / intervals * i).round()));
-      DateTime intervalEnd = i == intervals - 1
-          ? endDate
-          : startDate.add(
-              Duration(days: (totalDays / intervals * (i + 1)).round() - 1));
-
-      double intervalExpense =
-          await transactionsModel.getTotalExpenseForCurrency(currencyCode,
-                  startDate: intervalStart, endDate: intervalEnd) ??
-              0.0;
-      graphDataExpense[i] =
-          intervalExpense / (intervalEnd.difference(intervalStart).inDays + 1);
-
-      double intervalIncome = await transactionsModel.getTotalIncomeForCurrency(
-              currencyCode,
-              startDate: intervalStart,
-              endDate: intervalEnd) ??
-          0.0;
-      graphDataIncome[i] =
-          intervalIncome / (intervalEnd.difference(intervalStart).inDays + 1);
-    }
-
-    return {
-      'income': totalIncome,
-      'expense': totalExpense,
-      'balance': balance,
-      'periodIncome': periodIncome,
-      'periodExpense': periodExpense,
-      'graphDataIncome': graphDataIncome,
-      'graphDataExpense': graphDataExpense,
-    };
-  }*/
+*/
 
   IconData getIconBasedOnType(String? type) {
     // Logic to return an icon based on the transaction type
