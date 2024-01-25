@@ -15,12 +15,22 @@ import '../../utils/image_utils.dart';
 class CategoryCard extends StatefulWidget {
   final Key? key;
   final String documentId;
+  final String categoryName;
+  final String? imagePath;
+  final IconData iconDetails;
+  final Color? primaryColor;
   final Animation<double> animation;
   final int index;
+
+
 
   CategoryCard({
     this.key,
     required this.documentId,
+    required this.categoryName,
+    this.imagePath,
+    required this.iconDetails,
+    this.primaryColor,
     required this.animation,
     required this.index,
   }) : super(key: key);
@@ -89,100 +99,12 @@ class _CategoryCardState extends State<CategoryCard>
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<Map<String, Map<String, dynamic>>?>(
-      valueListenable: categoriesNotifier,
-      builder: (context, categoriesData, child) {
-        if (categoriesData != null && categoriesData.containsKey(widget.documentId)) {
-          final categoryDetails = categoriesData[widget.documentId]!;
-
-          return ValueListenableBuilder<Map<String, Map<String, dynamic>>?>(
-            valueListenable: accountsNotifier,
-            builder: (context, accountsData, child) {
-              return FutureBuilder<Map<String, Map<String, double>>>(
-                future: TransactionsDB().getIncomeAndExpenseByAccountForCategory(widget.documentId),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return widget.index == 0 ? const Center(child: CircularProgressIndicator()) : Container();
-                  } else if (snapshot.hasError) {
-                    return Center(child: Text('Error fetching data.'));
-                  } else if (snapshot.hasData) {
-                    double totalIncome = 0.0;
-                    double totalExpense = 0.0;
-
-                    snapshot.data!.forEach((accountId, totals) {
-                      totalIncome += totals['totalIncome'] ?? 0.0;
-                      totalExpense += totals['totalExpense'] ?? 0.0;
-                    });
-
-                    double totalBalance = totalIncome - totalExpense;
-                    return buildCard(categoryDetails, totalIncome, totalExpense, totalBalance);
-                  } else {
-                    return Center(child: Text('No data available.'));
-                  }
-                },
-              );
-            },
-          );
-        } else {
-          return Center(child: Text('Category details not available.'));
-        }
-      },
-    );
+    return buildCard(widget.documentId, widget.imagePath);
   }
 
-  Widget buildCard(Map<String, dynamic> category, double totalIncome, double totalExpense, double totalBalance) {
 
-    int? iconCodePoint = category[CategoriesDB.categoryIconCodePoint] as int?;
-    String? iconFontFamily = category[CategoriesDB.categoryIconFontFamily] as String?;
-    String? iconFontPackage = category[CategoriesDB.categoryIconFontPackage] as String?;
-
-    IconData? iconData;
-    if (iconCodePoint != null && iconFontFamily != null) {
-      iconData = IconData(
-        iconCodePoint,
-        fontFamily: iconFontFamily,
-        fontPackage: iconFontPackage,
-      );
-    } else {
-      // Default icon in case of null values
-      iconData = Icons.category_outlined;
-    }
-
-    String? imageUrl = category[CategoriesDB.categorySelectedImageBlob];
+  Widget buildCard(String documentId, String? imageUrl) {
     String fileName = imageUrl != null ? generateFileNameFromUrl(imageUrl) : 'default.jpg';
-
-    String? categoryName = category[CategoriesDB.categoryName];
-    Color? primaryColor = category[CategoriesDB.categoryColor] != null
-        ? Color(category[CategoriesDB.categoryColor] as int) : null;
-
-    /*Future<File?> downloadImage(String imageUrl) async {
-      try {
-        final response = await http.get(Uri.parse(imageUrl));
-        final documentDirectory = await getApplicationDocumentsDirectory();
-        final file = File('${documentDirectory.path}/tempImage');
-        file.writeAsBytesSync(response.bodyBytes);
-
-        return file;
-      } catch (e) {
-        // Handle exceptions
-        return null;
-      }
-    }
-
-    Future<File?>? _imageFileFuture;
-
-    if (category.containsKey(CategoriesDB.categorySelectedImageBlob) &&
-        category[CategoriesDB.categorySelectedImageBlob] != null) {
-      String imageUrl = category[CategoriesDB.categorySelectedImageBlob];
-      _imageFileFuture = downloadImage(imageUrl);
-    }
-
-    String? categoryName = category[CategoriesDB.categoryName];
-    Color? primaryColor;
-    if (category[CategoriesDB.categoryColor] != null) {
-      primaryColor = Color(category[CategoriesDB.categoryColor] as int);
-    }
-*/
 
     return AnimatedBuilder(
       animation: _deleteController,
@@ -238,59 +160,25 @@ class _CategoryCardState extends State<CategoryCard>
                                 return const CircularProgressIndicator(); // Show loading indicator
                               } else if (snapshot.hasError || snapshot.data == null) {
                                 return CircleAvatar(
-                                  backgroundColor: primaryColor,
+                                  backgroundColor: widget.primaryColor,
                                   child: Icon(
-                                    iconData,
+                                    widget.iconDetails,
                                     color: Colors.white,
                                     size: 24,
                                   ),
                                 );
                               } else {
                                 return CircleAvatar(
-                                  backgroundColor: primaryColor,
+                                  backgroundColor: widget.primaryColor,
                                   backgroundImage: snapshot.data != null ? FileImage(snapshot.data!) : null,
                                 );
                               }
-                              /*if (_imageFileFuture == null) {
-                                // _imageFileFuture is null, show the icon
-                                return CircleAvatar(
-                                  backgroundColor: primaryColor,
-                                  child: Icon(
-                                    iconData,
-                                    color: Colors.white,
-                                    size: 24,
-                                  ),
-                                );
-                              } else if (snapshot.connectionState == ConnectionState.done) {
-                                if (snapshot.hasError) {
-                                  // Handle the error
-                                  return CircleAvatar(
-                                    backgroundColor: primaryColor,
-                                    child: Icon(
-                                      iconData,
-                                      color: Colors.white,
-                                      size: 24,
-                                    ),
-                                  );
-                                }
-
-                                // File is ready
-                                File? file = snapshot.data;
-                                return CircleAvatar(
-                                  backgroundColor: primaryColor,
-                                  child: file == null ? Icon(iconData, color: Colors.white, size: 24) : null,
-                                  backgroundImage: file != null ? FileImage(file) : null,
-                                );
-                              } else {
-                                // File still loading
-                                return CircularProgressIndicator();
-                              }*/
                             },
                           ),
                           const SizedBox(width: 16),
                           Expanded(
                             child: Text(
-                              categoryName!,
+                              widget.categoryName!,
                               maxLines: 3,
                               overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.poppins(

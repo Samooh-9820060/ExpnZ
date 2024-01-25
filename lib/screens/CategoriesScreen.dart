@@ -62,10 +62,14 @@ class _CategoriesScreenState extends State<CategoriesScreen> with SingleTickerPr
                 ),
               );
             }
+
+            // Create a list of category keys, sorted by category name
+            List<String> sortedCategoryKeys = categoriesData.keys.toList();
+            sortedCategoryKeys.sort((a, b) => (categoriesData[a]?['name'] as String).compareTo(categoriesData[b]?['name'] as String));
             return ListView.builder(
-              itemCount: categoriesData.length,
+              itemCount: sortedCategoryKeys.length,
               itemBuilder: (context, index) {
-                final documentId = categoriesData.keys.elementAt(index);
+                final documentId = sortedCategoryKeys[index];
 
                 return buildAnimatedCategoryCard(
                   documentId: documentId,
@@ -83,6 +87,15 @@ class _CategoriesScreenState extends State<CategoriesScreen> with SingleTickerPr
     required String documentId,
     required int index,
   }) {
+    bool isExpanded = false;
+
+    // Extracting category data
+    final categoryData = categoriesNotifier.value![documentId];
+    final String categoryName = categoryData?['name'] ?? 'Unknown Category';
+    final String? imagePath = categoryData?['imageUrl']; // Replace 'imageUrl' with your field name if different
+    final IconData iconData = _getIconData(categoryData);
+    final Color? primaryColor = categoryData?['color'] != null ? Color(categoryData?['color'] as int) : null;
+
     return GestureDetector(
       onLongPress: () {
         _showDeleteConfirmationDialog(context, documentId);
@@ -97,6 +110,10 @@ class _CategoriesScreenState extends State<CategoriesScreen> with SingleTickerPr
               child: CategoryCard(
                 key: key,
                 documentId: documentId,
+                categoryName: categoryName,
+                imagePath: imagePath,
+                iconDetails: iconData,
+                primaryColor: primaryColor,
                 animation: _animation,
                 index: index,
               ),
@@ -105,6 +122,17 @@ class _CategoriesScreenState extends State<CategoriesScreen> with SingleTickerPr
         },
       ),
     );
+  }
+
+  IconData _getIconData(Map<String, dynamic>? categoryData) {
+    if (categoryData != null && categoryData.containsKey('iconCodePoint')) {
+      return IconData(
+        int.parse(categoryData['iconCodePoint'].toString()),
+        fontFamily: categoryData['iconFontFamily'],
+        fontPackage: categoryData['iconFontPackage'],
+      );
+    }
+    return Icons.category; // Default icon
   }
 
   void _showDeleteConfirmationDialog(BuildContext context, String documentId) {

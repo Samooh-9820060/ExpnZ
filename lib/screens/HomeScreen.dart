@@ -171,8 +171,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     var accountsData = accountsNotifier.value;
 
     try {
-      await Future.delayed(Duration(milliseconds: 500)).timeout(
-        Duration(milliseconds: 500),
+      await Future.delayed(Duration(seconds: 2)).timeout(
+        Duration(seconds: 2),
         onTimeout: () {},
       );
 

@@ -187,4 +187,40 @@ class CategoriesDB {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('localImagePath');
   }
+
+  Future<List<Map<String, dynamic>>> getCategoryDetailsWithImage() async {
+    final categoriesData = categoriesNotifier.value ?? {};
+    List<Map<String, dynamic>> categoriesWithImage = [];
+
+    for (var entry in categoriesData.entries) {
+      String documentId = entry.key;
+      Map<String, dynamic> category = entry.value;
+
+      String? localImagePath;
+      String? iconDetails;
+
+      if (category.containsKey(categorySelectedImageBlob) && category[categorySelectedImageBlob] != null) {
+        // If imageUrl is available, try to get the local image path
+        localImagePath = await getLocalImagePathFromSharedPreferences();
+      }
+
+      if (localImagePath == null) {
+        // If no image, use icon details
+        iconDetails = jsonEncode({
+          'iconCodePoint': category[categoryIconCodePoint],
+          'iconFontFamily': category[categoryIconFontFamily],
+          'iconFontPackage': category[categoryIconFontPackage],
+        });
+      }
+
+      categoriesWithImage.add({
+        'documentId': documentId,
+        'name': category[categoryName],
+        'imagePath': localImagePath,
+        'iconDetails': iconDetails,
+      });
+    }
+
+    return categoriesWithImage;
+  }
 }
