@@ -7,7 +7,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class TransactionsDB {
   static const String collectionName = 'transactions';
-  static const String usersCollection = 'users';
 
   static const String uid = 'uid';
   static const String transactionType = 'type';
@@ -25,7 +24,7 @@ class TransactionsDB {
     _firestore.collection(collectionName)
         .where(uid, isEqualTo: userUid)
         .snapshots()
-        .listen((snapshot) {
+        .listen((snapshot) async {
       final Map<String, Map<String, dynamic>> newTransactionsData = {};
 
       // Add all existing accounts to the new map
@@ -42,7 +41,18 @@ class TransactionsDB {
       }
 
       cacheTransactionsLocally(newTransactionsData);
+
+      await updateFirestoreReadCount(snapshot.docs.length);
     });
+  }
+
+  Future<void> updateFirestoreReadCount(int documentCount) async {
+    final prefs = await SharedPreferences.getInstance();
+    int totalReads = prefs.getInt('totalFirestoreReads') ?? 0;
+    totalReads += documentCount;
+    await prefs.setString('type', 'TransactionRead');
+    await prefs.setInt('totalFirestoreReads', totalReads);
+    await prefs.setString('lastFirestoreReadTime', DateTime.now().toIso8601String());
   }
 
   Future<void> cacheTransactionsLocally(Map<String, Map<String, dynamic>> transactionsData) async {
@@ -180,6 +190,32 @@ class TransactionsDB {
       });
     }
     return {'totalIncome': totalIncome, 'totalExpense': totalExpense};
+  }
+  Future<Map<String, Map<String, double>>> getTotalIncomeAndExpenseForAccounts(List<String> accountIds) async {
+    final transactions = await getLocalTransactions();
+    Map<String, Map<String, double>> totals = {};
+
+    for (var accountId in accountIds) {
+      double totalIncome = 0.0;
+      double totalExpense = 0.0;
+
+      if (transactions != null) {
+        transactions.forEach((docId, data) {
+          if (data[transactionAccountId] == accountId) {
+            double amount = double.tryParse(data[transactionAmount].toString()) ?? 0.0;
+            if (data[transactionType] == 'income') {
+              totalIncome += amount;
+            } else if (data[transactionType] == 'expense') {
+              totalExpense += amount;
+            }
+          }
+        });
+      }
+
+      totals[accountId] = {'totalIncome': totalIncome, 'totalExpense': totalExpense};
+    }
+
+    return totals;
   }
 
   Future<Map<String, Map<String, double>>> getIncomeAndExpenseByAccountForCategory(String categoryId) async {

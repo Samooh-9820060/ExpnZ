@@ -10,11 +10,15 @@ class ModernAccountCard extends StatefulWidget {
   final String documentId;
   final Map<String, dynamic> currencyMap;
   final int index;
+  final double totalIncome;
+  final double totalExpense;
 
   ModernAccountCard({
     required this.documentId,
     required this.currencyMap,
     required this.index,
+    required this.totalIncome,
+    required this.totalExpense,
   });
 
   @override
@@ -46,35 +50,17 @@ class _ModernAccountCardState extends State<ModernAccountCard>
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<Map<String, double>>(
-      future: TransactionsDB().getTotalIncomeAndExpenseForAccount(widget.documentId),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return widget.index == 0 ? const Center(child: CircularProgressIndicator()) : Container();
-        } else if (snapshot.hasError) {
-          print(snapshot.error);
-          // Handle any errors here
-          return Center(child: Text('Error fetching data.'));
-        } else if (snapshot.hasData) {
-          final totalIncome = snapshot.data!['totalIncome'] ?? 0.0;
-          final totalExpense = snapshot.data!['totalExpense'] ?? 0.0;
-          final totalBalance = totalIncome - totalExpense;
+    final totalBalance = widget.totalIncome - widget.totalExpense;
 
-          return ValueListenableBuilder<Map<String, Map<String, dynamic>>?>(
-            valueListenable: accountsNotifier,
-            builder: (context, accountsData, child) {
-              if (accountsData != null && accountsData.containsKey(widget.documentId)) {
-                final accountDetails = accountsData[widget.documentId]!;
-                return buildCard(accountDetails, totalIncome, totalExpense, totalBalance);
-              } else {
-                // If no account data is available, display a message
-                return Center(child: Text('No accounts available.'));
-              }
-            },
-          );
+    return ValueListenableBuilder<Map<String, Map<String, dynamic>>?>(
+      valueListenable: accountsNotifier,
+      builder: (context, accountsData, child) {
+        if (accountsData != null && accountsData.containsKey(widget.documentId)) {
+          final accountDetails = accountsData[widget.documentId]!;
+          return buildCard(accountDetails, widget.totalIncome, widget.totalExpense, totalBalance);
         } else {
-          // Handle the case where there is no data
-          return Center(child: Text('No data available.'));
+          // If no account data is available, display a message
+          return const Center(child: Text('No accounts available.'));
         }
       },
     );

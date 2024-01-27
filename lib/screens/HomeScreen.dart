@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:expnz/widgets/AppWidgets/MonthlySummaryCards.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -102,8 +101,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
     else {
       try {
-        final uid = FirebaseAuth.instance.currentUser?.uid;
-        if (uid != null) {
+        //final uid = FirebaseAuth.instance.currentUser?.uid;
+        /*if (uid != null) {
           final userDoc =
           await FirebaseFirestore.instance.collection('users').doc(uid).get();
           if (userDoc.exists) {
@@ -113,7 +112,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               userName = fetchedName;
             });
           }
-        }
+        }*/
       } catch (e) {
         // Handle any errors while fetching the name
         //print(e.toString());

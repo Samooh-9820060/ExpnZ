@@ -5,12 +5,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:expnz/utils/global.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CategoriesDB {
   static const String collectionName = 'categories';
-  static const String usersCollection = 'users';
 
   static const String uid = 'uid';
   static const String categoryName = 'name';
@@ -29,7 +29,7 @@ class CategoriesDB {
     _firestore.collection(collectionName)
         .where(uid, isEqualTo: userUid)
         .snapshots()
-        .listen((snapshot) {
+        .listen((snapshot) async {
       final Map<String, Map<String, dynamic>> newCategoriesData = {};
 
       // Add all existing accounts to the new map
@@ -46,7 +46,18 @@ class CategoriesDB {
       }
 
       cacheCategoriesLocally(newCategoriesData);
+
+      await updateFirestoreReadCount(snapshot.docs.length);
     });
+  }
+
+  Future<void> updateFirestoreReadCount(int documentCount) async {
+    final prefs = await SharedPreferences.getInstance();
+    int totalReads = prefs.getInt('totalFirestoreReads') ?? 0;
+    totalReads += documentCount;
+    await prefs.setString('type', 'CategoriesRead');
+    await prefs.setInt('totalFirestoreReads', totalReads);
+    await prefs.setString('lastFirestoreReadTime', DateTime.now().toIso8601String());
   }
 
   Future<void> cacheCategoriesLocally(Map<String, Map<String, dynamic>> categoriesData) async {
@@ -120,13 +131,7 @@ class CategoriesDB {
   }
 
   Future<void> deleteCategory(String documentId) async {
-    String userUid = FirebaseAuth.instance.currentUser!.uid;
     await _firestore.collection(collectionName).doc(documentId).delete();
-
-    // Update the user's document to remove the account's aggregate data
-    await _firestore.collection(usersCollection).doc(userUid).update({
-      'categories.$documentId': FieldValue.delete(),
-    });
   }
 
   Future<Map<String, dynamic>?> getSelectedCategory(String documentId) async {
@@ -222,5 +227,43 @@ class CategoriesDB {
     }
 
     return categoriesWithImage;
+  }
+
+  Future<void> createCategories(List<String> categoriesToCreate, BuildContext context) async {
+    String userUid = FirebaseAuth.instance.currentUser!.uid;
+    var batch = FirebaseFirestore.instance.batch();
+
+    for (var categoryName in categoriesToCreate) {
+      // Default values for icon, color, and description
+      final defaultIcon = Icons.category;
+      final defaultColor = Colors.blue;
+      final description = categoryName;
+
+      // Prepare data to insert
+      Map<String, dynamic> data = {
+        'uid': userUid,
+        'name': categoryName,
+        'description': description,
+        'color': defaultColor.value,
+        'iconCodePoint': defaultIcon.codePoint,
+        'iconFontFamily': defaultIcon.fontFamily,
+        'iconFontPackage': defaultIcon.fontPackage,
+        'selectedImageBlob': null, // No image
+      };
+
+      // Generate a new document reference
+      var categoryRef = FirebaseFirestore.instance.collection('categories').doc();
+      batch.set(categoryRef, data);
+    }
+
+    try {
+      await batch.commit();
+      //print("All categories added successfully.");
+    } catch (e) {
+      //print("Failed to add categories: $e");
+    }
+
+    // Refresh the categories list in the UI
+    categoriesNotifier.value = (await CategoriesDB().getLocalCategories())!;
   }
 }

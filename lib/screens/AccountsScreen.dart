@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:expnz/database/TransactionsDB.dart';
 import 'package:flutter/material.dart';
 import '../database/AccountsDB.dart';
 import '../widgets/AppWidgets/AccountCard.dart';
@@ -43,7 +44,7 @@ class _AccountsScreenState extends State<AccountsScreen>
           valueListenable: accountsNotifier, // The ValueNotifier for local accounts data
           builder: (context, accountsData, child) {
             if (accountsData.isEmpty) {
-              return Center(
+              return const Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -66,17 +67,47 @@ class _AccountsScreenState extends State<AccountsScreen>
                 ),
               );
             }
-            return ListView.builder(
-              itemCount: accountsData.length,
-              itemBuilder: (context, index) {
-                final documentId = accountsData.keys.elementAt(index);
-                final accountData = accountsData[documentId]!;
-                final currencyMap = jsonDecode(accountData[AccountsDB.accountCurrency]);
 
-                return buildAnimatedAccountCard(
-                  documentId: documentId,
-                  currencyMap: currencyMap,
-                  index: index,
+            List<String> accountIds = accountsData.keys.toList();
+            return FutureBuilder<Map<String, Map<String, double>>>(
+              future: TransactionsDB().getTotalIncomeAndExpenseForAccounts(accountIds),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                }
+
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return Center(child: Text('No data available.'));
+                }
+
+                Map<String, Map<String, double>> incomeExpenseData = snapshot.data!;
+
+                return ListView.builder(
+                  itemCount: accountsData.length,
+                  itemBuilder: (context, index) {
+                    final documentId = accountsData.keys.elementAt(index);
+                    final accountData = accountsData[documentId]!;
+                    final currencyMap = jsonDecode(accountData[AccountsDB.accountCurrency]);
+
+                    // Retrieve income and expense for the current account
+                    final accountTotals = incomeExpenseData[documentId] ?? {'totalIncome': 0.0, 'totalExpense': 0.0};
+
+                    // Use the null coalescing operator to ensure a non-null value is passed
+                    double totalIncome = accountTotals['totalIncome'] ?? 0.0;
+                    double totalExpense = accountTotals['totalExpense'] ?? 0.0;
+
+                    return buildAnimatedAccountCard(
+                      documentId: documentId,
+                      currencyMap: currencyMap,
+                      totalIncome: totalIncome,
+                      totalExpense: totalExpense,
+                      index: index,
+                    );
+                  },
                 );
               },
             );
@@ -88,6 +119,8 @@ class _AccountsScreenState extends State<AccountsScreen>
     required String documentId,
     required Map<String, dynamic> currencyMap,
     required int index,
+    required double totalIncome,
+    required double totalExpense,
   }) {
     return GestureDetector(
       onLongPress: () {
@@ -104,6 +137,8 @@ class _AccountsScreenState extends State<AccountsScreen>
                 documentId: documentId,
                 currencyMap: currencyMap,
                 index: index,
+                totalExpense: totalExpense,
+                totalIncome: totalIncome,
               ),
             ),
           );

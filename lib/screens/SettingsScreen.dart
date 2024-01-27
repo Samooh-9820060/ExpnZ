@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:excel/excel.dart';
 import 'package:expnz/database/AccountsDB.dart';
 import 'package:expnz/database/CategoriesDB.dart';
@@ -481,43 +480,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _isValidDateTime(String date) {
     return DateTime.tryParse(date) != null;
   }
-  Future<void> _createCategories(List<String> categoriesToCreate, BuildContext context) async {
-    String userUid = FirebaseAuth.instance.currentUser!.uid;
-    var batch = FirebaseFirestore.instance.batch();
 
-    for (var categoryName in categoriesToCreate) {
-      // Default values for icon, color, and description
-      final defaultIcon = Icons.category;
-      final defaultColor = Colors.blue;
-      final description = categoryName;
-
-      // Prepare data to insert
-      Map<String, dynamic> data = {
-        'uid': userUid,
-        'name': categoryName,
-        'description': description,
-        'color': defaultColor.value,
-        'iconCodePoint': defaultIcon.codePoint,
-        'iconFontFamily': defaultIcon.fontFamily,
-        'iconFontPackage': defaultIcon.fontPackage,
-        'selectedImageBlob': null, // No image
-      };
-
-      // Generate a new document reference
-      var categoryRef = FirebaseFirestore.instance.collection('categories').doc();
-      batch.set(categoryRef, data);
-    }
-
-    try {
-      await batch.commit();
-      print("All categories added successfully.");
-    } catch (e) {
-      print("Failed to add categories: $e");
-    }
-
-    // Refresh the categories list in the UI
-    categoriesNotifier.value = (await CategoriesDB().getLocalCategories())!;
-  }
   void _updateCategoryIdsInTransactions(List<Map<String, dynamic>> transactions) {
     final categoriesData = categoriesNotifier.value ?? {};
 
@@ -671,7 +634,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             TextButton(
               child: const Text('Create'),
               onPressed: () {
-                _createCategories(categoriesToCreate, context).then((_) {
+                CategoriesDB().createCategories(categoriesToCreate, context).then((_) {
                   Navigator.of(context).pop();
                   onCategoriesCreated();
                 });

@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:currency_picker/currency_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_iconpicker/flutter_iconpicker.dart';
@@ -136,21 +135,26 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
       AccountsDB.accountCardNumber: _cardNumberController.text.trim(),
     };
 
-    String? documentId;
+    bool? insertedAccount;
 
     // Check if modifying an existing account
     if (isModifyMode) {
       // Update the account in Firestore
-      await AccountsDB().updateAccount(widget.documentId!, row);
-      documentId = widget.documentId;
+      try {
+        await AccountsDB().updateAccount(widget.documentId!, row);
+        insertedAccount = true;
+      } catch(ex) {
+        insertedAccount = false;
+      }
+
     } else {
       // Insert a new account into Firestore
-      DocumentReference docRef = await AccountsDB().insertAccount(row);
-      documentId = docRef.id;
+      insertedAccount = await AccountsDB().insertAccount(row);
+
     }
 
     // Check if operation was successful
-    if (documentId != null) {
+    if (insertedAccount) {
       // Success handling
       await showModernSnackBar(
         context: context,

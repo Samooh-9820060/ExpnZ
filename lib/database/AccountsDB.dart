@@ -7,7 +7,6 @@ import 'package:expnz/utils/global.dart';
 
 class AccountsDB {
   static const String collectionName = 'accounts';
-  static const String usersCollection = 'users';
 
   static const String uid = 'uid';
   static const String accountName = 'name';
@@ -23,7 +22,7 @@ class AccountsDB {
     _firestore.collection(collectionName)
         .where(uid, isEqualTo: userUid)
         .snapshots()
-        .listen((snapshot) {
+        .listen((snapshot) async {
       final Map<String, Map<String, dynamic>> newAccountsData = {};
 
       // Add all existing accounts to the new map
@@ -39,7 +38,18 @@ class AccountsDB {
         }
       }
       cacheAccountsLocally(newAccountsData);
+
+      await updateFirestoreReadCount(snapshot.docs.length);
     });
+  }
+
+  Future<void> updateFirestoreReadCount(int documentCount) async {
+    final prefs = await SharedPreferences.getInstance();
+    int totalReads = prefs.getInt('totalFirestoreReads') ?? 0;
+    totalReads += documentCount;
+    await prefs.setString('type', 'AccountsRead');
+    await prefs.setInt('totalFirestoreReads', totalReads);
+    await prefs.setString('lastFirestoreReadTime', DateTime.now().toIso8601String());
   }
 
   Future<void> cacheAccountsLocally(Map<String, Map<String, dynamic>> accountsData) async {
@@ -74,24 +84,19 @@ class AccountsDB {
     }
   }
 
-  Future<DocumentReference> insertAccount(Map<String, dynamic> data) async {
-    String userUid = FirebaseAuth.instance.currentUser!.uid;
-    data[AccountsDB.uid] = userUid;
+  Future<bool> insertAccount(Map<String, dynamic> data) async {
+    try {
+      String userUid = FirebaseAuth.instance.currentUser!.uid;
+      data[AccountsDB.uid] = userUid;
 
-    // Add the new account to the accounts collection
-    DocumentReference accountRef = await _firestore.collection(collectionName).add(data);
+      // Add the new account to the accounts collection
+      DocumentReference accountRef = await _firestore.collection(collectionName).add(data);
 
-    // Initialize account-specific aggregate data under the user's document
-    await _firestore.collection(usersCollection).doc(userUid).set({
-      'accounts': {
-        accountRef.id: {
-          'totalIncome': 0.0,
-          'totalExpense': 0.0,
-        }
-      }
-    }, SetOptions(merge: true));
+      return true;
+    } catch(ex) {
+      return false;
+    }
 
-    return accountRef;
   }
 
   // function to get unique currency codes
@@ -112,14 +117,7 @@ class AccountsDB {
   }
 
   Future<void> deleteAccount(String documentId) async {
-    String userUid = FirebaseAuth.instance.currentUser!.uid;
-
     await _firestore.collection(collectionName).doc(documentId).delete();
-
-    // Update the user's document to remove the account's aggregate data
-    await _firestore.collection(usersCollection).doc(userUid).update({
-      'accounts.$documentId': FieldValue.delete(),
-    });
   }
 
   Future<void> updateAccount(String documentId, Map<String, dynamic> data) async {

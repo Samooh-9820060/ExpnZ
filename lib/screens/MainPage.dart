@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:expnz/models/TempTransactionsModel.dart';
 import 'package:expnz/screens/AccountsScreen.dart';
 import 'package:expnz/screens/CategoriesScreen.dart';
@@ -124,13 +123,13 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin, Widg
   Future<void> _fetchUserData() async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      DocumentSnapshot userData = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      /*DocumentSnapshot userData = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
       setState(() {
         // Other user data
         if (userData['profileImageUrl'] is String) {
           _profileImageUrl = userData['profileImageUrl'];
         }
-      });
+      });*/
     }
   }
 
