@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../database/AccountsDB.dart';
 import '../database/TransactionsDB.dart';
+import '../utils/global.dart';
 import '../widgets/AppWidgets/BuildCategoriesDropdown.dart';
 import '../widgets/AppWidgets/CategoryChip.dart';
 import '../widgets/AppWidgets/SearchTransactionCard.dart';
@@ -132,7 +133,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     });
   }
 
-  /*Future<void> clearFilter() async {
+  Future<void> clearFilter() async {
     selectedFromDate = DateTime(DateTime.now().year, 1, 1);
     selectedToDate = DateTime(DateTime.now().year, 12, 31);
     selectedIncludeCategoriesList = [];
@@ -143,12 +144,10 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     _showIncludeDropdown = false;
     filteredConditionalTransactions = [];
 
-    // Fetch all accounts and populate selectedAccounts with their IDs
-    AccountsModel accountsModel = Provider.of<AccountsModel>(context, listen: false);
-    if (accountsModel.accounts.isNotEmpty) {
-      selectedAccounts = accountsModel.accounts.map<int>((account) {
-        return account[AccountsDB.accountId] as int;
-      }).toList();
+    // Fetch all accounts from the ValueNotifier and populate selectedAccounts with their IDs
+    final accountsData = accountsNotifier.value;
+    if (accountsData.isNotEmpty) {
+      selectedAccounts = accountsData.keys.toList(); // Assuming accountsData is a Map with account IDs as keys
 
       // Update the ValueNotifier
       selectedAccountsNotifier.value = selectedAccounts;
@@ -158,9 +157,16 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
 
     Navigator.pop(context, true);
     showModernSnackBar(context: context, message: 'Filters cleared', backgroundColor: Colors.green);
-  }*/
+  }
 
-  /*void _showFilterDialog(BuildContext context) {
+  void closeDropdown() {
+    setState(() {
+      _showIncludeDropdown = false;
+      _showExcludeDropdown = false;
+    });
+  }
+
+  void _showFilterDialog(BuildContext context) {
     showModalBottomSheet(
       isScrollControlled: true,
       barrierColor: Colors.transparent,
@@ -306,9 +312,10 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                                 ),
                                 Container(
                                   height: 150, // set the height
-                                  child: Consumer<AccountsModel>(
-                                    builder: (context, accountsModel, child) {
-                                      if (accountsModel.accounts.isEmpty) {
+                                  child: ValueListenableBuilder<Map<String, Map<String, dynamic>>>(
+                                    valueListenable: accountsNotifier,
+                                    builder: (context, accountsList, child) {
+                                      if (accountsList.isEmpty) {
                                         return const Center(
                                           child: Text('No accounts available.'),
                                         );
@@ -316,27 +323,32 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                                         return ListView.builder(
                                           padding: EdgeInsets.zero,
                                           scrollDirection: Axis.horizontal,
-                                          itemCount: accountsModel.accounts.length,
+                                          itemCount: accountsList.length,
                                           itemBuilder: (context, index) {
-                                            final account = accountsModel.accounts[index];
+                                            final accountKey = accountsList.keys.elementAt(index);
+                                            final account = accountsList[accountKey];
+
+                                            // Ensure account is not null before accessing it
+                                            if (account == null) {
+                                              return Container(); // Or some other placeholder widget
+                                            }
                                             Map<String, dynamic> currencyMap = jsonDecode(account[AccountsDB.accountCurrency]);
                                             String currencyCode = currencyMap['code'] as String;
 
                                             return GestureDetector(
                                               onTap: () {
-                                                int currentAccountId = account[AccountsDB.accountId];
                                                 modalSetState(() {
-                                                  if (selectedAccounts.contains(currentAccountId)) {
-                                                    selectedAccounts.remove(currentAccountId);
+                                                  if (selectedAccounts.contains(accountKey)) {
+                                                    selectedAccounts.remove(accountKey);
                                                   } else {
-                                                    selectedAccounts.add(currentAccountId);
+                                                    selectedAccounts.add(accountKey);
                                                   }
                                                 });
                                               },
                                               child: Transform.scale(
                                                 scale: 0.8, // Adjust this scale factor to your need
                                                 child: AccountCard(
-                                                  accountId: account[AccountsDB.accountId],
+                                                  accountId: accountKey,
                                                   icon: IconData(
                                                     account[AccountsDB.accountIconCodePoint],
                                                     fontFamily: account[AccountsDB.accountIconFontFamily],
@@ -346,7 +358,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                                                   accountName: account[AccountsDB.accountName],
                                                   horizontalMargin: 0,
                                                   verticalMargin: 0,
-                                                  isSelected: selectedAccounts.contains(account[AccountsDB.accountId]),
+                                                  isSelected: selectedAccounts.contains(accountKey),
                                                 ),
                                               ),
                                             );
@@ -363,8 +375,6 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Your existing code for date selectors goes here
-
                             SizedBox(height: 20),
 
                             // Text headers for category selection
@@ -399,7 +409,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                                 });
                               },
                             ),
-                            SizedBox(height: 10),
+                            const SizedBox(height: 10),
                             if (_showIncludeDropdown)
                               GestureDetector(
                                 onTap: () {
@@ -412,18 +422,13 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                                     borderRadius: BorderRadius.circular(25),
                                   ),
                                   color: Colors.blueGrey[700],
-                                  child: Container(
+                                  child: SizedBox(
                                     width: MediaQuery.of(context).size.width, // Adjust as needed
-                                    child: Consumer<CategoriesModel>(
-                                      builder: (context, categoriesModel, child) {
-                                        return buildCategoriesDropdown(
-                                          categoriesModel,
-                                          selectedIncludeCategoriesList,
-                                          _categoryIncludeSearchController.text,
-                                          modalSetState, // Assuming this is within a StatefulWidget and you have access to setState
-                                          _showIncludeDropdown,
-                                        );
-                                      },
+                                    child: buildCategoriesDropdown(
+                                      selectedIncludeCategoriesList,
+                                      _categoryIncludeSearchController,
+                                      modalSetState,
+                                      closeDropdown,
                                     ),
                                   ),
                                 ),
@@ -436,17 +441,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                                 selectedIncludeCategoriesList.length,
                                     (int index) {
                                   final category = selectedIncludeCategoriesList[index];
-                                  dynamic categoryIdRaw = category['id'];
-                                  int categoryId = 0;
-
-                                  if (categoryIdRaw is String) {
-                                    categoryId = int.parse(categoryIdRaw);
-                                  } else if (categoryIdRaw is int) {
-                                    categoryId = categoryIdRaw;
-                                  } else {
-                                    // Handle error: unknown type
-                                    print('Unknown type for category ID');
-                                  }
+                                  String categoryId = category['id'];
 
                                   return CategoryChip(
                                     categoryId: categoryId,
@@ -505,7 +500,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                             if (_showExcludeDropdown)
                               GestureDetector(
                                 onTap: () {
-                                  // Do nothing to stop event propagation
+
                                   return;
                                 },
                                 child: Material(
@@ -514,18 +509,13 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                                     borderRadius: BorderRadius.circular(25),
                                   ),
                                   color: Colors.blueGrey[700],
-                                  child: Container(
+                                  child: SizedBox(
                                     width: MediaQuery.of(context).size.width, // Adjust as needed
-                                    child: Consumer<CategoriesModel>(
-                                      builder: (context, categoriesModel, child) {
-                                        return buildCategoriesDropdown(
-                                          categoriesModel,
-                                          selectedExcludeCategoriesList,
-                                          _categoryExcludeSearchController.text,
-                                          modalSetState, // Assuming this is within a StatefulWidget and you have access to setState
-                                          _showExcludeDropdown,
-                                        );
-                                      },
+                                    child: buildCategoriesDropdown(
+                                      selectedExcludeCategoriesList,
+                                      _categoryExcludeSearchController,
+                                      modalSetState, // Assuming this is within a StatefulWidget and you have access to setState
+                                      closeDropdown,
                                     ),
                                   ),
                                 ),
@@ -538,17 +528,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                                 selectedExcludeCategoriesList.length,
                                     (int index) {
                                   final category = selectedExcludeCategoriesList[index];
-                                  dynamic categoryIdRaw = category['id'];
-                                  int categoryId = 0;
-
-                                  if (categoryIdRaw is String) {
-                                    categoryId = int.parse(categoryIdRaw);
-                                  } else if (categoryIdRaw is int) {
-                                    categoryId = categoryIdRaw;
-                                  } else {
-                                    // Handle error: unknown type
-                                    print('Unknown type for category ID');
-                                  }
+                                  String categoryId = category['id'];
 
                                   return CategoryChip(
                                     categoryId: categoryId,
@@ -571,7 +551,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                             ),
                             SizedBox(width: 10),
                             Expanded(
-                                child: ExpnZButton(label: 'Filter', onPressed: FilterTransactions)
+                                child: ExpnZButton(label: 'Filter', onPressed: _filterTransactions)
                             ),
                           ],
                         )
@@ -585,7 +565,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
         );
       },
     );
-  }*/
+  }
 
 
   @override
@@ -627,7 +607,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                     ),
                     InkWell(
                       onTap: () {
-                        //_showFilterDialog(context); // <-- Call the filter dialog here
+                        _showFilterDialog(context); // <-- Call the filter dialog here
                       },
                       borderRadius: BorderRadius.circular(30), // Tune this for your case
                       splashColor: Colors.blue.withOpacity(0.5),
@@ -715,24 +695,43 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     );
   }
 
-  /*void FilterTransactions(){
-    Provider.of<TransactionsModel>(context, listen: false)
-        .filterTransactions(
-        context,
-        null,  // Search text
-        null,  // Transactions to filter
-        selectedFromDate,
-        selectedToDate,
-        selectedIncludeCategoriesList.map((category) => int.parse(category['id'])).toList(),
-        selectedExcludeCategoriesList.map((category) => int.parse(category['id'])).toList(),
-        selectedAccounts,
-    );
-    showModernSnackBar(context: context, message: 'Filters Applied', backgroundColor: Colors.green);
-    setState(() {
-      filteredConditionalTransactions = Provider.of<TransactionsModel>(context, listen: false).filteredTransactions;
+  void filterTransactions({String? type, DateTime? startDate, DateTime? endDate, String? currencyCode}) {
+    final transactionsData = transactionsNotifier.value;
+    final accountsData = accountsNotifier.value;
+    double total = 0.0;
+    List<Map<String, dynamic>> filteredTransactions = [];
+
+    transactionsData.forEach((transactionId, transaction) {
+      if (transaction['type'] == type) {
+        String accountId = transaction['account_id'];
+        if (accountsData.containsKey(accountId)) {
+          String accountCurrencyCode = jsonDecode(accountsData[accountId]?['currency'])['code'];
+          if (accountCurrencyCode == currencyCode) {
+            DateTime transactionDate = DateTime.parse(transaction['date']);
+            bool isWithinRange = (startDate == null || transactionDate.isAfter(startDate) || transactionDate.isAtSameMomentAs(startDate)) &&
+                (endDate == null || transactionDate.isBefore(endDate) || transactionDate.isAtSameMomentAs(endDate));
+
+            if (isWithinRange) {
+              double amount = (transaction['amount'] as num).toDouble();
+              total += amount;
+              filteredTransactions.add(transaction);
+            }
+          }
+        }
+      }
     });
+
+    // Update the UI or notifier as needed
+    setState(() {
+      filteredConditionalTransactions = filteredTransactions;
+    });
+
+    // Show a snack bar message
+    showModernSnackBar(context: context, message: 'Filters Applied', backgroundColor: Colors.green);
+
+    // Close the current screen or modal
     Navigator.pop(context, true);
-  }*/
+  }
 }
 
 void main() {

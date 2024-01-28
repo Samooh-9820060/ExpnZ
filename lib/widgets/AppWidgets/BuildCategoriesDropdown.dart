@@ -5,7 +5,7 @@ Widget buildCategoriesDropdown(
     List<Map<String, dynamic>> selectedCategoriesList,
     TextEditingController categorySearchController,
     Function setStateCallback,
-    bool showDropdown,
+    Function closeDropdownCallback,
     ) {
   return ValueListenableBuilder<Map<String, Map<String, dynamic>>?>(
     valueListenable: categoriesNotifier,
@@ -78,9 +78,11 @@ Widget buildCategoriesDropdown(
                   onTap: () {
                     setStateCallback(() {
                       selectedCategoriesList.add({'id': category['id']});
-                      //categorySearchController.text = '';
-                      showDropdown = false;
+                      categorySearchController.text = '';
+                      //close dropdown
+                      //showDropdown = false;
                     });
+                    closeDropdownCallback();
                   },
                   child: ListTile(
                     title: Text(category['name']),

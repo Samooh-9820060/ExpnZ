@@ -52,6 +52,19 @@ class AccountsDB {
     await prefs.setString('lastFirestoreReadTime', DateTime.now().toIso8601String());
   }
 
+  Future<void> printFirestoreReadDetails() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    String type = prefs.getString('type') ?? "Not specified";
+    int totalReads = prefs.getInt('totalFirestoreReads') ?? 0;
+    String lastFirestoreReadTime = prefs.getString('lastFirestoreReadTime') ?? "Not available";
+
+    print('Type: $type');
+    print('Total Firestore Reads: $totalReads');
+    print('Last Firestore Read Time: $lastFirestoreReadTime');
+  }
+
+
   Future<void> cacheAccountsLocally(Map<String, Map<String, dynamic>> accountsData) async {
     final prefs = await SharedPreferences.getInstance();
     String encodedData = json.encode(accountsData);

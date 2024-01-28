@@ -70,6 +70,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
     final tempTransactionData = await TempTransactionsDB().getSelectedTransaction(widget.tempTransactionId!);
     if (tempTransactionData != null) {
       setState(() {
+        print(tempTransactionData);
         if (tempTransactionData[TempTransactionsDB.columnType] == 'expense') {
           _selectedType = TransactionType.expense;
         } else if (tempTransactionData[TempTransactionsDB.columnType] == 'income') {
@@ -81,8 +82,12 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
         if (tempTransactionData[TempTransactionsDB.columnDate] != null && tempTransactionData[TempTransactionsDB.columnTime] != null) {
           final String date = tempTransactionData[TempTransactionsDB.columnDate];
           final String time = tempTransactionData[TempTransactionsDB.columnTime];
-          DateTime completeDateTime = DateTime.parse("$date $time");
-          selectedDate = DateTime.parse(tempTransactionData[TempTransactionsDB.columnDate]);
+
+          DateFormat format = DateFormat("dd/MM/yy HH:mm:ss");
+          DateFormat dateFormat = DateFormat("dd/MM/yy"); // Format for just the date
+
+          DateTime completeDateTime = format.parse("$date $time");
+          selectedDate = dateFormat.parse(date); // Parse just the date part
           selectedTime = TimeOfDay.fromDateTime(completeDateTime);
         }
       });
@@ -159,6 +164,12 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
     _descriptionController.dispose();
     _amountController.dispose();
     super.dispose();
+  }
+
+  void closeDropdown() {
+    setState(() {
+      _showDropdown = false;
+    });
   }
 
   //modify or insert transactions
@@ -750,7 +761,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                                   selectedCategoriesList,
                                                   _categorySearchController,
                                                   setState, // Pass setState directly without invoking it
-                                                _showDropdown,
+                                                closeDropdown,
                                               );
                                             } else {
                                               return const Center(child: Text('No categories available.'));
@@ -1081,7 +1092,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                                   selectedCategoriesList,
                                                   _categorySearchController,
                                                 setState,// Pass setState directly without invoking it
-                                                _showDropdown
+                                                closeDropdown,
                                               );
                                             } else {
                                               return const Center(child: Text('No categories available.'));

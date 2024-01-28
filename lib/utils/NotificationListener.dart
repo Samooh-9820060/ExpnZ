@@ -140,7 +140,7 @@ class AppNotificationListener {
 
   //regexes
   final RegExp transactionRegex = RegExp(
-      r"Transaction from (\d{4}) on (\d{2}/\d{2}/\d{2}) at (\d{2}:\d{2}:\d{2}) for ([A-Z]{3}\d+(\.\d{1,2})?) at (.+?) was processed\. Reference No:(\d+), Approval Code:(\d+)"
+      r"Transaction from (\d{4}) on (\d{2}/\d{2}/\d{2}) at (\d{2}:\d{2}:\d{2}) for ([A-Z]{3}) ?(\d+(\.\d{1,2})?) at (.+?) was processed\. Reference No:(\d+), Approval Code:(\d+)"
   );
   final RegExp bMLFundsReceivedRegex = RegExp(
       r"You have received ([A-Z]{3})\s(\d+\.\d{1,2}) from ([A-Z .]+) to (\d+\*\d+)"

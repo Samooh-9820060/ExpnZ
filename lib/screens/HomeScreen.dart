@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:expnz/database/AccountsDB.dart';
 import 'package:expnz/widgets/AppWidgets/MonthlySummaryCards.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -31,6 +32,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    //AccountsDB().printFirestoreReadDetails();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final financialDataNotifier = Provider.of<FinancialDataNotifier>(context, listen: false);
       financialDataNotifier.loadFinancialData();
