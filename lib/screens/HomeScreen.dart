@@ -2,7 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:expnz/database/AccountsDB.dart';
+import 'package:expnz/screens/AddAccount.dart';
 import 'package:expnz/widgets/AppWidgets/MonthlySummaryCards.dart';
+import 'package:expnz/widgets/SimpleWidgets/ExpnZButton.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -189,7 +191,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      userName,
+                      userName == '' ? 'Hi' : userName,
                       style: const TextStyle(
                         fontSize: 25,
                         fontWeight: FontWeight.bold,
@@ -212,8 +214,55 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             Consumer<FinancialDataNotifier>(
               builder: (context, financialDataNotifier, child) {
                 var financialData = financialDataNotifier.financialData;
-                if (financialData.isEmpty) {
+                if (financialDataNotifier.isLoading) {
+                  // Show loading indicator when data is being loaded
                   return const Center(child: CircularProgressIndicator());
+                } else if (financialDataNotifier.financialData.isEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20.0, 50.0, 20.0, 0.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.monetization_on,
+                            size: 80,
+                            color: Colors.white.withOpacity(0.8),
+                          ),
+                          const SizedBox(height: 20),
+                          const Text(
+                            "No financial data available",
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            "Looks like there's no financial data to display right now. Start Adding Transactions below",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.white.withOpacity(0.7),
+                            ),
+                          ),
+                          const SizedBox(height: 30),
+                          ExpnZButton(
+                            label: 'Add Account',
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => AddAccountScreen()),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
                 } else {
                   return Column(
                     children: [

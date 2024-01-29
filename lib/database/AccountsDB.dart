@@ -131,6 +131,13 @@ class AccountsDB {
 
   Future<void> deleteAccount(String documentId) async {
     await _firestore.collection(collectionName).doc(documentId).delete();
+
+    // Update the local cache by removing the deleted transaction
+    final currentAccounts = accountsNotifier.value ?? {};
+    if (currentAccounts.containsKey(documentId)) {
+      currentAccounts.remove(documentId);
+      accountsNotifier.value = currentAccounts;
+    }
   }
 
   Future<void> updateAccount(String documentId, Map<String, dynamic> data) async {

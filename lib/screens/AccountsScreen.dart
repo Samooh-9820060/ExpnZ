@@ -152,18 +152,18 @@ class _AccountsScreenState extends State<AccountsScreen>
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text("Delete Account"),
-          content: Text(
+          title: const Text("Delete Account"),
+          content: const Text(
               "Are you sure you want to delete this account? \n\nThis will delete all transactions associated with this account"),
           actions: [
             TextButton(
-              child: Text("Cancel"),
+              child: const Text("Cancel"),
               onPressed: () {
                 Navigator.of(context).pop();
               },
             ),
             TextButton(
-              child: Text("Delete"),
+              child: const Text("Delete"),
               onPressed: () async {
                 AccountsDB().deleteAccount(documentId);
 

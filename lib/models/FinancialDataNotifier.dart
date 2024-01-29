@@ -9,25 +9,37 @@ class FinancialDataNotifier extends ChangeNotifier {
   Map<String, dynamic> _financialData = {};
   Map<String, dynamic> currencyMap = {};
   List<String> currencyCodes = [];
+  bool _isLoading = false;
 
   Map<String, dynamic> get financialData => _financialData;
+  bool get isLoading => _isLoading;
 
   void setFinancialData(Map<String, dynamic> newData) {
     _financialData = newData;
     notifyListeners();
   }
 
+  void setLoading(bool loading) {
+    _isLoading = loading;
+    notifyListeners();
+  }
+
   Future<void> loadFinancialData([String? currencyCode]) async {
-    var accountsData = accountsNotifier.value;
+    setLoading(true);
+    try {
+      var accountsData = accountsNotifier.value;
 
-    if (accountsData.isEmpty) {
-      // If accounts data is not available, set a listener
-      accountsNotifier.addListener(() => loadData(currencyCode));
-      return;
+      if (accountsData.isEmpty) {
+        // If accounts data is not available, set a listener
+        accountsNotifier.addListener(() => loadData(currencyCode));
+        return;
+      }
+
+      // If accounts data is already available, load financial data
+      await loadData(currencyCode);
+    } finally {
+      setLoading(false);
     }
-
-    // If accounts data is already available, load financial data
-    await loadData(currencyCode);
   }
 
   Future<void> loadData(String? currencyCode) async {
