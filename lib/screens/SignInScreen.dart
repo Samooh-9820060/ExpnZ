@@ -1,8 +1,8 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:expnz/screens/MainPage.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
-import 'HomeScreen.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'SignUpScreen.dart';
 
 class SignInScreen extends StatefulWidget {
@@ -64,6 +64,52 @@ class _SignInScreenState extends State<SignInScreen>
         ],
       ),
     );
+  }
+
+  Future<void> signInWithGoogle() async {
+    try {
+      // Trigger the Google Sign-In process
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+
+      // Obtain the auth details from the request
+      final GoogleSignInAuthentication? googleAuth = await googleUser?.authentication;
+
+      // Create a new credential for Firebase authentication
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth?.accessToken,
+        idToken: googleAuth?.idToken,
+      );
+
+      // Sign in to Firebase with the Google user credentials
+      final UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+      final User? user = userCredential.user;
+
+      if (user != null) {
+        // Check Firestore for existing user by email
+        final usersRef = FirebaseFirestore.instance.collection('users');
+        final querySnapshot = await usersRef.where('email', isEqualTo: user.email).get();
+        if (querySnapshot.docs.isEmpty) {
+          // No existing user, create new user data in Firestore
+          await usersRef.doc(user.uid).set({
+            'name': user.displayName,
+            'email': user.email,
+            'phoneNumber': user.phoneNumber,
+            'profileImageUrl': user.photoURL,
+          });
+        } else {
+          // Existing user found, update existing user data
+          /*await usersRef.doc(user.uid).update({
+            'name': user.displayName ?? FieldValue.delete(), // Delete if null
+            'phoneNumber': user.phoneNumber ?? FieldValue.delete(),
+            'profileImageUrl': user.photoURL ?? FieldValue.delete(),
+          });*/
+        }
+      }
+    } on FirebaseAuthException catch (e) {
+      _showErrorDialog(e.message ?? "Firebase Auth error occurred.");
+    } catch (e) {
+      _showErrorDialog("An error occurred: ${e.toString()}");
+    }
   }
 
   Future<void> signInWithEmailAndPassword() async {
@@ -238,7 +284,7 @@ class _SignInScreenState extends State<SignInScreen>
         SizedBox(height: 10),
         ElevatedButton.icon(
           onPressed: () {
-          // Implement Google Sign-In logic
+            signInWithGoogle();
           },
           icon: Icon(Icons.login),
           label: Text('Sign in with Google'),
