@@ -104,6 +104,39 @@ class TransactionsDB {
     });
   }
 
+  Future<void> deleteCategoryFromTransactions(String categoryId) async {
+    String userUid = FirebaseAuth.instance.currentUser!.uid;
+
+    // Retrieve all transactions
+    QuerySnapshot querySnapshot = await _firestore.collection(collectionName)
+        .where(uid, isEqualTo: userUid)
+        .get();
+
+    // Process each transaction to remove the category
+    for (var doc in querySnapshot.docs) {
+      Map<String, dynamic> transaction = doc.data() as Map<String, dynamic>;
+      String categoriesString = transaction[transactionCategoryIDs];
+      List<String> categories = categoriesString.split(', ');
+
+      // Check if the category is in the transaction
+      if (categories.contains(categoryId)) {
+        // Remove the category
+        categories.remove(categoryId);
+
+        // Update the transaction categories string
+        String updatedCategoriesString = categories.join(', ');
+
+        // Handle the case where all categories are removed
+        if (categories.isEmpty) {
+          // Optionally set to a default value or leave it empty
+        }
+
+        // Update the transaction
+        await _firestore.collection(collectionName).doc(doc.id).update({transactionCategoryIDs: updatedCategoriesString});
+      }
+    }
+  }
+
   Future<bool> insertTransactions(List<Map<String, dynamic>> transactions) async {
     String userUid = FirebaseAuth.instance.currentUser!.uid;
     FirebaseFirestore firestore = FirebaseFirestore.instance;

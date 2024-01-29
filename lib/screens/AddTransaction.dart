@@ -192,12 +192,12 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
     }
 
     // Check if the selected categories list contains "Unassigned"
-    bool hasUnassignedCategory = selectedCategoriesList.any((category) => category['id'] == '0');
+    bool hasUnassignedCategory = selectedCategoriesList.isEmpty;
 
     if (hasUnassignedCategory) {
       await showModernSnackBar(
         context: context,
-        message: "Please remove the 'Unassigned' category",
+        message: "Please assign a category to the transaction before saving",
         backgroundColor: Colors.redAccent,
       );
       setState(() {

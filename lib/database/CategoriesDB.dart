@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:expnz/database/TransactionsDB.dart';
 import 'package:expnz/utils/global.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -132,6 +133,7 @@ class CategoriesDB {
 
   Future<void> deleteCategory(String documentId) async {
     await _firestore.collection(collectionName).doc(documentId).delete();
+    TransactionsDB().deleteCategoryFromTransactions(documentId);
   }
 
   Future<Map<String, dynamic>?> getSelectedCategory(String documentId) async {

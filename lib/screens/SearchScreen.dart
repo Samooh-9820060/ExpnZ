@@ -723,8 +723,8 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
 
           return TransactionCard(
             transaction: transaction,
-            onDelete: () {
-              TransactionsDB().deleteTransaction(transaction['documentId']);
+            onDelete: () async {
+              await TransactionsDB().deleteTransaction(transaction['documentId']);
               _filterTransactions();
             },
             onUpdate: () async {
@@ -760,13 +760,13 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
             size: 50,
             color: Colors.white,
           ),
-          SizedBox(height: 10),
+          const SizedBox(height: 10),
           Text(
             isFilterOn ? 'No Transactions available for the given filters' :
             _searchController.text.length > 3
                 ? 'No transactions available'
                 : 'Enter more than 3 letters to search or use the filter button',
-            style: TextStyle(color: Colors.white),
+            style: const TextStyle(color: Colors.white),
           ),
         ],
       ),
