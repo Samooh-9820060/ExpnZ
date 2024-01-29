@@ -17,6 +17,8 @@ class _SignUpScreenState extends State<SignUpScreen> with SingleTickerProviderSt
   final _mobileNumberController = TextEditingController(); // Mobile Number field controller
   late AnimationController _animationController;
   late Animation<double> _animation;
+  final _formKey = GlobalKey<FormState>();
+
 
   @override
   void initState() {
@@ -130,154 +132,184 @@ class _SignUpScreenState extends State<SignUpScreen> with SingleTickerProviderSt
       body: Center(
         child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 30.0, vertical: 80.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                // Animated Title "Sign Up"
-                AnimatedBuilder(
-                  animation: _animationController,
-                  builder: (context, child) {
-                    return Transform.translate(
-                      offset: Offset(-50 * (1 - _animation.value), 0),
-                      child: Opacity(
-                        opacity: _animation.value,
-                        child: Text(
-                          'Sign Up',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 30,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                SizedBox(height: 50),
-
-                // Name TextField
-                TextField(
-                  controller: _nameController,
-                  decoration: InputDecoration(
-                    labelText: 'You Name',
-                    labelStyle: TextStyle(color: Colors.white),
-                    enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.blueAccent),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.green),
-                    ),
-                  ),
-                  style: TextStyle(color: Colors.white),
-                ),
-                SizedBox(height: 20),
-
-                // Phone TextField
-                TextField(
-                  controller: _mobileNumberController,
-                  decoration: InputDecoration(
-                    labelText: 'Phone Number',
-                    labelStyle: TextStyle(color: Colors.white),
-                    enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.blueAccent),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.green),
-                    ),
-                  ),
-                  style: TextStyle(color: Colors.white),
-                  keyboardType: TextInputType.number,
-                ),
-                SizedBox(height: 20),
-
-                // Email TextField
-                TextField(
-                  controller: _emailController,
-                  decoration: InputDecoration(
-                    labelText: 'Email',
-                    labelStyle: TextStyle(color: Colors.white),
-                    enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.blueAccent),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.green),
-                    ),
-                  ),
-                  style: TextStyle(color: Colors.white),
-                ),
-                SizedBox(height: 20),
-
-                // Password TextField
-                TextField(
-                  controller: _passwordController,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    labelStyle: TextStyle(color: Colors.white),
-                    enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.blueAccent),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.green),
-                    ),
-                  ),
-                  style: TextStyle(color: Colors.white),
-                ),
-                SizedBox(height: 20),
-
-                // Confirm Password TextField
-                TextField(
-                  controller: _confirmPasswordController,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Confirm Password',
-                    labelStyle: TextStyle(color: Colors.white),
-                    enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.blueAccent),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.green),
-                    ),
-                  ),
-                  style: TextStyle(color: Colors.white),
-                ),
-                SizedBox(height: 20),
-
-                // Sign Up Button
-                ElevatedButton(
-                  onPressed: () {
-                    signUpWithEmailAndPassword();
-                  },
-                  child: Text('Sign Up'),
-                  style: ElevatedButton.styleFrom(
-                    primary: Colors.blueAccent,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                ),
-
-                // Option to Navigate to Sign In Screen
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).push(MaterialPageRoute(
-                      builder: (context) => SignInScreen(),
-                    ));
-                  },
-                  child: Text(
-                    'Already have an account? Sign in',
-                    style: TextStyle(color: Colors.white70),
-                  ),
-                ),
-              ],
+            padding: const EdgeInsets.symmetric(horizontal: 30.0, vertical: 80.0),
+            child: Form(
+              key: _formKey,
+              child: _buildSignUpForm(),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildSignUpForm() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        _buildAnimatedTitle(),
+        SizedBox(height: 40),
+        _buildNameField(),
+        SizedBox(height: 20),
+        _buildMobileNumberField(),
+        SizedBox(height: 20),
+        _buildEmailField(),
+        SizedBox(height: 20),
+        _buildPasswordField(),
+        SizedBox(height: 20),
+        _buildConfirmPasswordField(),
+        SizedBox(height: 30),
+        _buildSignUpButton(),
+        SizedBox(height: 20),
+        _buildSignInOption(),
+      ],
+    );
+  }
+
+  // Example of animated title
+  Widget _buildAnimatedTitle() {
+    return AnimatedBuilder(
+      animation: _animationController,
+      builder: (context, child) {
+        return Opacity(
+          opacity: _animation.value,
+          child: Text(
+            'Sign Up',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white, fontSize: 30, fontWeight: FontWeight.bold),
+          ),
+        );
+      },
+    );
+  }
+
+  // Mobile Number Field
+  Widget _buildMobileNumberField() {
+    return TextFormField(
+      controller: _mobileNumberController,
+      decoration: _inputDecoration('Mobile Number'),
+      keyboardType: TextInputType.phone,
+      style: TextStyle(color: Colors.white),
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Please enter your mobile number';
+        }
+        // Add more validation logic for phone number if needed
+        return null;
+      },
+    );
+  }
+
+// Email Field
+  Widget _buildEmailField() {
+    return TextFormField(
+      controller: _emailController,
+      decoration: _inputDecoration('Email'),
+      keyboardType: TextInputType.emailAddress,
+      style: TextStyle(color: Colors.white),
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Please enter your email';
+        }
+        // Use a regular expression to validate the email
+        if (!RegExp(r'\S+@\S+\.\S+').hasMatch(value)) {
+          return 'Please enter a valid email address';
+        }
+        return null;
+      },
+    );
+  }
+
+// Password Field
+  Widget _buildPasswordField() {
+    return TextFormField(
+      controller: _passwordController,
+      decoration: _inputDecoration('Password'),
+      obscureText: true,
+      style: TextStyle(color: Colors.white),
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Please enter your password';
+        }
+        if (value.length < 6) {
+          return 'Password must be at least 6 characters';
+        }
+        return null;
+      },
+    );
+  }
+
+// Confirm Password Field
+  Widget _buildConfirmPasswordField() {
+    return TextFormField(
+      controller: _confirmPasswordController,
+      decoration: _inputDecoration('Confirm Password'),
+      obscureText: true,
+      style: TextStyle(color: Colors.white),
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Please confirm your password';
+        }
+        if (value != _passwordController.text) {
+          return 'Passwords do not match';
+        }
+        return null;
+      },
+    );
+  }
+
+
+  // Example of a custom styled text field
+  Widget _buildNameField() {
+    return TextFormField(
+      controller: _nameController,
+      decoration: _inputDecoration('Your Name'),
+      style: TextStyle(color: Colors.white),
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Please enter your name';
+        }
+        return null;
+      },
+    );
+  }
+
+  // Other fields similar to _buildNameField, with appropriate validators
+
+  // Example of a custom styled button
+  Widget _buildSignUpButton() {
+    return ElevatedButton(
+      onPressed: () {
+        if (_formKey.currentState!.validate()) {
+          signUpWithEmailAndPassword();
+        }
+      },
+      child: Text('Sign Up'),
+      style: ElevatedButton.styleFrom(
+        primary: Colors.blueAccent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      ),
+    );
+  }
+
+  // Example of sign-in option
+  Widget _buildSignInOption() {
+    return TextButton(
+      onPressed: () {
+        Navigator.of(context).push(MaterialPageRoute(builder: (context) => SignInScreen()));
+      },
+      child: Text('Already have an account? Sign in', style: TextStyle(color: Colors.white70)),
+    );
+  }
+
+  // Utility method for consistent input decoration
+  InputDecoration _inputDecoration(String label) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: TextStyle(color: Colors.white),
+      enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.blueAccent)),
+      focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.green)),
     );
   }
 }
