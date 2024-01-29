@@ -24,6 +24,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   final ValueNotifier<List<String>> selectedAccountsNotifier = ValueNotifier<List<String>>([]);
   List<String> selectedAccounts = [];
   List<Map<String, dynamic>> filteredConditionalTransactions = [];
+  bool isFilterOn = false;
 
   final TextEditingController _categoryIncludeSearchController = TextEditingController();
   final TextEditingController _categoryExcludeSearchController = TextEditingController();
@@ -87,31 +88,97 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
       }
     }
 
+
   void _filterTransactions() {
     String searchText = _searchController.text.toLowerCase();
+    DateTime? startDate = selectedFromDate;
+    DateTime? endDate = selectedToDate;
 
-    if (searchText.length > 3) {
-      // Signal to cancel any ongoing filtering operation
-      _cancelOngoingFiltering = true;
+    // Check if any filter is active
+    if (isFilterOn) {
+      if (searchText.isNotEmpty) {
+        // Signal to cancel any ongoing filtering operation
+        _cancelOngoingFiltering = true;
 
-      // Delay to ensure any ongoing operation has time to stop
-      Future.delayed(const Duration(milliseconds: 100), () async {
-        // Reset the flag and start new filtering
-        _cancelOngoingFiltering = false;
-        filteredConditionalTransactions = await TransactionsDB().filterTransactions(searchText, selectedAccounts);
+        // Delay to ensure any ongoing operation has time to stop
+        Future.delayed(const Duration(milliseconds: 100), () async {
+          // Reset the flag and start new filtering
+          _cancelOngoingFiltering = false;
 
+          // Update this method to apply all the filters
+          filteredConditionalTransactions = await TransactionsDB().filterTransactions(
+              searchText,
+              selectedAccounts,
+              startDate,
+              endDate,
+              selectedIncludeCategoriesList,
+              selectedExcludeCategoriesList
+          );
 
-        // Check if the operation should be canceled at significant steps
-        if (_cancelOngoingFiltering) return;
+          // Check if the operation should be canceled at significant steps
+          if (_cancelOngoingFiltering) return;
 
-        setState(() {}); // Trigger a rebuild to update the UI with filtered data
-      });
+          setState(() {}); // Trigger a rebuild to update the UI with filtered data
+        });
+      } else {
+        //if search text is empty
+        // Signal to cancel any ongoing filtering operation
+        _cancelOngoingFiltering = true;
+
+        // Delay to ensure any ongoing operation has time to stop
+        Future.delayed(const Duration(milliseconds: 100), () async {
+          // Reset the flag and start new filtering
+          _cancelOngoingFiltering = false;
+
+          // Update this method to apply all the filters
+          filteredConditionalTransactions = await TransactionsDB().filterTransactions(
+              null,
+              selectedAccounts,
+              startDate,
+              endDate,
+              selectedIncludeCategoriesList,
+              selectedExcludeCategoriesList
+          );
+
+          // Check if the operation should be canceled at significant steps
+          if (_cancelOngoingFiltering) return;
+
+          setState(() {}); // Trigger a rebuild to update the UI with filtered data
+        });
+      }
     } else {
-      filteredConditionalTransactions.clear();
-      setState(() {
+      if (_searchController.text.length > 3) {
+        // Signal to cancel any ongoing filtering operation
+        _cancelOngoingFiltering = true;
 
-      });
+        // Delay to ensure any ongoing operation has time to stop
+        Future.delayed(const Duration(milliseconds: 100), () async {
+          // Reset the flag and start new filtering
+          _cancelOngoingFiltering = false;
+
+          // Update this method to apply all the filters
+          filteredConditionalTransactions = await TransactionsDB().filterTransactions(
+              searchText
+          );
+
+          // Check if the operation should be canceled at significant steps
+          if (_cancelOngoingFiltering) return;
+
+          setState(() {}); // Trigger a rebuild to update the UI with filtered data
+        });
+      } else {
+        filteredConditionalTransactions.clear();
+        setState(() {});
+      }
     }
+  }
+
+  void _applyFilters() {
+    isFilterOn = true;
+    _filterTransactions();
+    setState(() {
+    });
+    Navigator.pop(context);
   }
 
   @override
@@ -155,6 +222,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
       selectedAccounts = [];
     }
 
+    isFilterOn = false;
     Navigator.pop(context, true);
     showModernSnackBar(context: context, message: 'Filters cleared', backgroundColor: Colors.green);
   }
@@ -551,7 +619,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                             ),
                             SizedBox(width: 10),
                             Expanded(
-                                child: ExpnZButton(label: 'Filter', onPressed: _filterTransactions)
+                                child: ExpnZButton(label: 'Filter', onPressed: _applyFilters)
                             ),
                           ],
                         )
@@ -616,7 +684,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                         padding: const EdgeInsets.all(8.0),
                         child: Icon(
                           Icons.filter_alt,
-                          color: filteredConditionalTransactions.isNotEmpty ? Colors.blue : Colors.white,
+                          color: isFilterOn ? Colors.blue : Colors.white,
                           size: 20,
                         ),
                       ),
@@ -633,9 +701,17 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   }
 
   Widget _buildTransactionList() {
-    List<Map<String, dynamic>> transactionsToShow = _searchController.text.isNotEmpty
-        ? filteredConditionalTransactions
-        : filteredConditionalTransactions; // Or any other logic to determine the transactions to show
+    List<Map<String, dynamic>> transactionsToShow = [];
+
+    if (isFilterOn) {
+      if (filteredConditionalTransactions.isNotEmpty) {
+        transactionsToShow = filteredConditionalTransactions;
+      }
+    } else {
+      if (_searchController.text.length > 3) {
+        transactionsToShow = filteredConditionalTransactions;
+      }
+    }
 
     if (transactionsToShow.isNotEmpty) {
       return ListView.builder(
@@ -677,6 +753,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
+            isFilterOn ? Icons.sentiment_dissatisfied :
             _searchController.text.isNotEmpty
                 ? Icons.sentiment_dissatisfied
                 : Icons.sentiment_very_satisfied,
@@ -685,6 +762,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
           ),
           SizedBox(height: 10),
           Text(
+            isFilterOn ? 'No Transactions available for the given filters' :
             _searchController.text.length > 3
                 ? 'No transactions available'
                 : 'Enter more than 3 letters to search or use the filter button',

@@ -294,18 +294,49 @@ class TransactionsDB {
   }
 
 
-  // Function to filter transactions on search screen
-  Future<List<Map<String, dynamic>>> filterTransactions(String searchText, [List<String>? accountIds]) async {
+  Future<List<Map<String, dynamic>>> filterTransactions(
+      String? searchText,
+      [List<String>? accountIds,
+        DateTime? startDate,
+        DateTime? endDate,
+        List<Map<String, dynamic>>? includeCategories,
+        List<Map<String, dynamic>>? excludeCategories,
+      int limit = 30]) async {
+
     final transactionsData = transactionsNotifier.value ?? {};
     final categoriesData = categoriesNotifier.value ?? {};
     List<Map<String, dynamic>> filteredTransactions = [];
+    int count = 0;
 
-    String lowerCaseSearchText = searchText.toLowerCase();
+    String lowerCaseSearchText = "";
+    if (searchText != null) {
+      lowerCaseSearchText = searchText.toLowerCase();
+    }
 
     transactionsData.forEach((docId, transaction) {
-      bool matchesSearchText = transaction['name'].toString().toLowerCase().contains(lowerCaseSearchText) ||
-          transaction['description'].toString().toLowerCase().contains(lowerCaseSearchText) ||
-          transaction['amount'].toString().contains(searchText);
+      // Check if the limit is reached
+      if (count >= limit) {
+        return; // Exit the forEach loop
+      }
+
+      bool matchesSearchText = true;
+      if (searchText != null) {
+        matchesSearchText = transaction['name'].toString().toLowerCase().contains(lowerCaseSearchText) ||
+            transaction['description'].toString().toLowerCase().contains(lowerCaseSearchText) ||
+            transaction['amount'].toString().contains(searchText);
+      }
+
+      // Filter by category
+      List<String> transactionCategories = transaction.containsKey('categories') ? transaction['categories'].split(',') : [];
+      bool matchesIncludeCategories = includeCategories == null || includeCategories.isEmpty ||
+          transactionCategories.any((categoryId) => includeCategories.any((category) => category['id'] == categoryId));
+      bool matchesExcludeCategories = excludeCategories == null || excludeCategories.isEmpty ||
+          transactionCategories.every((categoryId) => !excludeCategories.any((category) => category['id'] == categoryId));
+
+      // Filter by date range
+      DateTime transactionDate = DateTime.parse(transaction['date']);
+      bool isWithinDateRange = (startDate == null || transactionDate.isAfter(startDate)) &&
+          (endDate == null || transactionDate.isBefore(endDate));
 
       // Check if any category associated with the transaction matches the search text
       bool matchesCategory = false;
@@ -321,12 +352,21 @@ class TransactionsDB {
       }
 
       if ((accountIds == null || accountIds.contains(transaction['account_id'])) &&
-          (matchesSearchText || matchesCategory)) {
-        // Create a new map for the transaction and include the document ID
+          (matchesSearchText || matchesCategory) &&
+          matchesIncludeCategories &&
+          matchesExcludeCategories &&
+          isWithinDateRange) {
         Map<String, dynamic> transactionWithId = Map.from(transaction);
         transactionWithId['documentId'] = docId; // Add the document ID
         filteredTransactions.add(transactionWithId);
       }
+    });
+
+    // Sort the transactions based on the combined date and time
+    filteredTransactions.sort((a, b) {
+      DateTime dateTimeA = DateTime.parse(a['date'] + " " + a['time']);
+      DateTime dateTimeB = DateTime.parse(b['date'] + " " + b['time']);
+      return dateTimeA.compareTo(dateTimeB); // For descending order, use dateTimeB.compareTo(dateTimeA)
     });
 
     return filteredTransactions;
