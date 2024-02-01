@@ -205,7 +205,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             setState(() {
                               selectedAccoutIndex = index;
                               selectedAccoutId = accountId; // Using the document ID as account ID
-                              _showImportTemplateDialog(account[AccountsDB.accountName], selectedAccoutId);
+                              _showImportTemplateDialog(account[AccountsDB.accountName], selectedAccoutId, account[AccountsDB.accountType]);
                             });
                           },
                           child: AccountCard(
@@ -299,24 +299,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );*/
   }
 
-  void _showImportTemplateDialog(String selectedAccountName, String selectedAccountId) {
+  void _showImportTemplateDialog(String selectedAccountName, String selectedAccountId, String accountType) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text("Import Template for transactions"),
+          title: const Text("Import Template for transactions"),
           content: SingleChildScrollView(
-            child: ListBody(
-              children: <Widget>[
-                Text('Expected Excel format:'),
-                Text('Column 1: Type (Income/Expense)'),
-                Text('Column 2: Name'),
-                Text('Column 3: Description'),
-                Text('Column 4: Amount'),
-                Text('Column 5: DateTime (YYYY-MM-DD HH:MM)'),
-                Text('Column 6: Categories (comma-separated)'),
-              ],
-            ),
+              child: accountType == 'Cash/Wallet' ? const ListBody(
+                children: <Widget>[
+                  Text('Expected Excel format:'),
+                  Text('Column 1: Type (Income/Expense)'),
+                  Text('Column 2: Name'),
+                  Text('Column 3: Description'),
+                  Text('Column 4: Expense Amount'),
+                  Text('Column 5: Actual Amount'),
+                  Text('Column 6: DateTime (YYYY-MM-DD HH:MM)'),
+                  Text('Column 7: Categories (comma-separated)'),
+                ],
+              ) : const ListBody(
+                children: <Widget>[
+                  Text('Expected Excel format:'),
+                  Text('Column 1: Type (Income/Expense)'),
+                  Text('Column 2: Name'),
+                  Text('Column 3: Description'),
+                  Text('Column 4: Amount'),
+                  Text('Column 5: DateTime (YYYY-MM-DD HH:MM)'),
+                  Text('Column 6: Categories (comma-separated)'),
+                ],
+              ),
           ),
           actions: <Widget>[
             TextButton(
@@ -326,7 +337,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               },
             ),
             TextButton(
-              child: Text('Choose File'),
+              child: const Text('Choose File'),
               onPressed: () async {
                 FilePickerResult? result = await FilePicker.platform.pickFiles(
                   type: FileType.custom,
@@ -335,7 +346,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                 if (result != null) {
                   File file = File(result.files.single.path!);
-                  _validateExcelFile(file, context);
+                  _validateExcelFile(file, context, accountType);
                 } else {
                   // User canceled the picker
                 }
@@ -346,25 +357,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
       },
     );
   }
-  void _validateExcelFile(File file, BuildContext context) async {
+  void _validateExcelFile(File file, BuildContext context, String accountType) async {
     var bytes = File(file.path).readAsBytesSync();
     var excel = Excel.decodeBytes(bytes);
 
     if (excel.tables.isNotEmpty) {
       var table = excel.tables.keys.first;
       List<List<dynamic>> rows = excel.tables[table]?.rows ?? [];
-      print('rows $rows');
       if (rows.isNotEmpty) {
         var headerRow = rows.first.map((cell) => (cell as Data?)?.value?.toString()).toList();
         // Checking if the header row contains the expected columns
-        if (headerRow.length >= 6 &&
-            headerRow[0] == 'Type' &&
-            headerRow[1] == 'Name' &&
-            headerRow[2] == 'Description' &&
-            headerRow[3] == 'Amount' &&
-            headerRow[4] == 'DateTime' &&
-            headerRow[5] == 'Categories') {
-          _validateDataRows(rows, context);
+        // Determine the expected header based on account type
+        List<String> expectedHeader = accountType == 'Cash/Wallet'
+            ? ['Type', 'Name', 'Description', 'Expense Amount', 'Actual Amount', 'DateTime', 'Categories']
+            : ['Type', 'Name', 'Description', 'Amount', 'DateTime', 'Categories'];
+
+        // Checking if the header row contains the expected columns
+        bool isValidHeader = headerRow.length >= expectedHeader.length &&
+            List.generate(expectedHeader.length, (index) => headerRow[index] == expectedHeader[index]).every((element) => element);
+
+        if (isValidHeader) {
+          _validateDataRows(rows, context, accountType);
         } else {
           _showErrorDialog(context, 'Invalid file format. Please ensure the file matches the template.');
         }
@@ -379,7 +392,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _getCellData(List<dynamic> row, int index) {
     return row.length > index ? (row[index] as Data?)?.value?.toString() ?? '' : '';
   }
-  Future<void> _validateDataRows(List<List<dynamic>> rows, BuildContext context) async {
+  Future<void> _validateDataRows(List<List<dynamic>> rows, BuildContext context, String accountType) async {
     List<String> errorMessages = [];
     List<String> categoriesToCreate = [];
     List<Map<String, dynamic>> transactionsToCreate = [];
@@ -395,15 +408,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       var typeCell = _getCellData(row, 0);
       var nameCell = _getCellData(row, 1);
       var descriptionCell = _getCellData(row, 2);
-      var amountCell = _getCellData(row, 3);
-      var dateTimeCell = _getCellData(row, 4);
-      var categoriesCell = _getCellData(row, 5);
+      var dateTimeCell = _getCellData(row, accountType == 'Cash/Wallet' ? 5 : 4);
+      var categoriesCell = _getCellData(row, accountType == 'Cash/Wallet' ? 6 : 5);
 
       // Validate each cell
       if (typeCell.toLowerCase() != 'income' && typeCell.toLowerCase() != 'expense') {
         errorsInRow = true;
         errorMessages.add('Row ${i + 1}, Column 1: Invalid type "$typeCell"');
       }
+
       if (nameCell.isEmpty) {
         errorsInRow = true;
         errorMessages.add('Row ${i + 1}, Column 2: Name is empty');
@@ -412,10 +425,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         errorsInRow = true;
         errorMessages.add('Row ${i + 1}, Column 3: Description is empty');
       }
-      if (!_isValidAmount(amountCell)) {
+      /*if (!_isValidAmount(amountCell)) {
         errorsInRow = true;
         errorMessages.add('Row ${i + 1}, Column 4: Invalid amount "$amountCell"');
-      }
+      }*/
       if (!_isValidDateTime(dateTimeCell)) {
         errorsInRow = true;
         errorMessages.add('Row ${i + 1}, Column 5: Invalid date time "$dateTimeCell"');
@@ -424,6 +437,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
         errorMessages.add('Row ${i + 1}, Column 6: Categories are empty');
         errorsInRow = true;
       }
+
+      String expenseAmountCell = '';
+      String actualAmountCell = '';
+
+      if (accountType == 'Cash/Wallet') {
+        expenseAmountCell = _getCellData(row, 3);
+        actualAmountCell = _getCellData(row, 4);
+
+        if (!_isValidAmount(expenseAmountCell)) {
+          errorsInRow = true;
+          errorMessages.add('Row ${i + 1}, Column 4: Invalid expense amount "$expenseAmountCell"');
+        }
+
+        if (!_isValidAmount(actualAmountCell)) {
+          errorsInRow = true;
+          errorMessages.add('Row ${i + 1}, Column 5: Invalid actual amount "$actualAmountCell"');
+        }
+
+        if (_isValidAmount(expenseAmountCell) && _isValidAmount(actualAmountCell)) {
+          double? expenseAmountValue = double.tryParse(expenseAmountCell) ?? 0.0;
+          double? actualAmountValue = double.tryParse(actualAmountCell) ?? 0.0;
+
+          if (expenseAmountValue < actualAmountValue) {
+            errorsInRow = true;
+            errorMessages.add('Row ${i + 1}, Column 4, 5: Expense amount should be greater than or equal to the actual amount');
+          }
+        }
+
+      } else {
+        var amountCell = _getCellData(row, 3);
+
+        if (!_isValidAmount(amountCell)) {
+          errorsInRow = true;
+          errorMessages.add('Row ${i + 1}, Column 4: Invalid amount "$amountCell"');
+        }
+      }
+
 
       // Check if existing categories
       var categoryList = categoriesCell.split(',');
@@ -447,7 +497,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           TransactionsDB.transactionType: typeCell.toLowerCase(),  // income, expense or transfer
           TransactionsDB.transactionName: nameCell,
           TransactionsDB.transactionDescription: descriptionCell,
-          TransactionsDB.transactionAmount: double.tryParse(amountCell) ?? 0.0, // Convert to double
+          TransactionsDB.transactionAmount: double.tryParse(expenseAmountCell) ?? 0.0, // Convert to double
+          TransactionsDB.transactionActualPrice: double.tryParse(actualAmountCell) ?? 0.0, // Convert to double
+          TransactionsDB.transactionBalance: (double.tryParse(expenseAmountCell) ?? 0.0) - (double.tryParse(actualAmountCell) ?? 0.0),
           TransactionsDB.transactionDate: DateFormat('yyyy-MM-dd').format(parsedDate),
           TransactionsDB.transactionTime: parsedTime.format(context),
           TransactionsDB.transactionAccountId: selectedAccoutId,
