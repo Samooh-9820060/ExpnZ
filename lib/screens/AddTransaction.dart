@@ -32,13 +32,16 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
   int selectedFromAccountIndex = -1;
   int selectedToAccountIndex = -1;
   int selectedAccoutIndex = -1;
+  String selectedAccountType = '';
   String selectedFromAccountId = "-1";
   String selectedToAccountId = "-1";
   String selectedAccoutId = "-1";
 
   late TextEditingController _nameController;
   late TextEditingController _descriptionController;
-  late TextEditingController _amountController;
+  late TextEditingController _expenseAmountController;
+  late TextEditingController _actualPriceController;
+  late TextEditingController _balanceGivenController;
   final TextEditingController _categorySearchController = TextEditingController();
   bool _showDropdown = false;
   bool isProcessing = false;
@@ -61,9 +64,30 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
     super.initState();
     _nameController = TextEditingController();
     _descriptionController = TextEditingController();
-    _amountController = TextEditingController();
+    _expenseAmountController = TextEditingController();
+    _actualPriceController = TextEditingController();
+    _balanceGivenController = TextEditingController();
+
+    _expenseAmountController.addListener(_updateBalance);
+    _actualPriceController.addListener(_updateBalance);
+
     if (widget.transaction != null) { updateMode = true; loadTransactionData(); }
     if (widget.tempTransactionId != null) { tempAdding = true; loadTempTransactionData(); }
+  }
+
+  void _updateBalance() {
+    if (selectedAccountType == 'Cash/Wallet') {
+      try {
+        double expenseAmount = double.tryParse(_expenseAmountController.text) ?? 0.0;
+        double actualPrice = double.tryParse(_actualPriceController.text) ?? 0.0;
+
+        // Calculate the balance
+        double balance = expenseAmount - actualPrice;
+
+        // Update the balance controller
+        _balanceGivenController.text = balance.toStringAsFixed(2); // Format to 2 decimal places
+      } catch (ex) {}
+    }
   }
 
   Future<void> loadTempTransactionData() async {
@@ -78,7 +102,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
         }
         _nameController.text = tempTransactionData[TempTransactionsDB.columnName] ?? '';
         _descriptionController.text = tempTransactionData[TempTransactionsDB.columnDescription] ?? '';
-        _amountController.text = tempTransactionData[TempTransactionsDB.columnAmount].toString() ?? '';
+        _expenseAmountController.text = tempTransactionData[TempTransactionsDB.columnAmount].toString() ?? '';
         if (tempTransactionData[TempTransactionsDB.columnDate] != null && tempTransactionData[TempTransactionsDB.columnTime] != null) {
           final String date = tempTransactionData[TempTransactionsDB.columnDate];
           final String time = tempTransactionData[TempTransactionsDB.columnTime];
@@ -107,7 +131,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
       final String accountId = transaction[TransactionsDB.transactionAccountId];
       final String date = transaction[TransactionsDB.transactionDate];
       final String time = transaction[TransactionsDB.transactionTime] ?? 'Unknown';
-      final double amount = (transaction[TransactionsDB.transactionAmount] ?? 0).toDouble(); // Cast to double
+      final double expenseAmount = (transaction[TransactionsDB.transactionAmount] ?? 0).toDouble();
+      final double actualPrice = (transaction[TransactionsDB.transactionActualPrice] ?? 0).toDouble();
+      final double balanceAmount = (transaction[TransactionsDB.transactionBalance] ?? 0).toDouble();
       final String type = transaction[TransactionsDB.transactionType] ?? 'Unknown';
 
       if (type == 'expense') {
@@ -118,7 +144,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
 
       _nameController.text = name;
       _descriptionController.text = description;
-      _amountController.text = amount.toString();
+      _expenseAmountController.text = expenseAmount.toString();
+      _actualPriceController.text = actualPrice.toString();
+      _balanceGivenController.text = balanceAmount.toString();
 
       // Combine date and time...
       if (date != null && time != null) {
@@ -133,8 +161,17 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
         selectedAccoutIndex = accountData.entries
             .toList()
             .indexWhere((entry) => entry.key == accountId.toString());
+
         if (selectedAccoutIndex != -1) {
           selectedAccoutId = accountId;
+
+          // Retrieve the account details map for the selected account
+          Map<String, dynamic>? selectedAccountData = accountData[accountId];
+
+          // Now retrieve the account type from the selected account details
+          if (selectedAccountData != null && selectedAccountData.containsKey(AccountsDB.accountType)) {
+            selectedAccountType = selectedAccountData[AccountsDB.accountType] as String;
+          }
         }
       }
 
@@ -162,7 +199,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
-    _amountController.dispose();
+    _expenseAmountController.dispose();
+    _balanceGivenController.dispose();
+    _actualPriceController.dispose();
     super.dispose();
   }
 
@@ -209,10 +248,12 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
     // Validate input fields
     String name = _nameController.text.trim();
     String description = _descriptionController.text.trim();
-    String amountStr = _amountController.text.trim();
-    double? amount = double.tryParse(amountStr);
+    String amountStr = _expenseAmountController.text.trim();
+    double? expenseAmount = double.tryParse(amountStr);
+    double? actualAmount = double.tryParse(_actualPriceController.text.trim());
+    double? balanceAmount = double.tryParse(_balanceGivenController.text.trim());
 
-    if (name.isEmpty || description.isEmpty || amount == null || amount <= 0) {
+    if (name.isEmpty || description.isEmpty || expenseAmount == null || expenseAmount <= 0) {
       await showModernSnackBar(
         context: context,
         message: "All fields must be filled and valid!",
@@ -222,6 +263,31 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
         isProcessing = false;
       });
       return;
+    }
+
+    if (selectedAccountType == 'Cash/Wallet') {
+      if (actualAmount == null || actualAmount <= 0) {
+        await showModernSnackBar(
+          context: context,
+          message: "Actual amount field cannot be null and should be greater than 0",
+          backgroundColor: Colors.red,
+        );
+        setState(() {
+          isProcessing = false;
+        });
+        return;
+      }
+      else if (expenseAmount - actualAmount != balanceAmount) {
+        await showModernSnackBar(
+          context: context,
+          message: "Expense - Actual must be equal to balance",
+          backgroundColor: Colors.red,
+        );
+        setState(() {
+          isProcessing = false;
+        });
+        return;
+      }
     }
 
     //validate category selection
@@ -273,7 +339,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
         TransactionsDB.transactionType: "expense",
         TransactionsDB.transactionName: name,
         TransactionsDB.transactionDescription: description,
-        TransactionsDB.transactionAmount: amount,
+        TransactionsDB.transactionAmount: expenseAmount,
         TransactionsDB.transactionDate: DateFormat('yyyy-MM-dd').format(selectedDate),
         TransactionsDB.transactionTime: selectedTime.format(context),
         TransactionsDB.transactionAccountId: selectedFromAccountId,
@@ -285,7 +351,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
         TransactionsDB.transactionType: "income",
         TransactionsDB.transactionName: name,
         TransactionsDB.transactionDescription: description,
-        TransactionsDB.transactionAmount: amount,
+        TransactionsDB.transactionAmount: expenseAmount,
         TransactionsDB.transactionDate: DateFormat('yyyy-MM-dd').format(selectedDate),
         TransactionsDB.transactionTime: selectedTime.format(context),
         TransactionsDB.transactionAccountId: selectedToAccountId,
@@ -369,7 +435,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
         TransactionsDB.transactionType: _selectedType.toString().split('.').last,  // income, expense or transfer
         TransactionsDB.transactionName: name,
         TransactionsDB.transactionDescription: description,
-        TransactionsDB.transactionAmount: amount,
+        TransactionsDB.transactionAmount: expenseAmount,
+        TransactionsDB.transactionActualPrice: actualAmount,
+        TransactionsDB.transactionBalance: balanceAmount,
         TransactionsDB.transactionDate: DateFormat('yyyy-MM-dd').format(selectedDate),
         TransactionsDB.transactionTime: selectedTime.format(context),  // You might want to store this differently
         TransactionsDB.transactionAccountId: selectedAccoutId,
@@ -558,7 +626,28 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                         CustomTextField(label: "Description", controller: _descriptionController),
                         SizedBox(height: 16),
                         // Amount
-                        CustomTextField(label: "Amount", controller: _amountController, isNumber: true,),
+                        if (selectedAccountType == 'Cash/Wallet')
+                          Row(
+                            children: [
+                              Expanded(
+                                flex: 5, // Giving more space to Expense Amount
+                                child: CustomTextField(label: "Expense Amount", controller: _expenseAmountController, isNumber: true, alwaysFloatingLabel: true,),
+                              ),
+                              SizedBox(width: 8), // Space between fields
+                              Expanded(
+                                flex: 5, // Giving more space to Actual Price
+                                child: CustomTextField(label: "Actual Price", controller: _actualPriceController, isNumber: true, alwaysFloatingLabel: true,),
+                              ),
+                              SizedBox(width: 8), // Space between fields
+                              Expanded(
+                                flex: 4, // Less space for Balance Given as it's automatic
+                                child: CustomTextField(label: "Balance", controller: _balanceGivenController, isNumber: true, alwaysFloatingLabel: true,),
+                              ),
+                            ],
+                          )
+                        else
+                          CustomTextField(label: "Amount", controller: _expenseAmountController, isNumber: true),
+                        SizedBox(height: 16),
                         SizedBox(height: 16),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -661,6 +750,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                       itemBuilder: (context, index) {
                                         final String accountId = accountIds[index];
                                         final account = accountsData[accountId]!;
+                                        final String accountType = account[AccountsDB.accountType] as String; // Retrieving the account type
                                         Map<String, dynamic> currencyMap = jsonDecode(account[AccountsDB.accountCurrency]);
                                         String currencyCode = currencyMap['code'] as String;
 
@@ -669,6 +759,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                             setState(() {
                                               selectedAccoutIndex = index;
                                               selectedAccoutId = accountId;
+                                              selectedAccountType = accountType;
+                                              _balanceGivenController.text = '0';
+                                              _actualPriceController.text = '0';
                                             });
                                           },
                                           child: AccountCard(
@@ -824,7 +917,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                         CustomTextField(label: "Description", controller: _descriptionController),
                         SizedBox(height: 16),
                         // Amount
-                        CustomTextField(label: "Amount", controller: _amountController, isNumber: true,),
+                        CustomTextField(label: "Amount", controller: _expenseAmountController, isNumber: true,),
                         SizedBox(height: 16),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,

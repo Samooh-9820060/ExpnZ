@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_iconpicker/flutter_iconpicker.dart';
 import '../database/AccountsDB.dart';
 import '../widgets/SimpleWidgets/ExpnZButton.dart';
+import '../widgets/SimpleWidgets/ExpnZDropdown.dart';
 import '../widgets/SimpleWidgets/ExpnZTextField.dart';
 import '../widgets/SimpleWidgets/ModernSnackBar.dart';
 
@@ -24,6 +25,7 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
   late TextEditingController _cardNumberController;
   Currency? selectedCurrency;  // Default currency
   IconData selectedIcon = Icons.star;  // Default icon
+  String selectedAccountType = 'Card';
   bool isModifyMode = false;
   bool isProcessing = false;
 
@@ -50,6 +52,7 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
         isModifyMode = true;
         _accountNameController.text = account[AccountsDB.accountName] as String;
         _cardNumberController.text = account[AccountsDB.accountCardNumber] as String;
+        selectedAccountType = account[AccountsDB.accountType] as String;
         String currencyJson = account[AccountsDB.accountCurrency] as String;
         Map<String, dynamic> currencyMap = jsonDecode(currencyJson);
         selectedCurrency = Currency(
@@ -129,6 +132,7 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
         'symbolOnLeft': selectedCurrency!.symbolOnLeft,
         'thousandsSeparator': selectedCurrency!.thousandsSeparator,
       }),
+      AccountsDB.accountType: selectedAccountType,
       AccountsDB.accountIconCodePoint: selectedIcon.codePoint,
       AccountsDB.accountIconFontFamily: selectedIcon.fontFamily,
       AccountsDB.accountIconFontPackage: selectedIcon.fontPackage,
@@ -269,6 +273,16 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
               ),
             ),
             SizedBox(height: 16),
+            CustomDropdownButton(
+              label: "Select Account Type",
+              value: selectedAccountType,
+              items: ["Card", "Cash/Wallet"],
+              onChanged: (newValue) {
+                setState(() {
+                  selectedAccountType = newValue!;
+                });
+              },
+            ),
             // Redesigned Text Field for Account Name
             CustomTextField(label: "Enter Account Name", controller: _accountNameController),
             SizedBox(height: 16),

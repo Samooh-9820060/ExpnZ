@@ -10,6 +10,7 @@ class AccountsDB {
 
   static const String uid = 'uid';
   static const String accountName = 'name';
+  static const String accountType = 'type';
   static const String accountCurrency = 'currency';
   static const String accountIconCodePoint = 'iconCodePoint';
   static const String accountIconFontFamily = 'iconFontFamily';

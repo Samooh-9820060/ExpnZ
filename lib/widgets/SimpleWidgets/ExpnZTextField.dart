@@ -6,6 +6,8 @@ class CustomTextField extends StatelessWidget {
   final bool isNumber;
   final int? maxLength;
   final bool isError;
+  final bool? enabled;
+  final bool alwaysFloatingLabel;
 
   CustomTextField({
     required this.label,
@@ -13,6 +15,8 @@ class CustomTextField extends StatelessWidget {
     this.isNumber = false,
     this.maxLength,
     this.isError = false,
+    this.enabled,
+    this.alwaysFloatingLabel = false,
   });
 
   @override
@@ -61,7 +65,11 @@ class CustomTextField extends StatelessWidget {
               ),
             ),
             contentPadding: const EdgeInsets.all(20),
+            floatingLabelBehavior: alwaysFloatingLabel
+                ? FloatingLabelBehavior.always
+                : FloatingLabelBehavior.auto,
           ),
+          enabled: enabled,
         ),
       ),
     );

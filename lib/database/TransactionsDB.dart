@@ -13,6 +13,8 @@ class TransactionsDB {
   static const String transactionName = 'name';
   static const String transactionDescription = 'description';
   static const String transactionAmount = 'amount';
+  static const String transactionActualPrice = 'actual_price';
+  static const String transactionBalance = 'wallet_balance';
   static const String transactionDate = 'date';
   static const String transactionTime = 'time';
   static const String transactionAccountId = 'account_id';
