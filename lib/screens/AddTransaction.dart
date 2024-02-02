@@ -1,10 +1,8 @@
 import 'dart:convert';
 import 'package:expnz/utils/currency_utils.dart';
 import 'package:expnz/widgets/SimpleWidgets/ExpnZTextField.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 import '../database/AccountsDB.dart';
 import '../database/TempTransactionsDB.dart';
 import '../database/TransactionsDB.dart';
@@ -22,7 +20,7 @@ class AddTransactionScreen extends StatefulWidget {
   final int? tempTransactionId; // New nullable named parameter
 
   // Constructor with named parameters
-  AddTransactionScreen({this.transaction, this.tempTransactionId});
+  const AddTransactionScreen({super.key, this.transaction, this.tempTransactionId});
 
   @override
   _AddTransactionScreenState createState() => _AddTransactionScreenState();
@@ -32,11 +30,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
 
   int selectedFromAccountIndex = -1;
   int selectedToAccountIndex = -1;
-  int selectedAccoutIndex = -1;
+  int selectedAccountIndex = -1;
   String selectedAccountType = '';
   String selectedFromAccountId = "-1";
   String selectedToAccountId = "-1";
-  String selectedAccoutId = "-1";
+  String selectedAccountId = "-1";
 
   late TextEditingController _nameController;
   late TextEditingController _descriptionController;
@@ -58,7 +56,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
   DateTime selectedDate = DateTime.now();
   TimeOfDay selectedTime = TimeOfDay.now();
 
-  FocusNode _categorySearchFocusNode = FocusNode();
+  final FocusNode _categorySearchFocusNode = FocusNode();
 
   @override
   void initState() {
@@ -95,7 +93,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
     final tempTransactionData = await TempTransactionsDB().getSelectedTransaction(widget.tempTransactionId!);
     if (tempTransactionData != null) {
       setState(() {
-        print(tempTransactionData);
         if (tempTransactionData[TempTransactionsDB.columnType] == 'expense') {
           _selectedType = TransactionType.expense;
         } else if (tempTransactionData[TempTransactionsDB.columnType] == 'income') {
@@ -103,7 +100,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
         }
         _nameController.text = tempTransactionData[TempTransactionsDB.columnName] ?? '';
         _descriptionController.text = tempTransactionData[TempTransactionsDB.columnDescription] ?? '';
-        _amountController.text = tempTransactionData[TempTransactionsDB.columnAmount].toString() ?? '';
+        _amountController.text = tempTransactionData[TempTransactionsDB.columnAmount].toString();
         if (tempTransactionData[TempTransactionsDB.columnDate] != null && tempTransactionData[TempTransactionsDB.columnTime] != null) {
           final String date = tempTransactionData[TempTransactionsDB.columnDate];
           final String time = tempTransactionData[TempTransactionsDB.columnTime];
@@ -124,7 +121,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
 
     // Extract the transaction data using the widget's transaction ID
     final String transactionId = widget.transaction?['documentId'];
-    final transaction = transactionsData?[transactionId];
+    final transaction = transactionsData[transactionId];
 
     if (transaction != null) {
       final String name = transaction[TransactionsDB.transactionName] ?? 'Unknown';
@@ -150,29 +147,25 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
       _balanceGivenController.text = balanceAmount.toString();
 
       // Combine date and time...
-      if (date != null && time != null) {
-        DateTime completeDateTime = DateTime.parse("$date $time");
-        selectedDate = DateTime.parse(date);
-        selectedTime = TimeOfDay.fromDateTime(completeDateTime);
-      }
+      DateTime completeDateTime = DateTime.parse("$date $time");
+      selectedDate = DateTime.parse(date);
+      selectedTime = TimeOfDay.fromDateTime(completeDateTime);
 
       // Fetch account index using accountData
       final accountData = accountsNotifier.value;
-      if (accountId != null && accountData != null) {
-        selectedAccoutIndex = accountData.entries
-            .toList()
-            .indexWhere((entry) => entry.key == accountId.toString());
+      selectedAccountIndex = accountData.entries
+          .toList()
+          .indexWhere((entry) => entry.key == accountId.toString());
 
-        if (selectedAccoutIndex != -1) {
-          selectedAccoutId = accountId;
+      if (selectedAccountIndex != -1) {
+        selectedAccountId = accountId;
 
-          // Retrieve the account details map for the selected account
-          Map<String, dynamic>? selectedAccountData = accountData[accountId];
+        // Retrieve the account details map for the selected account
+        Map<String, dynamic>? selectedAccountData = accountData[accountId];
 
-          // Now retrieve the account type from the selected account details
-          if (selectedAccountData != null && selectedAccountData.containsKey(AccountsDB.accountType)) {
-            selectedAccountType = selectedAccountData[AccountsDB.accountType] as String;
-          }
+        // Now retrieve the account type from the selected account details
+        if (selectedAccountData != null && selectedAccountData.containsKey(AccountsDB.accountType)) {
+          selectedAccountType = selectedAccountData[AccountsDB.accountType] as String;
         }
       }
 
@@ -281,10 +274,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
         });
         return;
       }
-      else if (roundToTwoDecimalPlaces(roundToTwoDecimalPlaces(amount) - roundToTwoDecimalPlaces(actualAmount)) != roundToTwoDecimalPlaces(balanceAmount!)) {
-        print(amount-actualAmount);
-        print(actualAmount);
-        print(balanceAmount);
+      else if (roundToTwoDecimalPlaces(roundToTwoDecimalPlaces(amount) - roundToTwoDecimalPlaces(actualAmount)) != roundToTwoDecimalPlaces(balanceAmount)) {
         await showModernSnackBar(
           context: context,
           message: "Amount - Actual must be equal to balance",
@@ -421,7 +411,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
     }
     else {
       // Validate account selection
-      if (selectedAccoutIndex < 0) {
+      if (selectedAccountIndex < 0) {
         await showModernSnackBar(
           context: context,
           message: "Please select the related account",
@@ -447,7 +437,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
         TransactionsDB.transactionBalance: balanceAmount,
         TransactionsDB.transactionDate: DateFormat('yyyy-MM-dd').format(selectedDate),
         TransactionsDB.transactionTime: selectedTime.format(context),  // You might want to store this differently
-        TransactionsDB.transactionAccountId: selectedAccoutId,
+        TransactionsDB.transactionAccountId: selectedAccountId,
         TransactionsDB.transactionCategoryIDs: categoryIds,
       };
 
@@ -522,7 +512,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
             });
           },
           child: Container(
-            padding: EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(25),
               border: Border.all(
@@ -556,10 +546,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
       firstDate: DateTime(2000),
       lastDate: DateTime(2101),
     );
-    if (pickedDate != null && pickedDate != selectedDate)
+    if (pickedDate != null && pickedDate != selectedDate) {
       setState(() {
         selectedDate = pickedDate;
       });
+    }
   }
 // Method to select Time
   Future<void> _selectTime(BuildContext context) async {
@@ -567,10 +558,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
       context: context,
       initialTime: selectedTime,
     );
-    if (pickedTime != null && pickedTime != selectedTime)
+    if (pickedTime != null && pickedTime != selectedTime) {
       setState(() {
         selectedTime = pickedTime;
       });
+    }
   }
 
   @override
@@ -592,7 +584,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
           ),
           title: Text(
               updateMode ? "Update Transaction" : "Add Transaction",
-              style: TextStyle(color: Colors.white)),
+              style: const TextStyle(color: Colors.white)),
           backgroundColor: Colors.blueGrey[900],
         ),
         body: GestureDetector(
@@ -613,10 +605,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                     Row(
                       children: [
                         buildTypeButton(TransactionType.income, 'Income'),
-                        SizedBox(width: 16),
+                        const SizedBox(width: 16),
                         buildTypeButton(TransactionType.expense, 'Expense'),
                         if (!updateMode)
-                          SizedBox(width: 16),
+                          const SizedBox(width: 16),
                         if (!updateMode)
                           buildTypeButton(TransactionType.transfer, 'Transfer'),
                       ],
@@ -625,13 +617,13 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                     // Fields for Income and Expense
                     if (_selectedType == TransactionType.income || _selectedType == TransactionType.expense)
                       ...[
-                        SizedBox(height: 16),
+                        const SizedBox(height: 16),
                         // Name
                         CustomTextField(label: "Name", controller: _nameController),
-                        SizedBox(height: 16),
+                        const SizedBox(height: 16),
                         // Description
                         CustomTextField(label: "Description", controller: _descriptionController),
-                        SizedBox(height: 16),
+                        const SizedBox(height: 16),
                         // Amount
                         if (selectedAccountType == 'Cash/Wallet')
                           Row(
@@ -640,12 +632,12 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                 flex: 5, // Giving more space to Amount
                                 child: CustomTextField(label: "Amount Spent", controller: _amountController, isNumber: true, alwaysFloatingLabel: true,),
                               ),
-                              SizedBox(width: 8), // Space between fields
+                              const SizedBox(width: 8), // Space between fields
                               Expanded(
                                 flex: 5, // Giving more space to Actual Price
                                 child: CustomTextField(label: "Actual Price", controller: _actualPriceController, isNumber: true, alwaysFloatingLabel: true,),
                               ),
-                              SizedBox(width: 8), // Space between fields
+                              const SizedBox(width: 8), // Space between fields
                               Expanded(
                                 flex: 4, // Less space for Balance Given as it's automatic
                                 child: CustomTextField(label: "Balance", controller: _balanceGivenController, isNumber: true, alwaysFloatingLabel: true,),
@@ -654,8 +646,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                           )
                         else
                           CustomTextField(label: "Amount", controller: _amountController, isNumber: true),
-                        SizedBox(height: 16),
-                        SizedBox(height: 16),
+                        const SizedBox(height: 16),
+                        const SizedBox(height: 16),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
@@ -664,11 +656,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                               onTap: () => _selectDate(context),
                               borderRadius: BorderRadius.circular(50),
                               child: Container(
-                                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                                 decoration: BoxDecoration(
                                   color: Colors.blueGrey[700],
                                   borderRadius: BorderRadius.circular(50),
-                                  boxShadow: [
+                                  boxShadow: const [
                                     BoxShadow(
                                       color: Colors.black12,
                                       blurRadius: 10,
@@ -678,11 +670,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                 ),
                                 child: Row(
                                   children: [
-                                    Icon(Icons.calendar_today, color: Colors.white),
-                                    SizedBox(width: 8),
+                                    const Icon(Icons.calendar_today, color: Colors.white),
+                                    const SizedBox(width: 8),
                                     Text(
                                       DateFormat('yyyy-MM-dd').format(selectedDate),
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -697,11 +689,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                               onTap: () => _selectTime(context),
                               borderRadius: BorderRadius.circular(50),
                               child: Container(
-                                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                                 decoration: BoxDecoration(
                                   color: Colors.blueGrey[700],
                                   borderRadius: BorderRadius.circular(50),
-                                  boxShadow: [
+                                  boxShadow: const [
                                     BoxShadow(
                                       color: Colors.black12,
                                       blurRadius: 10,
@@ -711,11 +703,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                 ),
                                 child: Row(
                                   children: [
-                                    Icon(Icons.access_time, color: Colors.white),
-                                    SizedBox(width: 8),
+                                    const Icon(Icons.access_time, color: Colors.white),
+                                    const SizedBox(width: 8),
                                     Text(
-                                      "${selectedTime.format(context)}",
-                                      style: TextStyle(
+                                      selectedTime.format(context),
+                                      style: const TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -726,25 +718,25 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                             ),
                           ],
                         ),
-                        SizedBox(height: 20),
+                        const SizedBox(height: 20),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            const Text(
                               'Select Account',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            SizedBox(height: 10),
-                            Container(
+                            const SizedBox(height: 10),
+                            SizedBox(
                               height: 150, // set the height
                               child: ValueListenableBuilder<Map<String, Map<String, dynamic>>?>(
                                 valueListenable: accountsNotifier,
                                 builder: (context, accountsData, child) {
                                   if (accountsData == null || accountsData.isEmpty) {
-                                    return Center(
+                                    return const Center(
                                       child: Text('No accounts available.'),
                                     );
                                   } else {
@@ -764,8 +756,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                         return GestureDetector(
                                           onTap: () {
                                             setState(() {
-                                              selectedAccoutIndex = index;
-                                              selectedAccoutId = accountId;
+                                              selectedAccountIndex = index;
+                                              selectedAccountId = accountId;
                                               selectedAccountType = accountType;
                                               _balanceGivenController.text = '0';
                                               _actualPriceController.text = '0';
@@ -780,7 +772,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                             ),
                                             currency: currencyCode,
                                             accountName: account[AccountsDB.accountName],
-                                            isSelected: index == selectedAccoutIndex,
+                                            isSelected: index == selectedAccountIndex,
                                           ),
                                         );
                                       },
@@ -791,23 +783,23 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                             ),
                           ],
                         ),
-                        SizedBox(height: 16),
+                        const SizedBox(height: 16),
                         // Category Selector
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            SizedBox(height: 10),
+                            const SizedBox(height: 10),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
+                                const Text(
                                   'Select Category',
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                SizedBox(height: 10),
+                                const SizedBox(height: 10),
                                 TextField(
                                   focusNode: _categorySearchFocusNode,
                                   controller: _categorySearchController,
@@ -815,13 +807,13 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                     hintText: 'Search Category',
                                     fillColor: Colors.blueGrey[700],
                                     filled: true,
-                                    prefixIcon: Icon(Icons.search),
+                                    prefixIcon: const Icon(Icons.search),
                                     border: OutlineInputBorder(
                                       borderSide: BorderSide.none,  // Removes the underline border
                                       borderRadius: BorderRadius.circular(50.0),
                                     ),
                                     focusedBorder: OutlineInputBorder(
-                                      borderSide: BorderSide(color: Colors.blue, width: 1),
+                                      borderSide: const BorderSide(color: Colors.blue, width: 1),
                                       borderRadius: BorderRadius.circular(50.0),
                                     ),
                                   ),
@@ -831,7 +823,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                     });
                                   },
                                 ),
-                                SizedBox(height: 10),
+                                const SizedBox(height: 10),
                                 if (_showDropdown)
                                   GestureDetector(
                                     onTap: () {
@@ -844,7 +836,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                         borderRadius: BorderRadius.circular(25),
                                       ),
                                       color: Colors.blueGrey[700],
-                                      child: Container(
+                                      child: SizedBox(
                                         width: MediaQuery.of(context).size.width, // Adjust as needed
                                         child: ValueListenableBuilder<Map<String, Map<String, dynamic>>?>(
                                           valueListenable: categoriesNotifier,
@@ -853,7 +845,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                               List<Map<String, dynamic>> categoriesList = categoriesData.entries.map((entry) {
                                                 return {
                                                   'id': entry.key,
-                                                  ...entry.value as Map<String, dynamic>,
+                                                  ...entry.value,
                                                 };
                                               }).toList();
 
@@ -871,7 +863,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                       ),
                                     ),
                                   ),
-                                SizedBox(height: 10),
+                                const SizedBox(height: 10),
                                 Wrap(
                                   spacing: 8.0,
                                   runSpacing: 8.0,
@@ -886,7 +878,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                         categoryId = categoryIdRaw;
                                       } else {
                                         // Handle error: unknown type
-                                        print('Unknown type for category ID');
+                                        //print('Unknown type for category ID');
                                       }
 
                                       return CategoryChip(
@@ -904,7 +896,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                             ),
                           ],
                         ),
-                        SizedBox(height: 20),
+                        const SizedBox(height: 20),
                         ExpnZButton(
                           label: updateMode ? "Update" : "Add",
                           onPressed: _addUpdateTransaction,
@@ -916,16 +908,16 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                     // Fields for Transfer
                     if (_selectedType == TransactionType.transfer)
                       ...[
-                        SizedBox(height: 16),
+                        const SizedBox(height: 16),
                         // Name
                         CustomTextField(label: "Name", controller: _nameController),
-                        SizedBox(height: 16),
+                        const SizedBox(height: 16),
                         // Description
                         CustomTextField(label: "Description", controller: _descriptionController),
-                        SizedBox(height: 16),
+                        const SizedBox(height: 16),
                         // Amount
                         CustomTextField(label: "Amount", controller: _amountController, isNumber: true,),
-                        SizedBox(height: 16),
+                        const SizedBox(height: 16),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
@@ -934,11 +926,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                               onTap: () => _selectDate(context),
                               borderRadius: BorderRadius.circular(50),
                               child: Container(
-                                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                                 decoration: BoxDecoration(
                                   color: Colors.blueGrey[700],
                                   borderRadius: BorderRadius.circular(50),
-                                  boxShadow: [
+                                  boxShadow: const [
                                     BoxShadow(
                                       color: Colors.black12,
                                       blurRadius: 10,
@@ -948,11 +940,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                 ),
                                 child: Row(
                                   children: [
-                                    Icon(Icons.calendar_today, color: Colors.white),
-                                    SizedBox(width: 8),
+                                    const Icon(Icons.calendar_today, color: Colors.white),
+                                    const SizedBox(width: 8),
                                     Text(
                                       DateFormat('yyyy-MM-dd').format(selectedDate),
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -967,11 +959,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                               onTap: () => _selectTime(context),
                               borderRadius: BorderRadius.circular(50),
                               child: Container(
-                                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                                 decoration: BoxDecoration(
                                   color: Colors.blueGrey[700],
                                   borderRadius: BorderRadius.circular(50),
-                                  boxShadow: [
+                                  boxShadow: const [
                                     BoxShadow(
                                       color: Colors.black12,
                                       blurRadius: 10,
@@ -981,11 +973,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                 ),
                                 child: Row(
                                   children: [
-                                    Icon(Icons.access_time, color: Colors.white),
-                                    SizedBox(width: 8),
+                                    const Icon(Icons.access_time, color: Colors.white),
+                                    const SizedBox(width: 8),
                                     Text(
-                                      "${selectedTime.format(context)}",
-                                      style: TextStyle(
+                                      selectedTime.format(context),
+                                      style: const TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -997,26 +989,26 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
 
                           ],
                         ),
-                        SizedBox(height: 20),
+                        const SizedBox(height: 20),
                         // From Account
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            const Text(
                               'From Account',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            SizedBox(height: 10),
-                            Container(
+                            const SizedBox(height: 10),
+                            SizedBox(
                               height: 150, // set the height
                               child: ValueListenableBuilder<Map<String, Map<String, dynamic>>?>(
                                 valueListenable: accountsNotifier,
                                 builder: (context, accountsData, child) {
                                   if (accountsData == null || accountsData.isEmpty) {
-                                    return Center(
+                                    return const Center(
                                       child: Text('No accounts available.'),
                                     );
                                   } else {
@@ -1059,26 +1051,26 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                             ),
                           ],
                         ),
-                        SizedBox(height: 16),
+                        const SizedBox(height: 16),
                         // To Account
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            const Text(
                               'To Account',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            SizedBox(height: 10),
-                            Container(
+                            const SizedBox(height: 10),
+                            SizedBox(
                               height: 150, // set the height
                               child: ValueListenableBuilder<Map<String, Map<String, dynamic>>?>(
                                 valueListenable: accountsNotifier,
                                 builder: (context, accountsData, child) {
                                   if (accountsData == null || accountsData.isEmpty) {
-                                    return Center(
+                                    return const Center(
                                       child: Text('No accounts available.'),
                                     );
                                   } else {
@@ -1121,12 +1113,12 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                             ),
                           ],
                         ),
-                        SizedBox(height: 16),
+                        const SizedBox(height: 16),
                         // Category Selector
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            SizedBox(height: 10),
+                            const SizedBox(height: 10),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -1137,7 +1129,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                SizedBox(height: 10),
+                                const SizedBox(height: 10),
                                 TextField(
                                   focusNode: _categorySearchFocusNode,
                                   controller: _categorySearchController,
@@ -1145,13 +1137,13 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                     hintText: 'Search Category',
                                     fillColor: Colors.blueGrey[700],
                                     filled: true,
-                                    prefixIcon: Icon(Icons.search),
+                                    prefixIcon: const Icon(Icons.search),
                                     border: OutlineInputBorder(
                                       borderSide: BorderSide.none,  // Removes the underline border
                                       borderRadius: BorderRadius.circular(50.0),
                                     ),
                                     focusedBorder: OutlineInputBorder(
-                                      borderSide: BorderSide(color: Colors.blue, width: 1),
+                                      borderSide: const BorderSide(color: Colors.blue, width: 1),
                                       borderRadius: BorderRadius.circular(50.0),
                                     ),
                                   ),
@@ -1161,7 +1153,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                     });
                                   },
                                 ),
-                                SizedBox(height: 10),
+                                const SizedBox(height: 10),
                                 if (_showDropdown)
                                   GestureDetector(
                                     onTap: () {
@@ -1174,7 +1166,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                         borderRadius: BorderRadius.circular(25),
                                       ),
                                       color: Colors.blueGrey[700],
-                                      child: Container(
+                                      child: SizedBox(
                                         width: MediaQuery.of(context).size.width, // Adjust as needed
                                         child: ValueListenableBuilder<Map<String, dynamic>?>(
                                           valueListenable: categoriesNotifier,
@@ -1202,7 +1194,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                       ),
                                     ),
                                   ),
-                                SizedBox(height: 10),
+                                const SizedBox(height: 10),
                                 Wrap(
                                   spacing: 8.0,
                                   runSpacing: 8.0,
@@ -1217,7 +1209,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                         categoryId = categoryIdRaw;
                                       } else {
                                         // Handle error: unknown type
-                                        print('Unknown type for category ID');
+                                        //print('Unknown type for category ID');
                                       }
 
                                       return CategoryChip(
@@ -1235,7 +1227,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                             ),
                           ],
                         ),
-                        SizedBox(height: 20),
+                        const SizedBox(height: 20),
                         ExpnZButton(
                           label: isProcessing ? "Processing" : updateMode ? "Update" : "Add",
                           onPressed: _addUpdateTransaction,

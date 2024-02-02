@@ -4,6 +4,7 @@ import 'package:expnz/database/TransactionsDB.dart';
 import 'package:expnz/models/FinancialDataNotifier.dart';
 import 'package:expnz/models/TempTransactionsModel.dart';
 import 'package:expnz/screens/SignInScreen.dart';
+import 'package:expnz/utils/NotificationListener.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -13,45 +14,73 @@ import 'database/ProfileDB.dart';
 import 'firebase_options.dart';
 
 void testRegexes() {
-  final RegExp transactionRegex = RegExp(
-      r"Transaction from (\d{4}) on (\d{2}/\d{2}/\d{2}) at (\d{2}:\d{2}:\d{2}) for ([A-Z]{3}\d+(\.\d{1,2})?) at (.+?) was processed\. Reference No:(\d+), Approval Code:(\d+)"
-  );
-  final RegExp bMLFundsReceivedRegex = RegExp(
-      r"You have received ([A-Z]{3})\s(\d+\.\d{1,2}) from ([A-Z .]+) to (\d+\*\d+)"
-  );
-
-  final RegExp bMLFundsTransferredRegex = RegExp(
-      r"You have sent ([A-Z]{3})\s(\d+\.\d{1,2}) from (\d+\*\d+) to ([A-Z0-9\\.* ]+)"
-  );
-
   // Test cases
   List<String> testStrings = [
-    "You have sent MVR 200.0 from 7730*1879 to 7730*7443",
-    "You have sent MVR 100.0 from 7730*1879 to SHAAMIKH MOHAMED",
-    "You have sent USD 77.0 from 7730*1879 to SHAAMIKH MOHAMED",
-    "You have received MVR 167.12 from AISHATH L.MOHAMED to 7730*7443",
-    "You have received MVR 23.5 from AISHATH L.MOHAMED to 7730*7443",
-    "You have sent MVR 4.9 from 7730*7443 to 7730*1879",
-    "You have received MVR 231.9 from MOHD.S.SHUJAU to 7730*7443",
-    "Transaction from 3368 on 25/01/24 at 17:39:04 for MVR200.00 at VILIMALE' BRANCH          was processed. Reference No:402517801476, Approval Code:801476.",
-    "Transaction from 3368 on 21/01/24 at 17:17:34 for MVR167.00 at GRILL HUT was processed. Reference No:012195154627, Approval Code:154627.",
-    "Transaction from 3368 on 18/01/24 at 18:54:21 for MVR70.00 at VICTORIOUS CAFE was processed. Reference No:011894439211, Approval Code:439211.",
-    "Transaction from 3368 on 09/01/24 at 08:11:18 for MVR25000.00 at VILIMALE' BRANCH          was processed. Reference No:400908196250, Approval Code:196250.",
-    "Transaction from 3368 on 08/01/24 at 17:33:08 for MVR105.00 at VICTORIOUS CAFE was processed. Reference No:010891749509, Approval Code:749509.",
-    "Transaction from 3368 on 05/01/24 at 06:07:39 for MVR808.92 at DHIRAAGU                  was processed. Reference No:400501306577, Approval Code:306577.",
-    "Transaction from 3368 on 02/01/24 at 11:07:53 for USD2.00 at aliexpress                was processed. Reference No:400206223938, Approval Code:223938.",
-    "Transaction from 3368 on 30/12/23 at 22:07:05 for MVR50.00 at FAHI PLAZA was processed. Reference No:123089264074, Approval Code:264074.",
-    "Transaction from 3368 on 29/12/23 at 20:09:23 for MVR200.00 at RTL                       was processed. Reference No:336315177695, Approval Code:177695.",
+    //"You have sent MVR 200.0 from 7730*1879 to 7730*7443",
+    //"You have sent MVR 100.0 from 7730*1879 to SHAAMIKH MOHAMED",
+    //"You have sent USD 77.0 from 7730*1879 to SHAAMIKH MOHAMED",
+    //"You have received MVR 167.12 from AISHATH L.MOHAMED to 7730*7443",
+    //"You have received MVR 23.5 from AISHATH L.MOHAMED to 7730*7443",
+    //"You have sent MVR 4.9 from 7730*7443 to 7730*1879",
+    //"You have received MVR 231.9 from MOHD.S.SHUJAU to 7730*7443",
+    //"Transaction from 3368 on 25/01/24 at 17:39:04 for MVR200.00 at VILIMALE' BRANCH          was processed. Reference No:402517801476, Approval Code:801476.",
+    //"Transaction from 3368 on 21/01/24 at 17:17:34 for MVR 167.00 at GRILL HUT was processed. Reference No:012195154627, Approval Code:154627.",
+    //"Transaction from 3368 on 18/01/24 at 18:54:21 for MVR70.00 at VICTORIOUS CAFE was processed. Reference No:011894439211, Approval Code:439211.",
+    //"Transaction from 3368 on 09/01/24 at 08:11:18 for MVR25000.00 at VILIMALE' BRANCH          was processed. Reference No:400908196250, Approval Code:196250.",
+    //"Transaction from 3368 on 08/01/24 at 17:33:08 for MVR105.00 at VICTORIOUS CAFE was processed. Reference No:010891749509, Approval Code:749509.",
+    //"Transaction from 3368 on 05/01/24 at 06:07:39 for MVR808.92 at DHIRAAGU                  was processed. Reference No:400501306577, Approval Code:306577.",
+    //"Transaction from 3368 on 02/01/24 at 11:07:53 for USD2.00 at aliexpress                was processed. Reference No:400206223938, Approval Code:223938.",
+    //"Transaction from 3368 on 30/12/23 at 22:07:05 for MVR50.00 at FAHI PLAZA was processed. Reference No:123089264074, Approval Code:264074.",
+    //"Transaction from 3368 on 29/12/23 at 20:09:23 for MVR200.00 at RTL                       was processed. Reference No:336315177695, Approval Code:177695.",
     "Transaction from 3368 on 29/12/23 at 21:51:05 for MVR317.00 at GRILL HUT was processed. Reference No:122988969324, Approval Code:969324.",
   ];
 
   for (var testString in testStrings) {
-    if (transactionRegex.hasMatch(testString)) {
+    if (AppNotificationListener.transactionRegex.hasMatch(testString)) {
       print("Matched TransactionRegex: $testString");
-    } else if (bMLFundsReceivedRegex.hasMatch(testString)) {
+      final match = AppNotificationListener.transactionRegex.firstMatch(testString ?? "");
+      String cardDigits = match?.group(1) ?? "";
+      String date = match?.group(2) ?? "";
+      String time = match?.group(3) ?? "";
+      String currencyCode = match?.group(4) ?? "";
+      String amount = match?.group(5) ?? "";
+      String placeName = match?.group(6) ?? "";
+      String referenceNo = match?.group(7) ?? "";
+      String approvalCode = match?.group(8) ?? "";
+      print("Card Digits: $cardDigits");
+      print("Date: $date");
+      print("Time: $time");
+      print("Currency Code: $currencyCode");
+      print("Amount: $amount");
+      print("Place Name: $placeName");
+      print("Reference No: $referenceNo");
+      print("Approval Code: $approvalCode");
+
+    } else if (AppNotificationListener.bMLFundsReceivedRegex.hasMatch(testString)) {
       print("Matched BMLFundsReceivedRegex: $testString");
-    } else if (bMLFundsTransferredRegex.hasMatch(testString)) {
+      final match = AppNotificationListener.bMLFundsReceivedRegex.firstMatch(testString ?? "");
+      String currencyCode = match?.group(1) ?? "";
+      String amountReceived = match?.group(2) ?? "";
+      String senderName = match?.group(3) ?? "";
+      String accountNumber = match?.group(4) ?? "";
+
+      print("Currency Code: $currencyCode");
+      print("Amount: $amountReceived");
+      print("Sender Name: $senderName");
+      print("Account No: $accountNumber");
+
+    } else if (AppNotificationListener.bMLFundsTransferredRegex.hasMatch(testString)) {
       print("Matched BMLFundsTransferredRegex: $testString");
+      final match = AppNotificationListener.bMLFundsTransferredRegex.firstMatch(testString ?? "");
+      String currencyCode = match?.group(1) ?? "";
+      String amountSent = match?.group(2) ?? "";
+      String accountNumber = match?.group(3) ?? "";
+      String recipientName = match?.group(4) ?? "";
+
+      print("Currency Code: $currencyCode");
+      print("Amount: $amountSent");
+      print("Recipient Name: $recipientName");
+      print("Account No: $accountNumber");
     } else {
       print("No match found for: $testString");
     }
