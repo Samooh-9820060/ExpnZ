@@ -13,3 +13,7 @@ String formatAmountWithSeparator(double amount, String thousandsSeparator, int d
   );
   return parts.join('.');
 }
+
+double roundToTwoDecimalPlaces(double value) {
+  return double.parse(value.toStringAsFixed(2));
+}

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:expnz/utils/currency_utils.dart';
 import 'package:expnz/widgets/SimpleWidgets/ExpnZTextField.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -39,7 +40,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
 
   late TextEditingController _nameController;
   late TextEditingController _descriptionController;
-  late TextEditingController _expenseAmountController;
+  late TextEditingController _amountController;
   late TextEditingController _actualPriceController;
   late TextEditingController _balanceGivenController;
   final TextEditingController _categorySearchController = TextEditingController();
@@ -64,11 +65,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
     super.initState();
     _nameController = TextEditingController();
     _descriptionController = TextEditingController();
-    _expenseAmountController = TextEditingController();
+    _amountController = TextEditingController();
     _actualPriceController = TextEditingController();
     _balanceGivenController = TextEditingController();
 
-    _expenseAmountController.addListener(_updateBalance);
+    _amountController.addListener(_updateBalance);
     _actualPriceController.addListener(_updateBalance);
 
     if (widget.transaction != null) { updateMode = true; loadTransactionData(); }
@@ -78,11 +79,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
   void _updateBalance() {
     if (selectedAccountType == 'Cash/Wallet') {
       try {
-        double expenseAmount = double.tryParse(_expenseAmountController.text) ?? 0.0;
+        double amount = double.tryParse(_amountController.text) ?? 0.0;
         double actualPrice = double.tryParse(_actualPriceController.text) ?? 0.0;
 
         // Calculate the balance
-        double balance = expenseAmount - actualPrice;
+        double balance = amount - actualPrice;
 
         // Update the balance controller
         _balanceGivenController.text = balance.toStringAsFixed(2); // Format to 2 decimal places
@@ -102,7 +103,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
         }
         _nameController.text = tempTransactionData[TempTransactionsDB.columnName] ?? '';
         _descriptionController.text = tempTransactionData[TempTransactionsDB.columnDescription] ?? '';
-        _expenseAmountController.text = tempTransactionData[TempTransactionsDB.columnAmount].toString() ?? '';
+        _amountController.text = tempTransactionData[TempTransactionsDB.columnAmount].toString() ?? '';
         if (tempTransactionData[TempTransactionsDB.columnDate] != null && tempTransactionData[TempTransactionsDB.columnTime] != null) {
           final String date = tempTransactionData[TempTransactionsDB.columnDate];
           final String time = tempTransactionData[TempTransactionsDB.columnTime];
@@ -131,7 +132,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
       final String accountId = transaction[TransactionsDB.transactionAccountId];
       final String date = transaction[TransactionsDB.transactionDate];
       final String time = transaction[TransactionsDB.transactionTime] ?? 'Unknown';
-      final double expenseAmount = (transaction[TransactionsDB.transactionAmount] ?? 0).toDouble();
+      final double amount = (transaction[TransactionsDB.transactionAmount] ?? 0).toDouble();
       final double actualPrice = (transaction[TransactionsDB.transactionActualPrice] ?? 0).toDouble();
       final double balanceAmount = (transaction[TransactionsDB.transactionBalance] ?? 0).toDouble();
       final String type = transaction[TransactionsDB.transactionType] ?? 'Unknown';
@@ -144,7 +145,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
 
       _nameController.text = name;
       _descriptionController.text = description;
-      _expenseAmountController.text = expenseAmount.toString();
+      _amountController.text = amount.toString();
       _actualPriceController.text = actualPrice.toString();
       _balanceGivenController.text = balanceAmount.toString();
 
@@ -199,7 +200,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
-    _expenseAmountController.dispose();
+    _amountController.dispose();
     _balanceGivenController.dispose();
     _actualPriceController.dispose();
     super.dispose();
@@ -248,12 +249,12 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
     // Validate input fields
     String name = _nameController.text.trim();
     String description = _descriptionController.text.trim();
-    String amountStr = _expenseAmountController.text.trim();
-    double? expenseAmount = double.tryParse(amountStr);
+    String amountStr = _amountController.text.trim();
+    double? amount = double.tryParse(amountStr);
     double? actualAmount = double.tryParse(_actualPriceController.text.trim());
     double? balanceAmount = double.tryParse(_balanceGivenController.text.trim());
 
-    if (name.isEmpty || description.isEmpty || expenseAmount == null || expenseAmount <= 0) {
+    if (name.isEmpty || description.isEmpty || amount == null || amount <= 0) {
       await showModernSnackBar(
         context: context,
         message: "All fields must be filled and valid!",
@@ -266,6 +267,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
     }
 
     if (selectedAccountType == 'Cash/Wallet') {
+      if (amount == actualAmount || balanceAmount == null) {
+        balanceAmount = 0.0;
+      }
       if (actualAmount == null || actualAmount <= 0) {
         await showModernSnackBar(
           context: context,
@@ -277,10 +281,13 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
         });
         return;
       }
-      else if (expenseAmount - actualAmount != balanceAmount) {
+      else if (roundToTwoDecimalPlaces(roundToTwoDecimalPlaces(amount) - roundToTwoDecimalPlaces(actualAmount)) != roundToTwoDecimalPlaces(balanceAmount!)) {
+        print(amount-actualAmount);
+        print(actualAmount);
+        print(balanceAmount);
         await showModernSnackBar(
           context: context,
-          message: "Expense - Actual must be equal to balance",
+          message: "Amount - Actual must be equal to balance",
           backgroundColor: Colors.red,
         );
         setState(() {
@@ -339,7 +346,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
         TransactionsDB.transactionType: "expense",
         TransactionsDB.transactionName: name,
         TransactionsDB.transactionDescription: description,
-        TransactionsDB.transactionAmount: expenseAmount,
+        TransactionsDB.transactionAmount: amount,
         TransactionsDB.transactionDate: DateFormat('yyyy-MM-dd').format(selectedDate),
         TransactionsDB.transactionTime: selectedTime.format(context),
         TransactionsDB.transactionAccountId: selectedFromAccountId,
@@ -351,7 +358,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
         TransactionsDB.transactionType: "income",
         TransactionsDB.transactionName: name,
         TransactionsDB.transactionDescription: description,
-        TransactionsDB.transactionAmount: expenseAmount,
+        TransactionsDB.transactionAmount: amount,
         TransactionsDB.transactionDate: DateFormat('yyyy-MM-dd').format(selectedDate),
         TransactionsDB.transactionTime: selectedTime.format(context),
         TransactionsDB.transactionAccountId: selectedToAccountId,
@@ -435,7 +442,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
         TransactionsDB.transactionType: _selectedType.toString().split('.').last,  // income, expense or transfer
         TransactionsDB.transactionName: name,
         TransactionsDB.transactionDescription: description,
-        TransactionsDB.transactionAmount: expenseAmount,
+        TransactionsDB.transactionAmount: amount,
         TransactionsDB.transactionActualPrice: actualAmount,
         TransactionsDB.transactionBalance: balanceAmount,
         TransactionsDB.transactionDate: DateFormat('yyyy-MM-dd').format(selectedDate),
@@ -630,8 +637,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                           Row(
                             children: [
                               Expanded(
-                                flex: 5, // Giving more space to Expense Amount
-                                child: CustomTextField(label: "Expense Amount", controller: _expenseAmountController, isNumber: true, alwaysFloatingLabel: true,),
+                                flex: 5, // Giving more space to Amount
+                                child: CustomTextField(label: "Amount Spent", controller: _amountController, isNumber: true, alwaysFloatingLabel: true,),
                               ),
                               SizedBox(width: 8), // Space between fields
                               Expanded(
@@ -646,7 +653,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                             ],
                           )
                         else
-                          CustomTextField(label: "Amount", controller: _expenseAmountController, isNumber: true),
+                          CustomTextField(label: "Amount", controller: _amountController, isNumber: true),
                         SizedBox(height: 16),
                         SizedBox(height: 16),
                         Row(
@@ -917,7 +924,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                         CustomTextField(label: "Description", controller: _descriptionController),
                         SizedBox(height: 16),
                         // Amount
-                        CustomTextField(label: "Amount", controller: _expenseAmountController, isNumber: true,),
+                        CustomTextField(label: "Amount", controller: _amountController, isNumber: true,),
                         SizedBox(height: 16),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,

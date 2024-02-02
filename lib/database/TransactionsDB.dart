@@ -401,7 +401,7 @@ class TransactionsDB {
     filteredTransactions.sort((a, b) {
       DateTime dateTimeA = DateTime.parse(a['date'] + " " + a['time']);
       DateTime dateTimeB = DateTime.parse(b['date'] + " " + b['time']);
-      return dateTimeA.compareTo(dateTimeB); // For descending order, use dateTimeB.compareTo(dateTimeA)
+      return dateTimeB.compareTo(dateTimeA); // For descending order, use dateTimeB.compareTo(dateTimeA)
     });
 
     return filteredTransactions;
