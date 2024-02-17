@@ -43,9 +43,13 @@ class FinancialDataNotifier extends ChangeNotifier {
   }
 
   Future<void> loadData(String? currencyCode) async {
+    print("Loading financial data...");
+
     var accountsData = accountsNotifier.value;
     // Check if accountsData is now available and load financial data
     if (accountsData.isNotEmpty) {
+      print("Accounts data is not empty. Processing data...");
+
       String usedCurrencyCode;
       Map<String, dynamic> selectedCurrencyData;
 
@@ -101,6 +105,9 @@ class FinancialDataNotifier extends ChangeNotifier {
       }
       // After loading data, remove the listener
       //accountsNotifier.removeListener(loadData);
+      print("Financial data loaded: $_financialData");
+    }  else {
+      print("Accounts data is empty. Waiting for data...");
     }
   }
 

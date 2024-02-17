@@ -300,6 +300,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
       return;
     }
 
+    String formattedTime = DateTime.now().toIso8601String();
+
     // Prepare Firestore reference
     if (_selectedType == TransactionType.transfer) {
       // Validate account selection
@@ -341,6 +343,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
         TransactionsDB.transactionTime: selectedTime.format(context),
         TransactionsDB.transactionAccountId: selectedFromAccountId,
         TransactionsDB.transactionCategoryIDs: categoryIds,
+        TransactionsDB.lastEditedTime: formattedTime,
       };
 
       // Prepare data for "deposit" into the destination account
@@ -353,6 +356,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
         TransactionsDB.transactionTime: selectedTime.format(context),
         TransactionsDB.transactionAccountId: selectedToAccountId,
         TransactionsDB.transactionCategoryIDs: categoryIds,
+        TransactionsDB.lastEditedTime: formattedTime,
       };
 
       try {
@@ -439,6 +443,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
         TransactionsDB.transactionTime: selectedTime.format(context),  // You might want to store this differently
         TransactionsDB.transactionAccountId: selectedAccountId,
         TransactionsDB.transactionCategoryIDs: categoryIds,
+        TransactionsDB.lastEditedTime: formattedTime,
       };
 
       try {

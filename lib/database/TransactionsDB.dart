@@ -19,49 +19,82 @@ class TransactionsDB {
   static const String transactionTime = 'time';
   static const String transactionAccountId = 'account_id';
   static const String transactionCategoryIDs = 'categories';
+  static const String lastEditedTime = 'lastEditedTime';
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  void listenToTransactionChanges(String userUid) {
+  void listenToTransactionChanges(String userUid) async {
+    final prefs = await SharedPreferences.getInstance();
+    // Get the last sync time
+    String? lastSyncTimeStr = prefs.getString('lastSyncTime');
+    // Ensure that the format of lastSyncTimeStr is consistent with the one in Firestore
+    DateTime lastSyncTime = lastSyncTimeStr != null
+        ? DateTime.parse(lastSyncTimeStr)
+        : DateTime.fromMillisecondsSinceEpoch(0);
+
+    String formattedLastSyncTime = _formatDateTimeForFirestore(lastSyncTime);
+
+    print('Last Sync Time: $formattedLastSyncTime');
+
     _firestore.collection(collectionName)
         .where(uid, isEqualTo: userUid)
+        .where('lastEditedTime', isGreaterThan: formattedLastSyncTime)
         .snapshots()
         .listen((snapshot) async {
+      print('Documents fetched: ${snapshot.docs.length}');
       final Map<String, Map<String, dynamic>> newTransactionsData = {};
 
-      // Add all existing accounts to the new map
       for (var doc in snapshot.docs) {
         newTransactionsData[doc.id] = doc.data() as Map<String, dynamic>;
       }
 
-      // Check and remove any deleted accounts from the local cache
-      final currentTransactions = transactionsNotifier.value ?? {};
-      for (var docId in currentTransactions.keys) {
-        if (!newTransactionsData.containsKey(docId)) {
-          newTransactionsData.remove(docId);
-        }
+      if (newTransactionsData.isNotEmpty) {
+        await cacheTransactionsLocally(newTransactionsData);
+        // Store the current time as the last sync time
+        await prefs.setString('lastSyncTime', DateTime.now().toIso8601String());
+      } else {
+        await loadTransactionsFromLocal();
       }
-
-      cacheTransactionsLocally(newTransactionsData);
-
-      await updateFirestoreReadCount(snapshot.docs.length);
+    }, onError: (error) {
+      print('Error fetching transactions: $error');
     });
   }
 
-  Future<void> updateFirestoreReadCount(int documentCount) async {
-    final prefs = await SharedPreferences.getInstance();
-    int totalReads = prefs.getInt('totalFirestoreReads') ?? 0;
-    totalReads += documentCount;
-    await prefs.setString('type', 'TransactionRead');
-    await prefs.setInt('totalFirestoreReads', totalReads);
-    await prefs.setString('lastFirestoreReadTime', DateTime.now().toIso8601String());
+  String _formatDateTimeForFirestore(DateTime dateTime) {
+    // Format the DateTime object to an ISO 8601 string
+    return dateTime.toIso8601String();
   }
 
-  Future<void> cacheTransactionsLocally(Map<String, Map<String, dynamic>> transactionsData) async {
+  Future<void> loadTransactionsFromLocal() async {
     final prefs = await SharedPreferences.getInstance();
-    String encodedData = json.encode(transactionsData);
+    String? encodedData = prefs.getString('userTransactions');
+    if (encodedData != null) {
+      Map<String, Map<String, dynamic>> transactionsData = Map<String, Map<String, dynamic>>.from(
+        json.decode(encodedData) as Map<String, dynamic>,
+      );
+
+      print('Documents stored locally: ${transactionsData.length}');
+      transactionsNotifier.value = transactionsData;
+    }
+  }
+
+  Future<void> cacheTransactionsLocally(Map<String, Map<String, dynamic>> newTransactionsData) async {
+    final prefs = await SharedPreferences.getInstance();
+    // Fetch existing transactions
+    String? existingData = prefs.getString('userTransactions');
+    Map<String, Map<String, dynamic>> existingTransactions = existingData != null
+        ? Map<String, Map<String, dynamic>>.from(json.decode(existingData))
+        : {};
+
+    // Merge new transactions with existing ones
+    existingTransactions.addAll(newTransactionsData);
+
+    // Cache the merged transactions
+    String encodedData = json.encode(existingTransactions);
     await prefs.setString('userTransactions', encodedData);
-    transactionsNotifier.value = transactionsData;
+    transactionsNotifier.value = existingTransactions;
+
+    print('Cached locally: ${existingTransactions.length} transactions');
   }
 
   Future<Map<String, Map<String, dynamic>>?> getLocalTransactions() async {
@@ -182,7 +215,7 @@ class TransactionsDB {
     await _firestore.collection(collectionName).doc(documentId).delete();
 
     // Update the local cache by removing the deleted transaction
-    final currentTransactions = transactionsNotifier.value ?? {};
+    final currentTransactions = transactionsNotifier.value;
     if (currentTransactions.containsKey(documentId)) {
       currentTransactions.remove(documentId);
       transactionsNotifier.value = currentTransactions;
@@ -208,7 +241,7 @@ class TransactionsDB {
   /****************************************************************************************/
   // Function to calculate total income and expense for a given account ID
   Future<Map<String, double>> getTotalIncomeAndExpenseForAccount(String accountId) async {
-    final transactions = await getLocalTransactions();
+    final transactions = transactionsNotifier.value;
     double totalIncome = 0.0;
     double totalExpense = 0.0;
 
@@ -286,7 +319,7 @@ class TransactionsDB {
     final transactionsData = transactionsNotifier.value;
     Map<String, Map<String, double>> accountTotals = {};
 
-    if (transactionsData != null) {
+    if (transactionsData != null && transactionsData.isNotEmpty) {
       for (var transaction in transactionsData.values) {
         var transactionCategories = transaction[transactionCategoryIDs];
         if (transactionCategories != null && transactionCategories.contains(categoryId)) {
