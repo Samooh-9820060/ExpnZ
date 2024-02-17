@@ -163,6 +163,7 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
         final compressedFile = await _compressFile(file);
         setState(() {
           selectedImage = compressedFile ?? file;
+          print(compressedFile ?? 'ok');
           imageHasChanged = true;
         });
       }
@@ -172,21 +173,22 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
     try {
       final filePath = file.absolute.path;
 
-      // Define the target path and file name
-      final lastIndex = filePath.lastIndexOf(new RegExp(r'\.png|\.jpg'));
-      final splitted = filePath.substring(0, lastIndex);
-      final outPath = "${splitted}_compressed.png";
+      // Define the target path and file name for JPEG format
+      String outPath = "${filePath.substring(0, filePath.lastIndexOf('.'))}_compressed.jpg";
 
+      // Compress the image and convert to JPEG
       final compressedImage = await FlutterImageCompress.compressAndGetFile(
         filePath,
         outPath,
-        quality: 50, // Adjust the quality as needed
-        minWidth: 1000, // Adjust the size as needed
+        quality: 20,
+        minWidth: 1000,
         minHeight: 1000,
+        format: CompressFormat.jpeg, // Specify JPEG format
       );
 
+      print('compressed');
       if (compressedImage != null) {
-        return File(compressedImage.path);  // Convert to File type
+        return File(compressedImage.path); // Convert to File type
       }
     } catch (e) {
       if (kDebugMode) {
@@ -195,6 +197,8 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
     }
     return null; // Return null if compression fails or any exception occurs
   }
+
+
   void _pickIcon() async {
     IconData? icon = await FlutterIconPicker.showIconPicker(context,
         iconPackModes: [
