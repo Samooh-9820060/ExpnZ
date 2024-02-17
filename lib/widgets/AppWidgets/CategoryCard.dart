@@ -47,6 +47,7 @@ class _CategoryCardState extends State<CategoryCard>
   late Map<int, double> accountExpense;
 
   bool showMoreInfo = false;
+  Future<File?>? _imageFileFuture;
 
   @override
   void initState() {
@@ -64,6 +65,10 @@ class _CategoryCardState extends State<CategoryCard>
     );
     _deleteAnimation =
         Tween<double>(begin: 1, end: 0).animate(_deleteController);
+    if (widget.imagePath != null) {
+      String fileName = widget.imagePath != null ? generateFileNameFromUrl(widget.imagePath!) : 'default.jpg';
+      _imageFileFuture = getImageFile(widget.imagePath!, fileName);
+    }
   }
 
   @override
@@ -109,8 +114,6 @@ class _CategoryCardState extends State<CategoryCard>
 
 
   Widget buildCard(String documentId, String? imageUrl) {
-    String fileName = imageUrl != null ? generateFileNameFromUrl(imageUrl) : 'default.jpg';
-
     return AnimatedBuilder(
       animation: _deleteController,
       builder: (context, child) {
@@ -159,7 +162,7 @@ class _CategoryCardState extends State<CategoryCard>
                       Row(
                         children: [
                           FutureBuilder<File?>(
-                            future: imageUrl != null ? getImageFile(imageUrl, fileName) : null,
+                            future: _imageFileFuture,
                             builder: (context, snapshot) {
                               if (snapshot.connectionState == ConnectionState.waiting) {
                                 return const CircularProgressIndicator(); // Show loading indicator
@@ -183,7 +186,7 @@ class _CategoryCardState extends State<CategoryCard>
                           const SizedBox(width: 16),
                           Expanded(
                             child: Text(
-                              widget.categoryName!,
+                              widget.categoryName,
                               maxLines: 3,
                               overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.poppins(
