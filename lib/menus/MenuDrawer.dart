@@ -1,3 +1,4 @@
+import 'package:expnz/screens/HelpSupportScreen.dart';
 import 'package:expnz/screens/HomeScreen.dart';
 import 'package:expnz/screens/MyProfile.dart';
 import 'package:expnz/screens/SettingsScreen.dart';
@@ -56,38 +57,14 @@ class _MenuDrawerState extends State<MenuDrawer> {
             ]),
             menuGroup([
               menuItem(Icons.settings, "Settings", context, targetPage: SettingsScreen()),
-              menuItem(Icons.help, "Help & Support", context, targetPage: HomeScreen()),
-              menuItem(Icons.notifications, "Notifications", context, targetPage: HomeScreen()),
+              menuItem(Icons.help, "Help & Support", context, targetPage: HelpSupportScreen()),
+              //menuItem(Icons.notifications, "Notifications", context, targetPage: HomeScreen()),
             ]),
             menuGroup([
-              menuItem(Icons.loop, "Recurring Transactions", context, targetPage: HomeScreen()),
-              menuItem(Icons.group_add, "Invite Friends", context, targetPage: HomeScreen()),
+              //menuItem(Icons.loop, "Recurring Transactions", context, targetPage: HomeScreen()),
+              //menuItem(Icons.group_add, "Invite Friends", context, targetPage: HomeScreen()),
               menuItem(Icons.info, "About Us", context, targetPage: HomeScreen()),
-            ]),
-            menuGroup([
               menuItem(Icons.exit_to_app, "Logout", context, targetPage: null, onTap: _signOut),
-              menuItem(
-                  Icons.brightness_4,
-                  "Dark Mode",
-                  context,
-                  trailing: Transform.scale(
-                    scale: 0.8,
-                    child: Switch(
-                      value: isDarkMode,
-                      onChanged: (bool value) {
-                        setState(() {
-                          isDarkMode = value;
-                          // Add logic to change app theme
-                        });
-                      },
-                      activeColor: Colors.blueAccent,
-                      inactiveThumbColor: Colors.grey,
-                      inactiveTrackColor: Colors.grey[900],
-                      activeTrackColor: Colors.blue[200],
-                    ),
-                  )
-              ),
-
             ]),
           ],
         ),
