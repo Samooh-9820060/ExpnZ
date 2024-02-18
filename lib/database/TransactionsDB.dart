@@ -34,7 +34,7 @@ class TransactionsDB {
 
     String formattedLastSyncTime = _formatDateTimeForFirestore(lastSyncTime);
 
-    print('Last Sync Time: $formattedLastSyncTime');
+    print('Last Sync Time Transactions: $formattedLastSyncTime');
 
     _firestore.collection(collectionName)
         .where(uid, isEqualTo: userUid)
@@ -72,8 +72,6 @@ class TransactionsDB {
       Map<String, Map<String, dynamic>> transactionsData = Map<String, Map<String, dynamic>>.from(
         json.decode(encodedData) as Map<String, dynamic>,
       );
-
-      print('Documents stored locally: ${transactionsData.length}');
       transactionsNotifier.value = transactionsData;
     }
   }
@@ -89,12 +87,17 @@ class TransactionsDB {
     // Merge new transactions with existing ones
     existingTransactions.addAll(newTransactionsData);
 
+    // Remove soft-deleted categories
+    newTransactionsData.forEach((key, value) {
+      if (value['isDeleted'] == true) {
+        existingTransactions.remove(key);
+      }
+    });
+
     // Cache the merged transactions
     String encodedData = json.encode(existingTransactions);
     await prefs.setString('userTransactions', encodedData);
     transactionsNotifier.value = existingTransactions;
-
-    print('Cached locally: ${existingTransactions.length} transactions');
   }
 
   Future<Map<String, Map<String, dynamic>>?> getLocalTransactions() async {
@@ -212,14 +215,19 @@ class TransactionsDB {
   }
 
   Future<void> deleteTransaction(String documentId) async {
-    await _firestore.collection(collectionName).doc(documentId).delete();
+    await _firestore.collection(collectionName)
+        .doc(documentId)
+        .update({
+      'isDeleted': true,
+      'lastEditedTime': DateTime.now().toIso8601String(),
+    });
 
-    // Update the local cache by removing the deleted transaction
-    final currentTransactions = transactionsNotifier.value;
+    // Remove the transaction from the local cache
+    /*final currentTransactions = transactionsNotifier.value;
     if (currentTransactions.containsKey(documentId)) {
       currentTransactions.remove(documentId);
       transactionsNotifier.value = currentTransactions;
-    }
+    }*/
   }
 
   //method to update transaction by its id

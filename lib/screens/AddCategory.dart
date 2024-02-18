@@ -289,6 +289,8 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
       imageUrl = await CategoriesDB().uploadImageToStorage(selectedImage!);
     }
 
+    String formattedTime = DateTime.now().toIso8601String();
+
     // Prepare data to insert or update
     Map<String, dynamic> row = {
       CategoriesDB.categoryName: _categoryController.text.trim(),
@@ -298,6 +300,7 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
       CategoriesDB.categoryIconFontFamily: selectedIcon.fontFamily,
       CategoriesDB.categoryIconFontPackage: selectedIcon.fontPackage,
       CategoriesDB.categorySelectedImageBlob: imageUrl.isEmpty ? originalImageUrl : imageUrl,
+      CategoriesDB.lastEditedTime: formattedTime,
     };
 
 

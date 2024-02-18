@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../database/AccountsDB.dart';
 import '../utils/global.dart';
@@ -43,12 +44,10 @@ class FinancialDataNotifier extends ChangeNotifier {
   }
 
   Future<void> loadData(String? currencyCode) async {
-    print("Loading financial data...");
 
     var accountsData = accountsNotifier.value;
     // Check if accountsData is now available and load financial data
     if (accountsData.isNotEmpty) {
-      print("Accounts data is not empty. Processing data...");
 
       String usedCurrencyCode;
       Map<String, dynamic> selectedCurrencyData;
@@ -105,13 +104,22 @@ class FinancialDataNotifier extends ChangeNotifier {
       }
       // After loading data, remove the listener
       //accountsNotifier.removeListener(loadData);
-      print("Financial data loaded: $_financialData");
     }  else {
       print("Accounts data is empty. Waiting for data...");
     }
   }
 
   Future<double> getTotalForCurrency(String currencyCode, String type, {DateTime? startDate, DateTime? endDate}) async {
+    if (transactionsNotifier.value.isEmpty) {
+      final prefs = await SharedPreferences.getInstance();
+      String? encodedData = prefs.getString('userTransactions');
+      if (encodedData != null) {
+        Map<String, Map<String, dynamic>> transactionsData = Map<String, Map<String, dynamic>>.from(
+          json.decode(encodedData) as Map<String, dynamic>,
+        );
+        transactionsNotifier.value = transactionsData;
+      }
+    }
     final transactionsData = transactionsNotifier.value;
     final accountsData = accountsNotifier.value;
     double total = 0.0;

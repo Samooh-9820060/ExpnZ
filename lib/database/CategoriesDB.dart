@@ -23,50 +23,79 @@ class CategoriesDB {
   static const String categorySelectedImageBlob = 'imageUrl';
   static const String totalIncome = 'totalIncome';
   static const String totalExpense = 'totalExpense';
+  static const String lastEditedTime = 'lastEditedTime';
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  void listenToCategoryChanges(String userUid) {
+  void listenToCategoryChanges(String userUid) async {
+    final prefs = await SharedPreferences.getInstance();
+    // Get the last sync time
+    String? lastSyncTimeStr = prefs.getString('lastCategorySyncTime');
+    DateTime lastSyncTime = lastSyncTimeStr != null
+        ? DateTime.parse(lastSyncTimeStr)
+        : DateTime.fromMillisecondsSinceEpoch(0);
+
     _firestore.collection(collectionName)
         .where(uid, isEqualTo: userUid)
+        .where('lastEditedTime', isGreaterThan: lastSyncTime.toIso8601String())
         .snapshots()
         .listen((snapshot) async {
+      bool hasSoftDeletes = false;
       final Map<String, Map<String, dynamic>> newCategoriesData = {};
 
-      // Add all existing accounts to the new map
+      print('categories fetched ${snapshot.docs.length}');
       for (var doc in snapshot.docs) {
-        newCategoriesData[doc.id] = doc.data() as Map<String, dynamic>;
+        var data = doc.data() as Map<String, dynamic>;
+        newCategoriesData[doc.id] = data;
       }
 
-      // Check and remove any deleted accounts from the local cache
-      final currentCategories = categoriesNotifier.value ?? {};
-      for (var docId in currentCategories.keys) {
-        if (!newCategoriesData.containsKey(docId)) {
-          newCategoriesData.remove(docId);
-        }
+      if (newCategoriesData.isNotEmpty) {
+        await cacheCategoriesLocally(newCategoriesData);
+      } else {
+        await loadCategoriesFromLocal();
       }
 
-      cacheCategoriesLocally(newCategoriesData);
-
-      await updateFirestoreReadCount(snapshot.docs.length);
+      await prefs.setString('lastCategorySyncTime', DateTime.now().toIso8601String());
+    }, onError: (error) {
+      print('Error fetching categories: $error');
     });
   }
 
-  Future<void> updateFirestoreReadCount(int documentCount) async {
+  Future<void> loadCategoriesFromLocal() async {
     final prefs = await SharedPreferences.getInstance();
-    int totalReads = prefs.getInt('totalFirestoreReads') ?? 0;
-    totalReads += documentCount;
-    await prefs.setString('type', 'CategoriesRead');
-    await prefs.setInt('totalFirestoreReads', totalReads);
-    await prefs.setString('lastFirestoreReadTime', DateTime.now().toIso8601String());
+    String? encodedData = prefs.getString('userCategories');
+    if (encodedData != null) {
+      Map<String, Map<String, dynamic>> categoriesData = Map<String, Map<String, dynamic>>.from(
+        json.decode(encodedData) as Map<String, dynamic>,
+      );
+      categoriesNotifier.value = categoriesData;
+    }
   }
 
-  Future<void> cacheCategoriesLocally(Map<String, Map<String, dynamic>> categoriesData) async {
+  Future<void> cacheCategoriesLocally(Map<String, Map<String, dynamic>> newCategoriesData) async {
     final prefs = await SharedPreferences.getInstance();
-    String encodedData = json.encode(categoriesData);
+    String? existingData = prefs.getString('userCategories');
+    Map<String, Map<String, dynamic>> existingCategories = existingData != null
+        ? Map<String, Map<String, dynamic>>.from(json.decode(existingData))
+        : {};
+
+    // Update existing categories with new data
+    existingCategories.addAll(newCategoriesData);
+
+    // Remove soft-deleted categories
+    newCategoriesData.forEach((key, value) {
+      if (value['isDeleted'] == true) {
+        existingCategories.remove(key);
+      }
+    });
+
+    // Encode the updated categories and save them
+    String encodedData = json.encode(existingCategories);
     await prefs.setString('userCategories', encodedData);
-    categoriesNotifier.value = categoriesData;
+    categoriesNotifier.value = existingCategories;
   }
+
+
 
   Future<Map<String, Map<String, dynamic>>?> getLocalCategories() async {
     final prefs = await SharedPreferences.getInstance();
@@ -132,7 +161,12 @@ class CategoriesDB {
   }
 
   Future<void> deleteCategory(String documentId) async {
-    await _firestore.collection(collectionName).doc(documentId).delete();
+    await _firestore.collection(collectionName)
+        .doc(documentId)
+        .update({
+      'isDeleted': true,
+      'lastEditedTime': DateTime.now().toIso8601String(),
+    });
     TransactionsDB().deleteCategoryFromTransactions(documentId);
   }
 
