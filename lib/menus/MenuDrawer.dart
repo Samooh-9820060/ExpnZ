@@ -1,3 +1,4 @@
+import 'package:expnz/screens/AboutUsScreen.dart';
 import 'package:expnz/screens/HelpSupportScreen.dart';
 import 'package:expnz/screens/HomeScreen.dart';
 import 'package:expnz/screens/MyProfile.dart';
@@ -63,7 +64,7 @@ class _MenuDrawerState extends State<MenuDrawer> {
             menuGroup([
               //menuItem(Icons.loop, "Recurring Transactions", context, targetPage: HomeScreen()),
               //menuItem(Icons.group_add, "Invite Friends", context, targetPage: HomeScreen()),
-              menuItem(Icons.info, "About Us", context, targetPage: HomeScreen()),
+              menuItem(Icons.info, "About Us", context, targetPage: AboutUsScreen()),
               menuItem(Icons.exit_to_app, "Logout", context, targetPage: null, onTap: _signOut),
             ]),
           ],
