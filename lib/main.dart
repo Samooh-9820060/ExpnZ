@@ -149,8 +149,8 @@ class _MyAppState extends State<MyApp> {
         primarySwatch: Colors.blue,
         primaryColor: Colors.blueAccent,
         hintColor: Colors.amber,
-        brightness: Brightness.dark, // Set brightness as per your design
-        visualDensity: VisualDensity.adaptivePlatformDensity,
+        brightness: Brightness.dark,
+        visualDensity: VisualDensity.comfortable,
 
         buttonTheme: ButtonThemeData(
           buttonColor: Colors.blueAccent,

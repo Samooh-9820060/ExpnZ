@@ -2,6 +2,7 @@ import 'package:expnz/screens/AboutUsScreen.dart';
 import 'package:expnz/screens/HelpSupportScreen.dart';
 import 'package:expnz/screens/HomeScreen.dart';
 import 'package:expnz/screens/MyProfile.dart';
+import 'package:expnz/screens/RecurringTransactionsPage.dart';
 import 'package:expnz/screens/SettingsScreen.dart';
 import 'package:expnz/screens/SignInScreen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -62,7 +63,7 @@ class _MenuDrawerState extends State<MenuDrawer> {
               //menuItem(Icons.notifications, "Notifications", context, targetPage: HomeScreen()),
             ]),
             menuGroup([
-              //menuItem(Icons.loop, "Recurring Transactions", context, targetPage: HomeScreen()),
+              menuItem(Icons.loop, "Recurring Transactions", context, targetPage: RecurringTransactionsPage()),
               //menuItem(Icons.group_add, "Invite Friends", context, targetPage: HomeScreen()),
               menuItem(Icons.info, "About Us", context, targetPage: AboutUsScreen()),
               menuItem(Icons.exit_to_app, "Logout", context, targetPage: null, onTap: _signOut),
