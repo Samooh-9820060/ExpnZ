@@ -8,9 +8,12 @@ class CategoriesScreen extends StatefulWidget {
   _CategoriesScreenState createState() => _CategoriesScreenState();
 }
 
-class _CategoriesScreenState extends State<CategoriesScreen> with SingleTickerProviderStateMixin {
+class _CategoriesScreenState extends State<CategoriesScreen>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _animation;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -28,6 +31,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> with SingleTickerPr
   @override
   void dispose() {
     _controller.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -35,49 +39,90 @@ class _CategoriesScreenState extends State<CategoriesScreen> with SingleTickerPr
   Widget build(BuildContext context) {
     return Container(
       color: Colors.blueGrey[900],
-      child: ValueListenableBuilder<Map<String, Map<String, dynamic>>>(
-          valueListenable: categoriesNotifier, // The ValueNotifier for local accounts data
-          builder: (context, categoriesData, child) {
-            if (categoriesData.isEmpty) {
-              return const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.category_outlined,
-                      color: Colors.grey,
-                      size: 64,
-                    ),
-                    SizedBox(height: 16),
-                    Text(
-                      'No categories available.',
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            // Create a list of category keys, sorted by category name
-            List<String> sortedCategoryKeys = categoriesData.keys.toList();
-            sortedCategoryKeys.sort((a, b) => (categoriesData[a]?['name'] as String).compareTo(categoriesData[b]?['name'] as String));
-            return ListView.builder(
-              itemCount: sortedCategoryKeys.length,
-              itemBuilder: (context, index) {
-                final documentId = sortedCategoryKeys[index];
-
-                return buildAnimatedCategoryCard(
-                  documentId: documentId,
-                  index: index,
-                );
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                labelText: 'Search Categories',
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                  icon: Icon(Icons.clear),
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() {
+                      _searchQuery = '';
+                    });
+                  },
+                )
+                    : null,
+              ),
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                });
               },
-            );
-        }
+            ),
+          ),
+          Expanded(
+            child: ValueListenableBuilder<Map<String, Map<String, dynamic>>>(
+                valueListenable: categoriesNotifier,
+                // The ValueNotifier for local accounts data
+                builder: (context, categoriesData, child) {
+                  if (categoriesData.isEmpty) {
+                    return const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.category_outlined,
+                            color: Colors.grey,
+                            size: 64,
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            'No categories available.',
+                            style: TextStyle(
+                              color: Colors.grey,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  // Create a list of category keys, sorted by category name
+                  List<String> sortedCategoryKeys =
+                      categoriesData.keys.toList();
+                  sortedCategoryKeys.sort((a, b) =>
+                      (categoriesData[a]?['name'] as String)
+                          .compareTo(categoriesData[b]?['name'] as String));
+                  return ListView.builder(
+                    itemCount: sortedCategoryKeys.length,
+                    itemBuilder: (context, index) {
+                      final documentId = sortedCategoryKeys[index];
+                      final categoryName = categoriesData[documentId]?['name'] as String;
+                      final categoryDescription = categoriesData[documentId]?['description'] as String;
+
+                      // Filter categories based on the search query
+                      if (_searchQuery.isNotEmpty && (!categoryName.toLowerCase().contains(_searchQuery.toLowerCase()) || !categoryDescription.toLowerCase().contains(_searchQuery.toLowerCase()))) {
+                        return Container();
+                      }
+
+                      return buildAnimatedCategoryCard(
+                        documentId: documentId,
+                        index: index,
+                      );
+                    },
+                  );
+                }),
+          ),
+        ],
       ),
     );
   }
@@ -92,9 +137,12 @@ class _CategoriesScreenState extends State<CategoriesScreen> with SingleTickerPr
     // Extracting category data
     final categoryData = categoriesNotifier.value![documentId];
     final String categoryName = categoryData?['name'] ?? 'Unknown Category';
-    final String? imagePath = categoryData?['imageUrl']; // Replace 'imageUrl' with your field name if different
+    final String? imagePath = categoryData?[
+        'imageUrl']; // Replace 'imageUrl' with your field name if different
     final IconData iconData = _getIconData(categoryData);
-    final Color? primaryColor = categoryData?['color'] != null ? Color(categoryData?['color'] as int) : null;
+    final Color? primaryColor = categoryData?['color'] != null
+        ? Color(categoryData?['color'] as int)
+        : null;
 
     return GestureDetector(
       onLongPress: () {
@@ -141,7 +189,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> with SingleTickerPr
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text("Delete Category"),
-          content: const Text("Are you sure you want to delete this category?\n\n"
+          content: const Text(
+              "Are you sure you want to delete this category?\n\n"
               "This will remove this category from all transactions with more than 1 category and Uncategorize any transactions with this category only."),
           actions: [
             TextButton(
