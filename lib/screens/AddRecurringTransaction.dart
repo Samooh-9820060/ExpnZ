@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class AddRecurringTransactionPage extends StatefulWidget {
   @override
@@ -19,10 +21,49 @@ class _AddRecurringTransactionPageState extends State<AddRecurringTransactionPag
   int notificationHoursBefore = 0;
   int notificationMinutesBefore = 0;
   String notificationFrequency = 'Hourly'; // Notification frequency for monthly/yearly
+  late FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
+  bool _notificationsEnabled = false;
 
   final List<String> frequencies = ['Daily', 'Weekly', 'Monthly', 'Yearly'];
   final List<String> daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   final List<String> notificationFrequencies = ['Hourly', 'Daily', 'At Time of Event'];
+
+  @override
+  void initState() {
+    super.initState();
+    flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+    // Initialize other variables or state
+  }
+
+  Future<void> _requestPermissions() async {
+    if (Platform.isIOS || Platform.isMacOS) {
+      await flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
+          ?.requestPermissions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      await flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<MacOSFlutterLocalNotificationsPlugin>()
+          ?.requestPermissions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+    } else if (Platform.isAndroid) {
+      final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
+      flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+
+      final bool? grantedNotificationPermission =
+      await androidImplementation?.requestNotificationsPermission();
+      setState(() {
+        _notificationsEnabled = grantedNotificationPermission ?? false;
+      });
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -125,7 +166,12 @@ class _AddRecurringTransactionPageState extends State<AddRecurringTransactionPag
               SwitchListTile(
                 title: Text('Schedule Reminder Notifications'),
                 value: scheduleReminder,
-                onChanged: (bool value) => setState(() => scheduleReminder = value),
+                onChanged: (bool value) async {
+                  if (value) {
+                    await _requestPermissions();
+                  }
+                  setState(() => scheduleReminder = value && _notificationsEnabled);
+                },
               ),
               ...notificationTimingWidgets,
               Center(
