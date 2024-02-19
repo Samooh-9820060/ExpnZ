@@ -117,6 +117,7 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
       return;
     }
 
+    String formattedTime = DateTime.now().toIso8601String();
     Map<String, dynamic> row = {
       AccountsDB.accountName: _accountNameController.text.trim(),
       AccountsDB.accountCurrency: jsonEncode({
@@ -137,6 +138,7 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
       AccountsDB.accountIconFontFamily: selectedIcon.fontFamily,
       AccountsDB.accountIconFontPackage: selectedIcon.fontPackage,
       AccountsDB.accountCardNumber: _cardNumberController.text.trim(),
+      AccountsDB.lastEditedTime: formattedTime,
     };
 
     bool? insertedAccount;

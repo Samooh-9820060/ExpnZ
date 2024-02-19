@@ -16,62 +16,77 @@ class AccountsDB {
   static const String accountIconFontFamily = 'iconFontFamily';
   static const String accountIconFontPackage = 'iconFontPackage';
   static const String accountCardNumber = 'card_number';
+  static const String lastEditedTime = 'lastEditedTime';
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  void listenToAccountChanges(String userUid) {
+  void listenToAccountChanges(String userUid) async {
+    final prefs = await SharedPreferences.getInstance();
+    // Get the last sync time for accounts
+    String? lastSyncTimeStr = prefs.getString('lastAccountSyncTime');
+    DateTime lastSyncTime = lastSyncTimeStr != null
+        ? DateTime.parse(lastSyncTimeStr)
+        : DateTime.fromMillisecondsSinceEpoch(0);
+
     _firestore.collection(collectionName)
         .where(uid, isEqualTo: userUid)
+        .where('lastEditedTime', isGreaterThan: lastSyncTime.toIso8601String())
         .snapshots()
         .listen((snapshot) async {
       final Map<String, Map<String, dynamic>> newAccountsData = {};
 
-      // Add all existing accounts to the new map
       for (var doc in snapshot.docs) {
-        newAccountsData[doc.id] = doc.data() as Map<String, dynamic>;
+        var data = doc.data() as Map<String, dynamic>;
+        newAccountsData[doc.id] = data;
       }
 
-      // Check and remove any deleted accounts from the local cache
-      final currentAccounts = accountsNotifier.value ?? {};
-      for (var docId in currentAccounts.keys) {
-        if (!newAccountsData.containsKey(docId)) {
-          newAccountsData.remove(docId);
-        }
+      if (newAccountsData.isNotEmpty) {
+        await cacheAccountsLocally(newAccountsData);
+      } else {
+        await loadAccountsFromLocal();
       }
-      cacheAccountsLocally(newAccountsData);
 
-      await updateFirestoreReadCount(snapshot.docs.length);
+      // Update the last sync time
+      await prefs.setString('lastAccountSyncTime', DateTime.now().toIso8601String());
+    }, onError: (error) {
+      print('Error fetching accounts: $error');
     });
   }
 
-  Future<void> updateFirestoreReadCount(int documentCount) async {
+  Future<void> loadAccountsFromLocal() async {
     final prefs = await SharedPreferences.getInstance();
-    int totalReads = prefs.getInt('totalFirestoreReads') ?? 0;
-    totalReads += documentCount;
-    await prefs.setString('type', 'AccountsRead');
-    await prefs.setInt('totalFirestoreReads', totalReads);
-    await prefs.setString('lastFirestoreReadTime', DateTime.now().toIso8601String());
+    String? encodedData = prefs.getString('userAccounts');
+    if (encodedData != null) {
+      Map<String, Map<String, dynamic>> accountsData = Map<String, Map<String, dynamic>>.from(
+        json.decode(encodedData) as Map<String, dynamic>,
+      );
+      accountsNotifier.value = accountsData;
+    }
   }
 
-  Future<void> printFirestoreReadDetails() async {
+  Future<void> cacheAccountsLocally(Map<String, Map<String, dynamic>> newAccountsData) async {
     final prefs = await SharedPreferences.getInstance();
+    String? existingData = prefs.getString('userAccounts');
+    Map<String, Map<String, dynamic>> existingAccounts = existingData != null
+        ? Map<String, Map<String, dynamic>>.from(json.decode(existingData))
+        : {};
 
-    String type = prefs.getString('type') ?? "Not specified";
-    int totalReads = prefs.getInt('totalFirestoreReads') ?? 0;
-    String lastFirestoreReadTime = prefs.getString('lastFirestoreReadTime') ?? "Not available";
+    // Update existing accounts with new data
+    existingAccounts.addAll(newAccountsData);
 
-    print('Type: $type');
-    print('Total Firestore Reads: $totalReads');
-    print('Last Firestore Read Time: $lastFirestoreReadTime');
-  }
+    // Remove soft-deleted accounts
+    newAccountsData.forEach((key, value) {
+      if (value['isDeleted'] == true) {
+        existingAccounts.remove(key);
+      }
+    });
 
-
-  Future<void> cacheAccountsLocally(Map<String, Map<String, dynamic>> accountsData) async {
-    final prefs = await SharedPreferences.getInstance();
-    String encodedData = json.encode(accountsData);
+    // Encode the updated accounts and save them
+    String encodedData = json.encode(existingAccounts);
     await prefs.setString('userAccounts', encodedData);
-    accountsNotifier.value = accountsData;
+    accountsNotifier.value = existingAccounts;
   }
+
 
   Future<Map<String, Map<String, dynamic>>?> getLocalAccounts() async {
     final prefs = await SharedPreferences.getInstance();
@@ -131,14 +146,10 @@ class AccountsDB {
   }
 
   Future<void> deleteAccount(String documentId) async {
-    await _firestore.collection(collectionName).doc(documentId).delete();
-
-    // Update the local cache by removing the deleted transaction
-    final currentAccounts = accountsNotifier.value ?? {};
-    if (currentAccounts.containsKey(documentId)) {
-      currentAccounts.remove(documentId);
-      accountsNotifier.value = currentAccounts;
-    }
+    await _firestore.collection(collectionName).doc(documentId).update({
+      'isDeleted': true,
+      'lastEditedTime': DateTime.now().toIso8601String(),
+    });
   }
 
   Future<void> updateAccount(String documentId, Map<String, dynamic> data) async {
