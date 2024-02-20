@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:auto_size_text/auto_size_text.dart';
 
 class FinanceInfoCard extends StatelessWidget {
   final String title;
@@ -21,23 +22,31 @@ class FinanceInfoCard extends StatelessWidget {
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.start, // Added this
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: color, size: 20), // Added icon
-            SizedBox(width: 4), // Added space between icon and text
+            Icon(icon, color: color, size: 20),
+            SizedBox(width: 4),
             Text(
               title,
               style: TextStyle(
-                  color: color, fontSize: 14, fontWeight: FontWeight.w500), // Adjusted font size
+                color: color,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ],
         ),
         Padding(
-          padding: EdgeInsets.only(left: 5),  // Added padding to align with above text
-          child: Text(
+          padding: EdgeInsets.only(left: 5),
+          child: AutoSizeText(
             amount,
             style: TextStyle(
-                color: color, fontSize: 20, fontWeight: FontWeight.bold),
+              color: color,
+              fontWeight: FontWeight.bold,
+            ),
+            maxLines: 1,
+            minFontSize: 10, // Minimum font size you want to use
+            overflow: TextOverflow.ellipsis, // To handle overflow if text is still too long
           ),
         ),
       ],

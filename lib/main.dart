@@ -1,9 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:expnz/database/AccountsDB.dart';
 import 'package:expnz/database/CategoriesDB.dart';
+import 'package:expnz/database/RecurringTransactionsDB.dart';
 import 'package:expnz/database/TransactionsDB.dart';
 import 'package:expnz/models/FinancialDataNotifier.dart';
 import 'package:expnz/models/TempTransactionsModel.dart';
+import 'package:expnz/screens/RecurringTransactionsPage.dart';
 import 'package:expnz/screens/SignInScreen.dart';
 import 'package:expnz/utils/NotificationListener.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -126,6 +128,7 @@ class _MyAppState extends State<MyApp> {
       AccountsDB().listenToAccountChanges(user!.uid);
       CategoriesDB().listenToCategoryChanges(user!.uid);
       TransactionsDB().listenToTransactionChanges(user!.uid);
+      RecurringTransactionDB().listenToRecurringTransactionsChanges(user!.uid);
     }
 
     // Set up an auth state change listener
@@ -137,6 +140,7 @@ class _MyAppState extends State<MyApp> {
           AccountsDB().listenToAccountChanges(user!.uid);
           CategoriesDB().listenToCategoryChanges(user!.uid);
           TransactionsDB().listenToTransactionChanges(user!.uid);
+          RecurringTransactionDB().listenToRecurringTransactionsChanges(user!.uid);
         }
       });
     });

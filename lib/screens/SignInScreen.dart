@@ -250,7 +250,7 @@ class _SignInScreenState extends State<SignInScreen>
           },
           child: Text('Forgot Password?'),
           style: TextButton.styleFrom(
-            primary: Colors.white70,
+            foregroundColor: Colors.white70,
           ),
         ),
         SizedBox(height: 20),
@@ -260,7 +260,7 @@ class _SignInScreenState extends State<SignInScreen>
           },
           child: Text('Sign In'),
           style: ElevatedButton.styleFrom(
-            primary: Colors.blueAccent,
+            backgroundColor: Colors.blueAccent,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
             ),
@@ -275,7 +275,7 @@ class _SignInScreenState extends State<SignInScreen>
           },
           child: Text('Sign Up'),
           style: ElevatedButton.styleFrom(
-            primary: Colors.green,
+            backgroundColor: Colors.green,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
             ),
@@ -289,7 +289,7 @@ class _SignInScreenState extends State<SignInScreen>
           icon: Icon(Icons.login),
           label: Text('Sign in with Google'),
           style: ElevatedButton.styleFrom(
-            primary: Colors.red,
+            backgroundColor: Colors.red,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
             ),

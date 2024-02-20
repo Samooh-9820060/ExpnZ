@@ -92,8 +92,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
               onPressed: () => _submitFeedback(),
               child: Text('Submit Feedback'),
               style: ElevatedButton.styleFrom(
-                primary: Colors.blue,
-                onPrimary: Colors.white,
+                foregroundColor: Colors.white, backgroundColor: Colors.blue,
                 padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
               ),
             ),

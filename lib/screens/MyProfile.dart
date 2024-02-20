@@ -209,7 +209,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                 },
                 child: Text('Save Changes'),
                 style: ElevatedButton.styleFrom(
-                  primary: Colors.blueAccent,
+                  backgroundColor: Colors.blueAccent,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                   ),
@@ -224,7 +224,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                   ));
                 },
                 style: ElevatedButton.styleFrom(
-                  primary: Colors.blue,
+                  backgroundColor: Colors.blue,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                   ),

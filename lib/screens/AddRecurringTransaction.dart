@@ -1,8 +1,18 @@
+import 'package:expnz/utils/global.dart';
+import 'package:expnz/widgets/SimpleWidgets/ExpnZButton.dart';
+import 'package:expnz/widgets/SimpleWidgets/ModernSnackBar.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+import '../database/RecurringTransactionsDB.dart';
+
 class AddRecurringTransactionPage extends StatefulWidget {
+  String? documentId;
+
+  AddRecurringTransactionPage({super.key, this.documentId});
+
   @override
   _AddRecurringTransactionPageState createState() => _AddRecurringTransactionPageState();
 }
@@ -23,6 +33,13 @@ class _AddRecurringTransactionPageState extends State<AddRecurringTransactionPag
   String notificationFrequency = 'Hourly'; // Notification frequency for monthly/yearly
   late FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
   bool _notificationsEnabled = false;
+  bool updateMode = false;
+
+  // TextEditingControllers
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _amountController = TextEditingController();
+
 
   final List<String> frequencies = ['Daily', 'Weekly', 'Monthly', 'Yearly'];
   final List<String> daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -32,8 +49,49 @@ class _AddRecurringTransactionPageState extends State<AddRecurringTransactionPag
   void initState() {
     super.initState();
     flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
-    // Initialize other variables or state
+
+    if (widget.documentId != null) { updateMode = true; loadTransactionData(); }
   }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _descriptionController.dispose();
+    _amountController.dispose();
+    super.dispose();
+  }
+
+  void loadTransactionData() {
+    final transactionsData = recurringTransactionsNotifier.value;
+
+    // Extract the transaction data using the widget's transaction ID
+    final transaction = transactionsData[widget.documentId];
+
+    if (transaction != null) {
+      _nameController.text = transaction['name'];
+      _descriptionController.text = transaction['description'] ?? '';
+      _amountController.text = transaction['amount']?.toString() ?? '';
+
+      // Update other fields
+      scheduleReminder = transaction['scheduleReminder'] ?? false;
+      frequency = transaction['frequency'] ?? 'Daily';
+      dayOfWeek = transaction['dayOfWeek'] ?? 'Monday';
+
+      if (transaction.containsKey('dueDate')) {
+        selectedDate = DateTime.parse(transaction['dueDate']);
+      }
+
+      if (transaction.containsKey('dueTime')) {
+        selectedTime = TimeOfDay.fromDateTime(DateTime.parse('2022-01-01 ${transaction['dueTime']}'));
+      }
+
+      notificationDaysBefore = transaction['notificationDaysBefore'] ?? 0;
+      notificationHoursBefore = transaction['notificationHoursBefore'] ?? 0;
+      notificationMinutesBefore = transaction['notificationMinutesBefore'] ?? 0;
+      notificationFrequency = transaction['notificationFrequency'] ?? 'Hourly';
+    }
+  }
+
 
   Future<void> _requestPermissions() async {
     if (Platform.isIOS || Platform.isMacOS) {
@@ -76,7 +134,7 @@ class _AddRecurringTransactionPageState extends State<AddRecurringTransactionPag
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Add Recurring Transaction'),
+        title: updateMode ? Text('Update Recurring Transaction') : Text('Add Recurring Transaction'),
         backgroundColor: Colors.blueGrey[900],
       ),
       body: SingleChildScrollView(
@@ -87,17 +145,20 @@ class _AddRecurringTransactionPageState extends State<AddRecurringTransactionPag
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               TextFormField(
+                controller: _nameController,
                 decoration: InputDecoration(labelText: 'Name *'),
                 validator: (value) => value!.isEmpty ? 'Please enter a name' : null,
                 onSaved: (value) => name = value!,
               ),
               SizedBox(height: 20),
               TextFormField(
+                controller: _descriptionController,
                 decoration: InputDecoration(labelText: 'Description'),
                 onSaved: (value) => description = value ?? '',
               ),
               SizedBox(height: 20),
               TextFormField(
+                controller: _amountController,
                 decoration: InputDecoration(labelText: 'Amount (optional)'),
                 keyboardType: TextInputType.number,
                 onSaved: (value) => amount = value!.isEmpty ? null : double.parse(value),
@@ -177,15 +238,10 @@ class _AddRecurringTransactionPageState extends State<AddRecurringTransactionPag
               Center(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 16.0),
-                  child: ElevatedButton(
+                  child: ExpnZButton(
+                    label: 'Save',
                     onPressed: _submitForm,
-                    child: Text('Submit'),
-                    style: ElevatedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      backgroundColor: Colors.blue,
-                      padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-                    ),
-                  ),
+                  )
                 ),
               ),
             ],
@@ -249,14 +305,35 @@ class _AddRecurringTransactionPageState extends State<AddRecurringTransactionPag
 
 
 
-  void _submitForm() {
+  void _submitForm() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
-      // Save the data locally and set up notifications if needed
-      // Navigate back or show confirmation
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Recurring Transaction added')),
-      );
+      // Prepare data for the new recurring transaction
+      Map<String, dynamic> recurringTransactionData = {
+        'name': name,
+        'description': description,
+        'amount': amount,
+        'scheduleReminder': scheduleReminder,
+        'frequency': frequency,
+        'dayOfWeek': frequency == 'Weekly' ? dayOfWeek : null,
+        'dueDate': (frequency == 'Monthly' || frequency == 'Yearly') ? selectedDate.toIso8601String() : null,
+        'dueTime': selectedTime.format(context),
+        'notificationDaysBefore': notificationDaysBefore,
+        'notificationHoursBefore': notificationHoursBefore,
+        'notificationMinutesBefore': notificationMinutesBefore,
+        'notificationFrequency': scheduleReminder ? notificationFrequency : null,
+        'createdTime': DateTime.now().toIso8601String(),
+        'lastEditedTime': DateTime.now().toIso8601String(),
+        'userId': FirebaseAuth.instance.currentUser?.uid,
+      };
+
+      try {
+        await RecurringTransactionDB().addRecurringTransaction(recurringTransactionData);
+        showModernSnackBar(context: context, message: 'Recurring Transaction added', backgroundColor: Colors.green);
+        Navigator.pop(context);
+      } catch (e) {
+        showModernSnackBar(context: context, message: 'Failed to add transaction', backgroundColor: Colors.red);
+      }
     }
   }
 }

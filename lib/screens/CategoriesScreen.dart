@@ -110,7 +110,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                       final categoryDescription = categoriesData[documentId]?['description'] as String;
 
                       // Filter categories based on the search query
-                      if (_searchQuery.isNotEmpty && (!categoryName.toLowerCase().contains(_searchQuery.toLowerCase()) || !categoryDescription.toLowerCase().contains(_searchQuery.toLowerCase()))) {
+                      if (_searchQuery.isNotEmpty && (!categoryName.toLowerCase().contains(_searchQuery.toLowerCase()) && !categoryDescription.toLowerCase().contains(_searchQuery.toLowerCase()))) {
                         return Container();
                       }
 

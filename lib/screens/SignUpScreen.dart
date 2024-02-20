@@ -287,7 +287,7 @@ class _SignUpScreenState extends State<SignUpScreen> with SingleTickerProviderSt
       },
       child: Text('Sign Up'),
       style: ElevatedButton.styleFrom(
-        primary: Colors.blueAccent,
+        backgroundColor: Colors.blueAccent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
     );
