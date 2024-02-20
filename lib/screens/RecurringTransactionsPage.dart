@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../database/RecurringTransactionsDB.dart';
+import '../widgets/SimpleWidgets/ModernSnackBar.dart';
 import 'AddRecurringTransaction.dart';
 import 'package:expnz/utils/global.dart'; // Import global utilities
 
@@ -52,6 +54,17 @@ class _RecurringTransactionsPageState extends State<RecurringTransactionsPage> {
                       setState(() {});
                     });
                   },
+                  onLongPress: () {
+                    showDeleteConfirmationDialog(
+                      context: context,
+                      title: "Delete Transaction",
+                      content: "Are you sure you want to delete this transaction? This action cannot be undone.",
+                      onConfirmDelete: () async {
+                        await RecurringTransactionDB().softDeleteRecurringTransaction(documentId);
+                        setState(() {}); // Update the UI if necessary
+                      },
+                    );
+                  }
                 ),
               );
             },

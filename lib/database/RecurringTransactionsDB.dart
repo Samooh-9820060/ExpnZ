@@ -64,6 +64,13 @@ class RecurringTransactionDB {
     // Update existing transactions with new data
     existingTransactions.addAll(newTransactionsData);
 
+    // Remove soft-deleted categories
+    newTransactionsData.forEach((key, value) {
+      if (value['isDeleted'] == true) {
+        existingTransactions.remove(key);
+      }
+    });
+
     // Encode the updated transactions and save them
     String encodedData = json.encode(existingTransactions);
     await prefs.setString('recurringTransactions', encodedData);

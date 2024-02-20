@@ -89,3 +89,34 @@ Future<void> showModernSnackBar({
     completer.complete();
   }
 }
+
+void showDeleteConfirmationDialog({
+  required BuildContext context,
+  required String title,
+  required String content,
+  required VoidCallback onConfirmDelete,
+}) {
+  showDialog(
+    context: context,
+    builder: (BuildContext dialogContext) {
+      return AlertDialog(
+        title: Text(title),
+        content: Text(content),
+        actions: [
+          TextButton(
+            child: const Text("Cancel"),
+            onPressed: () => Navigator.of(dialogContext).pop(),
+          ),
+          TextButton(
+            child: const Text("Delete"),
+            onPressed: () {
+              onConfirmDelete();
+              Navigator.of(dialogContext).pop();
+            },
+          ),
+        ],
+      );
+    },
+  );
+}
+

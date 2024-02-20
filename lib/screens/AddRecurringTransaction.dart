@@ -134,7 +134,10 @@ class _AddRecurringTransactionPageState extends State<AddRecurringTransactionPag
 
     return Scaffold(
       appBar: AppBar(
-        title: updateMode ? Text('Update Recurring Transaction') : Text('Add Recurring Transaction'),
+        title: Text(
+          updateMode ? 'Update Recurring Transaction' : 'Add Recurring Transaction',
+          style: TextStyle(fontSize: 18), // Adjust font size as needed
+        ),
         backgroundColor: Colors.blueGrey[900],
       ),
       body: SingleChildScrollView(
@@ -239,9 +242,9 @@ class _AddRecurringTransactionPageState extends State<AddRecurringTransactionPag
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 16.0),
                   child: ExpnZButton(
-                    label: 'Save',
+                    label: updateMode ? 'Update' : 'Save',
                     onPressed: _submitForm,
-                  )
+                  ),
                 ),
               ),
             ],
@@ -328,11 +331,18 @@ class _AddRecurringTransactionPageState extends State<AddRecurringTransactionPag
       };
 
       try {
-        await RecurringTransactionDB().addRecurringTransaction(recurringTransactionData);
-        showModernSnackBar(context: context, message: 'Recurring Transaction added', backgroundColor: Colors.green);
+        if (updateMode) {
+          // Update existing transaction
+          await RecurringTransactionDB().updateRecurringTransaction(widget.documentId!, recurringTransactionData);
+          showModernSnackBar(context: context, message: 'Recurring Transaction updated', backgroundColor: Colors.green);
+        } else {
+          // Add new transaction
+          await RecurringTransactionDB().addRecurringTransaction(recurringTransactionData);
+          showModernSnackBar(context: context, message: 'Recurring Transaction added', backgroundColor: Colors.green);
+        }
         Navigator.pop(context);
       } catch (e) {
-        showModernSnackBar(context: context, message: 'Failed to add transaction', backgroundColor: Colors.red);
+        showModernSnackBar(context: context, message: 'Failed to process transaction', backgroundColor: Colors.red);
       }
     }
   }
