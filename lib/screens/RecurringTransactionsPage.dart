@@ -4,7 +4,9 @@ import 'package:intl/intl.dart';
 import '../database/RecurringTransactionsDB.dart';
 import '../widgets/SimpleWidgets/ModernSnackBar.dart';
 import 'AddRecurringTransaction.dart';
-import 'package:expnz/utils/global.dart'; // Import global utilities
+import 'package:expnz/utils/global.dart';
+
+import 'AddTransaction.dart'; // Import global utilities
 
 class RecurringTransactionsPage extends StatefulWidget {
   @override
@@ -84,7 +86,7 @@ class _RecurringTransactionsPageState extends State<RecurringTransactionsPage> {
                         children: <Widget>[
                           Text('${transaction?['amount']?.toStringAsFixed(2) ?? 'Undefined'}'),
                           PopupMenuButton<String>(
-                            onSelected: (String result) {
+                            onSelected: (String result) async {
                               switch (result) {
                                 case 'Edit':
                                   Navigator.push(
@@ -112,9 +114,17 @@ class _RecurringTransactionsPageState extends State<RecurringTransactionsPage> {
                                   break;
                                 case 'Pay':
                                 // Handle payment logic
+                                  await _handlePayNowClick(
+                                  context, documentId);
+                                  setState(() {
+
+                                  });
                                   break;
                                 case 'MarkPaid':
-                                // Handle mark as paid logic
+                                  setState(() {
+                                    RecurringTransactionDB().payRecurringTransaction(documentId);
+                                  });
+                                  showModernSnackBar(context: context, message: 'Due Date has been updated', backgroundColor: Colors.green);
                                   break;
                               }
                             },
@@ -165,5 +175,20 @@ class _RecurringTransactionsPageState extends State<RecurringTransactionsPage> {
         backgroundColor: Colors.blue,
       ),
     );
+  }
+}
+
+Future<void> _handlePayNowClick(
+    BuildContext context, String transactionId) async {
+  final result = await Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) =>
+          AddTransactionScreen(recurringTransactionId: transactionId),
+    ),
+  );
+
+  if (result == true) {
+    RecurringTransactionDB().payRecurringTransaction(transactionId);
   }
 }

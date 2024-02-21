@@ -16,11 +16,12 @@ import '../widgets/SimpleWidgets/ModernSnackBar.dart';
 enum TransactionType { income, expense, transfer }
 
 class AddTransactionScreen extends StatefulWidget {
-  final Map<String, dynamic>? transaction; // Nullable named parameter
-  final int? tempTransactionId; // New nullable named parameter
+  final Map<String, dynamic>? transaction;
+  final int? tempTransactionId;
+  final String? recurringTransactionId;
 
   // Constructor with named parameters
-  const AddTransactionScreen({super.key, this.transaction, this.tempTransactionId});
+  const AddTransactionScreen({super.key, this.transaction, this.tempTransactionId, this.recurringTransactionId});
 
   @override
   _AddTransactionScreenState createState() => _AddTransactionScreenState();
@@ -46,6 +47,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
   bool isProcessing = false;
   bool updateMode = false;
   bool tempAdding = false;
+  bool recurringAdding = false;
 
   List<Map<String, dynamic>> filteredCategories = [];
   List<Map<String, dynamic>> selectedCategoriesList = [];
@@ -72,6 +74,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
 
     if (widget.transaction != null) { updateMode = true; loadTransactionData(); }
     if (widget.tempTransactionId != null) { tempAdding = true; loadTempTransactionData(); }
+    if (widget.recurringTransactionId != null) { recurringAdding = true; loadRecurringTransactionData(); }
   }
 
   void _updateBalance() {
@@ -86,6 +89,20 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
         // Update the balance controller
         _balanceGivenController.text = balance.toStringAsFixed(2); // Format to 2 decimal places
       } catch (ex) {}
+    }
+  }
+
+  Future<void> loadRecurringTransactionData() async {
+    Map<String, Map<String, dynamic>> transactionsData = recurringTransactionsNotifier.value;
+
+    // Retrieve the specific transaction data
+    Map<String, dynamic>? transactionData = transactionsData[widget.recurringTransactionId];
+
+    if (transactionData != null) {
+      _selectedType = TransactionType.expense;
+      _nameController.text = transactionData['name'] ?? '';
+      _descriptionController.text = transactionData['description'] ?? '';
+      _amountController.text = transactionData['amount'].toString();
     }
   }
 

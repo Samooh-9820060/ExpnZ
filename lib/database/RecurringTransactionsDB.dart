@@ -224,6 +224,12 @@ class RecurringTransactionDB {
     });
   }
 
+  Future<void> payRecurringTransaction(String transactionId) async {
+    await _firestore.collection(collectionName).doc(transactionId).update({
+      'lastEditedTime': DateTime.now().toIso8601String(),
+      'paidThisMonth': true
+    });
+  }
 
   TimeOfDay parseTimeOfDay(String timeString) {
     final hourMinute = timeString.split(':');

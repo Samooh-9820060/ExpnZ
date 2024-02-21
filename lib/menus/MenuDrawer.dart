@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:expnz/screens/AboutUsScreen.dart';
 import 'package:expnz/screens/HelpSupportScreen.dart';
 import 'package:expnz/screens/HomeScreen.dart';
@@ -33,115 +34,74 @@ class _MenuDrawerState extends State<MenuDrawer> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 100.0, left: 15),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (widget.profilePicUrl != null)  // If profile picture is available
-              Image.network(
-                widget.profilePicUrl!,
-                width: MediaQuery.of(context).size.width / 4,
-                height: MediaQuery.of(context).size.width / 4,
-              )
-            else  // If profile picture is not available, show Lottie animation
-              Lottie.asset(
-                'assets/lottie/profile-pic1.json',
-                width: MediaQuery.of(context).size.width / 4,
-                height: MediaQuery.of(context).size.width / 4,
-                fit: BoxFit.fill,
+    final user = FirebaseAuth.instance.currentUser;
+
+    return Drawer(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          DrawerHeader(
+            decoration: const BoxDecoration(
+              color: Colors.transparent,
+            ),
+            child: Padding(
+              padding: EdgeInsets.all(6),
+              child: FutureBuilder<DocumentSnapshot>(
+                future: FirebaseFirestore.instance.collection('users').doc(user?.uid).get(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.done && snapshot.data != null) {
+                    var userData = snapshot.data!.data() as Map<String, dynamic>?;
+                    String? profileImageUrl = userData?['profileImageUrl'];
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: <Widget>[
+                        Flexible(
+                          child: CircleAvatar(
+                            backgroundImage: profileImageUrl != null ? NetworkImage(profileImageUrl) : null,
+                            child: profileImageUrl == null ? Icon(Icons.person, size: 40) : null,
+                            radius: 50.0,
+                          ),
+                        ),
+                      ],
+                    );
+                  } else {
+                    return CircularProgressIndicator();
+                  }
+                },
               ),
-            SizedBox(height: 40),
-            menuGroup([
-              //menuItem(Icons.home, "Home", context, HomeScreen()),
-              menuItem(Icons.person, "My Profile", context, targetPage: MyProfileScreen()),
-            ]),
-            menuGroup([
-              menuItem(Icons.settings, "Settings", context, targetPage: SettingsScreen()),
-              menuItem(Icons.help, "Help & Support", context, targetPage: HelpSupportScreen()),
-              //menuItem(Icons.notifications, "Notifications", context, targetPage: HomeScreen()),
-            ]),
-            menuGroup([
-              menuItem(Icons.loop, "Recurring Transactions", context, targetPage: RecurringTransactionsPage()),
-              //menuItem(Icons.group_add, "Invite Friends", context, targetPage: HomeScreen()),
-              menuItem(Icons.info, "About Us", context, targetPage: AboutUsScreen()),
-              menuItem(Icons.exit_to_app, "Logout", context, targetPage: null, onTap: _signOut),
-            ]),
-          ],
-        ),
+            ),
+          ),
+          Expanded(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: <Widget>[
+                menuItem(Icons.person, "My Profile", MyProfileScreen()),
+                menuItem(Icons.settings, "Settings", SettingsScreen()),
+                menuItem(Icons.help, "Help & Support", HelpSupportScreen()),
+                menuItem(Icons.loop, "Recurring", RecurringTransactionsPage()),
+                menuItem(Icons.info, "About Us", AboutUsScreen()),
+                ListTile(
+                  leading: Icon(Icons.exit_to_app, color: Colors.blueGrey[700]),
+                  title: Text("Logout"),
+                  onTap: _signOut,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget menuGroup(List<Widget> items) {
-    return Column(
-      children: [
-        ...items,
-        SizedBox(height: 20),
-        Divider(color: Colors.blueGrey[700], thickness: 2),
-        SizedBox(height: 20),
-      ],
-    );
-  }
-
-  Widget menuItem(IconData icon, String title, BuildContext context, {Widget? targetPage, Widget? trailing, Function()? onTap}) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: InkWell(
-        onTap: () {
-          if (targetPage != null) {
-            Navigator.push(
-              context,
-              PageRouteBuilder(
-                transitionDuration: Duration(milliseconds: 500),
-                pageBuilder: (BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation) {
-                  return targetPage;
-                },
-                transitionsBuilder: (BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation, Widget child) {
-                  return SlideTransition(
-                    position: Tween<Offset>(
-                      begin: Offset(1.0, 0.0),
-                      end: Offset.zero,
-                    ).animate(animation),
-                    child: child,
-                  );
-                },
-              ),
-            );
-          } else {
-            onTap!(); // Call the onTap function
-          }
-        },
-        child: AnimatedContainer(
-          duration: Duration(milliseconds: 300),
-          margin: EdgeInsets.symmetric(vertical: 8.0),
-          padding: EdgeInsets.all(12.0),
-          decoration: BoxDecoration(
-            color: Colors.blueGrey[800],
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.blueGrey[700]!.withOpacity(0.5),
-                spreadRadius: 1,
-                blurRadius: 2,
-                offset: Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Container(
-            height: 15,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,  // Wrap content by setting this to min
-              children: [
-                Icon(icon, color: Colors.white, size: 14),
-                SizedBox(width: 20),
-                Text(title, style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
-                if (trailing != null) trailing // Add trailing widget if available
-              ],
-            ),
-          ),
-        ),
+  Widget menuItem(IconData icon, String title, Widget targetPage) {
+    return ListTile(
+      leading: Icon(icon, color: Colors.blueGrey[700]),
+      title: Text(title),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => targetPage),
       ),
     );
   }
