@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:expnz/database/AccountsDB.dart';
 import 'package:expnz/database/CategoriesDB.dart';
@@ -10,11 +12,16 @@ import 'package:expnz/screens/SignInScreen.dart';
 import 'package:expnz/utils/NotificationListener.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:provider/provider.dart';
 import './screens/MainPage.dart';
 import 'database/ProfileDB.dart';
 import 'firebase_options.dart';
+import 'package:timezone/data/latest_all.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
+
 
 void testRegexes() {
   // Test cases
@@ -90,11 +97,22 @@ void testRegexes() {
   }
 }
 
+Future<void> _configureLocalTimeZone() async {
+  if (kIsWeb || Platform.isLinux) {
+    return;
+  }
+  tz.initializeTimeZones();
+  final String timeZoneName = await FlutterTimezone.getLocalTimezone();
+  tz.setLocalLocation(tz.getLocation(timeZoneName));
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  await _configureLocalTimeZone();
+
   //testRegexes();
 
   runApp(
@@ -122,14 +140,14 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
+    /*if (user != null) {
       // Start listening to profile changes if the user is logged in
       ProfileDB().listenToProfileChanges(user!.uid);
       AccountsDB().listenToAccountChanges(user!.uid);
       CategoriesDB().listenToCategoryChanges(user!.uid);
       TransactionsDB().listenToTransactionChanges(user!.uid);
       RecurringTransactionDB().listenToRecurringTransactionsChanges(user!.uid);
-    }
+    }*/
 
     // Set up an auth state change listener
     FirebaseAuth.instance.authStateChanges().listen((User? currentUser) {

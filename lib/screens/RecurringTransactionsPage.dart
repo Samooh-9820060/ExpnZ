@@ -1,4 +1,6 @@
+import 'package:expnz/utils/notification_manager.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../database/RecurringTransactionsDB.dart';
 import '../widgets/SimpleWidgets/ModernSnackBar.dart';
 import 'AddRecurringTransaction.dart';
@@ -36,39 +38,63 @@ class _RecurringTransactionsPageState extends State<RecurringTransactionsPage> {
             itemBuilder: (context, index) {
               String documentId = transactionKeys[index];
               var transaction = transactionsData[documentId];
-              return Card(
-                margin: EdgeInsets.all(8.0),
-                child: ListTile(
-                  title: Text(transaction?['name'] ?? 'Unknown'),
-                  subtitle: Text(transaction?['description'] ?? 'No description'),
-                  trailing: Text('${transaction?['amount']?.toStringAsFixed(2) ?? 'Undefined'}'),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => AddRecurringTransactionPage(
-                          documentId: documentId,
-                        ),
-                      ),
-                    ).then((value) {
-                      setState(() {});
-                    });
-                  },
-                  onLongPress: () {
-                    showDeleteConfirmationDialog(
-                      context: context,
-                      title: "Delete Transaction",
-                      content: "Are you sure you want to delete this transaction? This action cannot be undone.",
-                      onConfirmDelete: () async {
-                        await RecurringTransactionDB().softDeleteRecurringTransaction(documentId);
-                        setState(() {}); // Update the UI if necessary
-                      },
-                    );
+
+              return FutureBuilder<String?>(
+                future: NotificationManager().getNotificationTime(documentId),
+                builder: (context, snapshot) {
+                  String subtitle;
+                  if (snapshot.connectionState == ConnectionState.done) {
+                    if (snapshot.hasData && snapshot.data != null) {
+                      // Format the date string if it's not null
+                      DateTime? notificationTime = DateTime.tryParse(snapshot.data!);
+                      if (notificationTime != null) {
+                        subtitle = "${transaction?['frequency']} \n(Next reminder at ${DateFormat('yyyy-MM-dd HH:mm').format(notificationTime)})";
+                      } else {
+                        subtitle = "${transaction?['frequency']} (No reminder set)";
+                      }
+                    } else {
+                      subtitle = "${transaction?['frequency']} (No reminder set)";
+                    }
+                  } else {
+                    subtitle = "${transaction?['frequency']} (Loading reminder...)";
                   }
-                ),
+
+                  return Card(
+                    margin: EdgeInsets.all(8.0),
+                    child: ListTile(
+                      title: Text(transaction?['name'] ?? 'Unknown'),
+                      subtitle: Text(subtitle),
+                      trailing: Text('${transaction?['amount']?.toStringAsFixed(2) ?? 'Undefined'}'),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => AddRecurringTransactionPage(
+                              documentId: documentId,
+                            ),
+                          ),
+                        ).then((value) {
+                          setState(() {});
+                        });
+                      },
+                      onLongPress: () {
+                        showDeleteConfirmationDialog(
+                          context: context,
+                          title: "Delete Transaction",
+                          content: "Are you sure you want to delete this transaction? This action cannot be undone.",
+                          onConfirmDelete: () async {
+                            await RecurringTransactionDB().softDeleteRecurringTransaction(documentId);
+                            setState(() {}); // Update the UI if necessary
+                          },
+                        );
+                      },
+                    ),
+                  );
+                },
               );
             },
           );
+
         },
       ),
       floatingActionButton: FloatingActionButton(
