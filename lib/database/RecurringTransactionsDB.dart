@@ -78,6 +78,7 @@ class RecurringTransactionDB {
     newTransactionsData.forEach((key, value) {
       if (value['isDeleted'] == true) {
         existingTransactions.remove(key);
+        deleteNotification(key);
       }
     });
 
@@ -235,5 +236,13 @@ class RecurringTransactionDB {
         dueTime.minute
     );
     return fullDueDate.subtract(Duration(days: daysBefore, hours: hoursBefore, minutes: minutesBefore));
+  }
+
+  Future<void> deleteNotification(String docKey) async {
+    // The times do not match, delete the old notification and schedule a new one
+    int? existingNotificationId = await NotificationManager().findNotificationId(docKey);
+    if (existingNotificationId != null) {
+      await flutterLocalNotificationsPlugin.cancel(existingNotificationId);
+    }
   }
 }
