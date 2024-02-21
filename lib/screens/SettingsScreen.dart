@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:android_intent_plus/android_intent.dart';
 import 'package:excel/excel.dart';
 import 'package:expnz/database/AccountsDB.dart';
 import 'package:expnz/database/CategoriesDB.dart';
@@ -61,14 +62,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return true;
   }
 
+  Future<void> _requestBatteryOptimization() async {
+    if (Platform.isAndroid) {
+      final AndroidIntent intent = AndroidIntent(
+        action: 'android.settings.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS',
+        data: 'package:com.techNova.ExpnZ.expnz',
+      );
+      await intent.launch();
+    }
+  }
+
   void _handleNotificationPermission(bool value) async {
-    print('started');
     if (value) {
       bool isPermissionGranted = await _checkNotificationPermission();
-      print('went here');
 
       if (isPermissionGranted) {
-        print('turning on permission');
+        await _requestBatteryOptimization();
+
         _notificationListener.stopListening();
         _notificationListener.startListening();
       }
@@ -154,7 +164,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   title: Text('Allow Reading of Notifications',
                       style: TextStyle(color: Colors.white)),
                   value: _allowNotificationReading, // Boolean variable to track the toggle state
-                  onChanged: _handleNotificationPermission,
+                  onChanged: (bool value) {
+                    setState(() {
+                      _handleNotificationPermission(value);
+                    });
+                  },
                   secondary: Icon(Icons.notifications_active, color: Colors.white),
                 ),
               ],

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 
@@ -53,7 +54,8 @@ class NotificationManager {
   }
 
   // Schedule a zoned notification
-  Future<void> scheduleNotification(Map<String, dynamic> transaction, DateTime notificationTime) async {
+  // Add an additional parameter `notificationType`
+  Future<void> scheduleNotification(Map<String, dynamic> transaction, DateTime notificationTime, String notificationType) async {
     var androidPlatformChannelSpecifics = AndroidNotificationDetails(
       transaction.keys.first,
       'Recurring Transactions',
@@ -65,7 +67,6 @@ class NotificationManager {
       sound: 'slow_spring_board.aiff',
     );
 
-
     var platformChannelSpecifics = NotificationDetails(
       android: androidPlatformChannelSpecifics,
       iOS: darwinNotificationDetails,
@@ -74,12 +75,26 @@ class NotificationManager {
     Map<String, dynamic> payloadMap = {
       'docKey': transaction['docKey'],
       'notificationTime': notificationTime.toIso8601String(),
+      'type': notificationType, // Include the type in the payload
     };
     String payload = json.encode(payloadMap);
+
+    String notificationTitle = "Reminder: ${transaction['name']}";
+    String notificationBody = "It's time for your ${transaction['frequency']} transaction '${transaction['name']}'.";
+
+    // Modify the title and body based on the type of notification
+    if (notificationType == "overdue") {
+      notificationTitle = "Overdue: ${transaction['name']}";
+      notificationBody = "Your ${transaction['frequency']} transaction '${transaction['name']}' is overdue!\n"
+          "Amount: ${transaction['amount']}";
+    } else {
+      notificationBody += "\nAmount: ${transaction['amount']}";
+    }
+
     await flutterLocalNotificationsPlugin.zonedSchedule(
       transaction.hashCode,
-      transaction['name'],
-      transaction['description'],
+      notificationTitle,
+      notificationBody,
       tz.TZDateTime.from(notificationTime, tz.local),
       platformChannelSpecifics,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
@@ -88,6 +103,7 @@ class NotificationManager {
       payload: payload,
     );
   }
+
 
   Future<int?> findNotificationId(String transactionId) async {
     List<PendingNotificationRequest> pendingNotifications =
@@ -102,7 +118,7 @@ class NotificationManager {
     return null;
   }
 
-  Future<String?> getNotificationTime(String id) async {
+  Future<Map<String, dynamic>?> getNotificationPayload(String id) async {
     List<PendingNotificationRequest> pendingNotifications =
     await flutterLocalNotificationsPlugin.pendingNotificationRequests();
 
@@ -110,7 +126,7 @@ class NotificationManager {
       try {
         Map<String, dynamic> payloadData = json.decode(notification.payload!);
         if (payloadData['docKey'] == id) {
-          return payloadData['notificationTime']; // Return the notification time
+          return payloadData; // Return the entire payload as a map
         }
       } catch (e) {
         // Handle or log error
@@ -137,5 +153,54 @@ class NotificationManager {
     }
 
     return false;
+  }
+
+  DateTime calculateNextDueDate(DateTime currentDueDate, String frequency) {
+    switch (frequency) {
+      case 'Daily':
+        return currentDueDate.add(Duration(days: 1));
+      case 'Weekly':
+        return currentDueDate.add(Duration(days: 7));
+      case 'Monthly':
+        int year = currentDueDate.year;
+        int month = currentDueDate.month;
+        int day = currentDueDate.day;
+
+        month += 1;
+        if (month > 12) {
+          month = 1;
+          year += 1;
+        }
+
+        int lastDayOfMonth = DateTime(year, month + 1, 0).day;
+        if (day > lastDayOfMonth) {
+          day = lastDayOfMonth;
+        }
+
+        return DateTime(year, month, day);
+      case 'Yearly':
+        return DateTime(currentDueDate.year + 1, currentDueDate.month, currentDueDate.day);
+      default:
+        return currentDueDate;
+    }
+  }
+
+  DateTime calculateNotificationTime(DateTime dueDate, TimeOfDay dueTime, int daysBefore, int hoursBefore, int minutesBefore) {
+    DateTime fullDueDate = DateTime(
+        dueDate.year,
+        dueDate.month,
+        dueDate.day,
+        dueTime.hour,
+        dueTime.minute
+    );
+    return fullDueDate.subtract(Duration(days: daysBefore, hours: hoursBefore, minutes: minutesBefore));
+  }
+
+  Future<void> deleteNotification(String docKey) async {
+    // The times do not match, delete the old notification and schedule a new one
+    int? existingNotificationId = await NotificationManager().findNotificationId(docKey);
+    if (existingNotificationId != null) {
+      await flutterLocalNotificationsPlugin.cancel(existingNotificationId);
+    }
   }
 }

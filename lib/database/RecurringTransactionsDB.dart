@@ -78,7 +78,7 @@ class RecurringTransactionDB {
     newTransactionsData.forEach((key, value) {
       if (value['isDeleted'] == true) {
         existingTransactions.remove(key);
-        deleteNotification(key);
+        NotificationManager().deleteNotification(key);
       }
     });
 
@@ -120,23 +120,25 @@ class RecurringTransactionDB {
 
   void updateScheduledNotifications() async {
     for (var transaction in recurringTransactionsNotifier.value.values) {
+
+      //remove any already outdated notifications
+      var payload = await NotificationManager().getNotificationPayload(transaction['docKey']);
+      if (payload != null) {
+        DateTime notificationTime = DateTime.parse(payload['notificationTime']);
+        if (notificationTime.isBefore(DateTime.now())) {
+          // The times do not match, delete the old notification and schedule a new one
+          int? existingNotificationId = await NotificationManager().findNotificationId(transaction['docKey']);
+          if (existingNotificationId != null) {
+            await flutterLocalNotificationsPlugin.cancel(existingNotificationId);
+          }
+        }
+      }
+
       if (transaction['scheduleReminder']) {
         DateTime dueDate = DateTime.parse(transaction['dueDate']);
         TimeOfDay dueTime = parseTimeOfDay(transaction['dueTime']);
 
-        if (dueDate.isBefore(DateTime.now())) {
-          if (transaction['paidThisMonth'] == true) {
-            // Calculate the next due date
-            dueDate = calculateNextDueDate(dueDate, transaction['frequency']);
-
-            // Update the due date in Firestore
-            await updateRecurringTransactionDate(transaction['id'], dueDate);
-          } else {
-            // Handle overdue payments
-          }
-        }
-
-        DateTime notificationTime = calculateNotificationTime(
+        DateTime notificationTime = NotificationManager().calculateNotificationTime(
             dueDate,
             dueTime,
             transaction['notificationDaysBefore'],
@@ -146,23 +148,54 @@ class RecurringTransactionDB {
 
         // Await the result of notificationExists
         bool doesExist = await NotificationManager().notificationExists(transaction['docKey']);
-        //clearAllNotifications();
-        if (!doesExist) {
-          NotificationManager().scheduleNotification(transaction, notificationTime);
-        } else {
-          // Retrieve the notification time asynchronously and then compare
-          String? existingNotificationTimeString = await NotificationManager().getNotificationTime(transaction['docKey']);
-          DateTime? existingNotificationTime = existingNotificationTimeString != null ? DateTime.tryParse(existingNotificationTimeString) : null;
 
-          if (existingNotificationTime != null && existingNotificationTime.isAtSameMomentAs(notificationTime)) {
+        if (dueDate.isBefore(DateTime.now())) {
+          if (transaction['paidThisMonth'] == true) {
+            // Calculate the next due date
+            dueDate = NotificationManager().calculateNextDueDate(dueDate, transaction['frequency']);
 
+            // Update the due date in Firestore
+            await updateRecurringTransactionDate(transaction['docKey'], dueDate);
           } else {
-            // The times do not match, delete the old notification and schedule a new one
-            int? existingNotificationId = await NotificationManager().findNotificationId(transaction['docKey']);
-            if (existingNotificationId != null) {
-              await flutterLocalNotificationsPlugin.cancel(existingNotificationId);
+            //Schedule Notification saying its overdue
+            var payload = await NotificationManager().getNotificationPayload(transaction['docKey']);
+            if (payload != null) {
+              if (payload['type'].toString() != 'overdue') {
+                int? existingNotificationId = await NotificationManager().findNotificationId(transaction['docKey']);
+                if (existingNotificationId != null) {
+                  await flutterLocalNotificationsPlugin.cancel(existingNotificationId);
+                }
+
+                //schedule it
+                DateTime nextDayReminder = DateTime.now().add(Duration(days: 1));
+                NotificationManager().scheduleNotification(transaction, nextDayReminder, "overdue");
+              }
+            } else {
+              //schedule it
+              DateTime nextDayReminder = DateTime.now().add(Duration(days: 1));
+              NotificationManager().scheduleNotification(transaction, nextDayReminder, "overdue");
             }
-            NotificationManager().scheduleNotification(transaction, notificationTime);
+          }
+        } else {
+          //clearAllNotifications();
+          if (!doesExist) {
+            NotificationManager().scheduleNotification(transaction, notificationTime, "normal");
+          } else {
+            // Retrieve the notification time asynchronously and then compare
+            var payload = await NotificationManager().getNotificationPayload(transaction['docKey']);
+            String? existingNotificationTimeString = payload?['notificationTime'];
+            DateTime? existingNotificationTime = existingNotificationTimeString != null ? DateTime.tryParse(existingNotificationTimeString) : null;
+
+            if (existingNotificationTime != null && existingNotificationTime.isAtSameMomentAs(notificationTime) && payload?['type'] == 'normal') {
+              //ok
+            } else {
+              // The times do not match, delete the old notification and schedule a new one
+              int? existingNotificationId = await NotificationManager().findNotificationId(transaction['docKey']);
+              if (existingNotificationId != null) {
+                await flutterLocalNotificationsPlugin.cancel(existingNotificationId);
+              }
+              NotificationManager().scheduleNotification(transaction, notificationTime, "normal");
+            }
           }
         }
       } else {
@@ -195,54 +228,5 @@ class RecurringTransactionDB {
   TimeOfDay parseTimeOfDay(String timeString) {
     final hourMinute = timeString.split(':');
     return TimeOfDay(hour: int.parse(hourMinute[0]), minute: int.parse(hourMinute[1]));
-  }
-
-  DateTime calculateNextDueDate(DateTime currentDueDate, String frequency) {
-    switch (frequency) {
-      case 'Daily':
-        return currentDueDate.add(Duration(days: 1));
-      case 'Weekly':
-        return currentDueDate.add(Duration(days: 7));
-      case 'Monthly':
-        int year = currentDueDate.year;
-        int month = currentDueDate.month;
-        int day = currentDueDate.day;
-
-        month += 1;
-        if (month > 12) {
-          month = 1;
-          year += 1;
-        }
-
-        int lastDayOfMonth = DateTime(year, month + 1, 0).day;
-        if (day > lastDayOfMonth) {
-          day = lastDayOfMonth;
-        }
-
-        return DateTime(year, month, day);
-      case 'Yearly':
-        return DateTime(currentDueDate.year + 1, currentDueDate.month, currentDueDate.day);
-      default:
-        return currentDueDate;
-    }
-  }
-
-  DateTime calculateNotificationTime(DateTime dueDate, TimeOfDay dueTime, int daysBefore, int hoursBefore, int minutesBefore) {
-    DateTime fullDueDate = DateTime(
-        dueDate.year,
-        dueDate.month,
-        dueDate.day,
-        dueTime.hour,
-        dueTime.minute
-    );
-    return fullDueDate.subtract(Duration(days: daysBefore, hours: hoursBefore, minutes: minutesBefore));
-  }
-
-  Future<void> deleteNotification(String docKey) async {
-    // The times do not match, delete the old notification and schedule a new one
-    int? existingNotificationId = await NotificationManager().findNotificationId(docKey);
-    if (existingNotificationId != null) {
-      await flutterLocalNotificationsPlugin.cancel(existingNotificationId);
-    }
   }
 }

@@ -154,6 +154,7 @@ class _MyAppState extends State<MyApp> {
       setState(() {
         user = currentUser;
         if (user != null) {
+          RecurringTransactionDB().updateScheduledNotifications();
           ProfileDB().listenToProfileChanges(user!.uid);
           AccountsDB().listenToAccountChanges(user!.uid);
           CategoriesDB().listenToCategoryChanges(user!.uid);
