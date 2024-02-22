@@ -50,8 +50,8 @@ class _CustomAppBarState extends State<CustomAppBar> {
     // Set the status bar color
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent, // transparent status bar
-        statusBarIconBrightness: Brightness.light,
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
       ),
     );
 
@@ -62,8 +62,9 @@ class _CustomAppBarState extends State<CustomAppBar> {
       ),
       child: AppBar(
         automaticallyImplyLeading: false,
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.blueGrey[900],
         elevation: 0,
+        scrolledUnderElevation: 0.0,
         titleSpacing: 50,
         title: Transform.translate(
           offset: const Offset(0, -5),  // Move title upwards by 5 units

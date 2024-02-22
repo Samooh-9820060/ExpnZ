@@ -172,6 +172,7 @@ class SettingsScreenState extends State<SettingsScreen> {
       child: Scaffold(
         backgroundColor: Colors.blueGrey[900],
         appBar: AppBar(
+          scrolledUnderElevation: 0.0,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () {

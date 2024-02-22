@@ -253,7 +253,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                 height: MediaQuery.of(context).size.height * 0.7,
                 margin: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.blueGrey,
+                  color: Colors.blueGrey[900],
                   borderRadius: BorderRadius.circular(40),
                 ),
                 child: Padding(
@@ -641,6 +641,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     return Scaffold(
       backgroundColor: Colors.blueGrey[900],
       appBar: AppBar(
+        scrolledUnderElevation: 0.0,
         elevation: 0,
         backgroundColor: Colors.blueGrey[900],
         leading: BackButton(

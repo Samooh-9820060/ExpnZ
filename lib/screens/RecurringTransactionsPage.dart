@@ -31,6 +31,7 @@ class RecurringTransactionsPageState extends State<RecurringTransactionsPage> {
       backgroundColor: Colors.blueGrey[900],
       appBar: AppBar(
         title: const Text('Recurring Transactions'),
+        scrolledUnderElevation: 0.0,
         backgroundColor: Colors.blueGrey[900],
       ),
       body: ValueListenableBuilder<Map<String, Map<String, dynamic>>>(
