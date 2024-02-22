@@ -52,6 +52,36 @@ class AccountsDB {
       print('Error fetching accounts: $error');
     });
   }
+  Future<void> fetchAccountsSince(DateTime sinceTime, String userUid) async {
+    final prefs = await SharedPreferences.getInstance();
+    final String formattedSinceTime = sinceTime.toIso8601String();
+
+    try {
+      // Fetch accounts updated after the provided sinceTime
+      QuerySnapshot snapshot = await _firestore.collection(collectionName)
+          .where(uid, isEqualTo: userUid)
+          .where('lastEditedTime', isGreaterThan: formattedSinceTime)
+          .get();
+
+      final Map<String, Map<String, dynamic>> newAccountsData = {};
+
+      for (var doc in snapshot.docs) {
+        var data = doc.data() as Map<String, dynamic>;
+        newAccountsData[doc.id] = data;
+      }
+
+      if (newAccountsData.isNotEmpty) {
+        await cacheAccountsLocally(newAccountsData);
+      } else {
+        await loadAccountsFromLocal();
+      }
+
+      // Update the last sync time in SharedPreferences
+      await prefs.setString('lastAccountSyncTime', DateTime.now().toIso8601String());
+    } catch (error) {
+      print('Error fetching accounts: $error');
+    }
+  }
 
   Future<void> loadAccountsFromLocal() async {
     final prefs = await SharedPreferences.getInstance();

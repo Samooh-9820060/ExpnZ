@@ -26,7 +26,7 @@ class TransactionsDB {
   void listenToTransactionChanges(String userUid) async {
     final prefs = await SharedPreferences.getInstance();
     // Get the last sync time
-    String? lastSyncTimeStr = prefs.getString('lastSyncTime');
+    String? lastSyncTimeStr = prefs.getString('lastTransactionSyncTime');
     // Ensure that the format of lastSyncTimeStr is consistent with the one in Firestore
     DateTime lastSyncTime = lastSyncTimeStr != null
         ? DateTime.parse(lastSyncTimeStr)
@@ -34,14 +34,12 @@ class TransactionsDB {
 
     String formattedLastSyncTime = _formatDateTimeForFirestore(lastSyncTime);
 
-    print('Last Sync Time Transactions: $formattedLastSyncTime');
 
     _firestore.collection(collectionName)
         .where(uid, isEqualTo: userUid)
         .where('lastEditedTime', isGreaterThan: formattedLastSyncTime)
         .snapshots()
         .listen((snapshot) async {
-      print('Documents fetched: ${snapshot.docs.length}');
       final Map<String, Map<String, dynamic>> newTransactionsData = {};
 
       for (var doc in snapshot.docs) {
@@ -58,6 +56,35 @@ class TransactionsDB {
     }, onError: (error) {
       print('Error fetching transactions: $error');
     });
+  }
+  Future<void> fetchTransactionsSince(DateTime sinceTime, String userUid) async {
+    final prefs = await SharedPreferences.getInstance();
+    final String formattedSinceTime = _formatDateTimeForFirestore(sinceTime);
+
+    try {
+      // Fetch transactions updated after the provided sinceTime
+      QuerySnapshot snapshot = await _firestore.collection(collectionName)
+          .where(uid, isEqualTo: userUid)
+          .where('lastEditedTime', isGreaterThan: formattedSinceTime)
+          .get();
+
+      final Map<String, Map<String, dynamic>> newTransactionsData = {};
+
+      for (var doc in snapshot.docs) {
+        newTransactionsData[doc.id] = doc.data() as Map<String, dynamic>;
+      }
+
+      if (newTransactionsData.isNotEmpty) {
+        await cacheTransactionsLocally(newTransactionsData);
+      } else {
+        await loadTransactionsFromLocal();
+      }
+
+      // Update the last sync time in SharedPreferences
+      await prefs.setString('lastTransactionSyncTime', DateTime.now().toIso8601String());
+    } catch (error) {
+      print('Error fetching transactions: $error');
+    }
   }
 
   String _formatDateTimeForFirestore(DateTime dateTime) {

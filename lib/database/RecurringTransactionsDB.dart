@@ -51,6 +51,37 @@ class RecurringTransactionDB {
       print('Error listening to recurring transactions changes: $error');
     });
   }
+  Future<void> fetchRecurringTransactionsSince(DateTime sinceTime, String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final String formattedSinceTime = sinceTime.toIso8601String();
+
+    try {
+      QuerySnapshot snapshot = await _firestore.collection(collectionName)
+          .where('userId', isEqualTo: userId)
+          .where('lastEditedTime', isGreaterThan: formattedSinceTime)
+          .get();
+
+      final newTransactionsData = <String, Map<String, dynamic>>{};
+
+      for (var doc in snapshot.docs) {
+        var data = doc.data();
+        if (data is Map<String, dynamic>) {
+          data['docKey'] = doc.id;
+          newTransactionsData[doc.id] = data;
+        }
+      }
+
+      if (newTransactionsData.isNotEmpty) {
+        await cacheRecurringTransactionsLocally(newTransactionsData);
+      } else {
+        await loadRecurringTransactionsFromLocal();
+      }
+
+      await prefs.setString('lastRecurringTransactionSyncTime', DateTime.now().toIso8601String());
+    } catch (error) {
+      print('Error fetching recurring transactions: $error');
+    }
+  }
 
   Future<void> loadRecurringTransactionsFromLocal() async {
     final prefs = await SharedPreferences.getInstance();

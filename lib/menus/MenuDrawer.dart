@@ -8,7 +8,9 @@ import 'package:expnz/screens/SettingsScreen.dart';
 import 'package:expnz/screens/SignInScreen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:lottie/lottie.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MenuDrawer extends StatefulWidget {
   final String? profilePicUrl;  // Assuming this is your profile picture URL
@@ -24,6 +26,14 @@ class _MenuDrawerState extends State<MenuDrawer> {
 
   Future<void> _signOut() async {
     try {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.remove('lastAccountSyncTime');
+      await prefs.remove('lastCategorySyncTime');
+      await prefs.remove('lastTransactionSyncTime');
+      await prefs.remove('lastRecurringTransactionSyncTime');
+
+      final GoogleSignIn googleSignIn = GoogleSignIn();
+      await googleSignIn.signOut();
       await FirebaseAuth.instance.signOut();
       // Navigate to the HomeScreen or any other screen after successful logout
       Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => SignInScreen()));
@@ -67,7 +77,7 @@ class _MenuDrawerState extends State<MenuDrawer> {
                       ],
                     );
                   } else {
-                    return CircularProgressIndicator();
+                    return const Center(child: CircularProgressIndicator());
                   }
                 },
               ),

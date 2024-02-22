@@ -43,9 +43,8 @@ class CategoriesDB {
       bool hasSoftDeletes = false;
       final Map<String, Map<String, dynamic>> newCategoriesData = {};
 
-      print('categories fetched ${snapshot.docs.length}');
       for (var doc in snapshot.docs) {
-        var data = doc.data() as Map<String, dynamic>;
+        var data = doc.data();
         newCategoriesData[doc.id] = data;
       }
 
@@ -59,6 +58,36 @@ class CategoriesDB {
     }, onError: (error) {
       print('Error fetching categories: $error');
     });
+  }
+  Future<void> fetchCategoriesSince(DateTime sinceTime, String userUid) async {
+    final prefs = await SharedPreferences.getInstance();
+    final String formattedSinceTime = sinceTime.toIso8601String();
+
+    try {
+      // Fetch categories updated after the provided sinceTime
+      QuerySnapshot snapshot = await _firestore.collection(collectionName)
+          .where(uid, isEqualTo: userUid)
+          .where('lastEditedTime', isGreaterThan: formattedSinceTime)
+          .get();
+
+      final Map<String, Map<String, dynamic>> newCategoriesData = {};
+
+      for (var doc in snapshot.docs) {
+        var data = doc.data() as Map<String, dynamic>;
+        newCategoriesData[doc.id] = data;
+      }
+
+      if (newCategoriesData.isNotEmpty) {
+        await cacheCategoriesLocally(newCategoriesData);
+      } else {
+        await loadCategoriesFromLocal();
+      }
+
+      // Update the last sync time in SharedPreferences
+      await prefs.setString('lastCategorySyncTime', DateTime.now().toIso8601String());
+    } catch (error) {
+      print('Error fetching categories: $error');
+    }
   }
 
   Future<void> loadCategoriesFromLocal() async {

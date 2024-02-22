@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:expnz/screens/MainPage.dart';
+import 'package:expnz/widgets/SimpleWidgets/ExpnZButton.dart';
+import 'package:expnz/widgets/SimpleWidgets/ExpnZTextField.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -105,6 +107,7 @@ class _SignInScreenState extends State<SignInScreen>
           });*/
         }
       }
+      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => HomePage()));
     } on FirebaseAuthException catch (e) {
       _showErrorDialog(e.message ?? "Firebase Auth error occurred.");
     } catch (e) {
@@ -213,37 +216,8 @@ class _SignInScreenState extends State<SignInScreen>
           ),
         ),
         SizedBox(height: 50),
-        TextField(
-          controller: _emailController,
-          decoration: InputDecoration(
-            labelText: 'Email',
-            labelStyle: TextStyle(color: Colors.white),
-            enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.blueAccent),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.green),
-            ),
-          ),
-          style: TextStyle(color: Colors.white),
-        ),
-        SizedBox(height: 20),
-        TextField(
-          controller: _passwordController,
-          obscureText: true,
-          decoration: const InputDecoration(
-            labelText: 'Password',
-            labelStyle: TextStyle(color: Colors.white),
-            enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.blueAccent),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.green),
-            ),
-          ),
-          style: TextStyle(color: Colors.white),
-        ),
-        SizedBox(height: 10),
+        ExpnzTextField(label: 'Email', controller: _emailController),
+        ExpnzTextField(label: 'Password', controller: _passwordController, isPassword: true),
         TextButton(
           onPressed: () {
             forgotPassword();
@@ -254,46 +228,30 @@ class _SignInScreenState extends State<SignInScreen>
           ),
         ),
         SizedBox(height: 20),
-        ElevatedButton(
+        ExpnZButton(
+          label: 'Sign In',
           onPressed: () {
             signInWithEmailAndPassword();
           },
-          child: Text('Sign In'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.blueAccent,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-          ),
         ),
         SizedBox(height: 10),
-        ElevatedButton(
+        ExpnZButton(
+          label: 'Sign Up',
           onPressed: () {
             Navigator.of(context).push(MaterialPageRoute(
               builder: (context) => SignUpScreen(),
             ));
           },
-          child: Text('Sign Up'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.green,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-          ),
+          primaryColor: Colors.green,
         ),
         SizedBox(height: 10),
-        ElevatedButton.icon(
+        ExpnZButton(
+          label: 'Sign in with Google',
           onPressed: () {
             signInWithGoogle();
           },
-          icon: Icon(Icons.login),
-          label: Text('Sign in with Google'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.red,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-          ),
+          primaryColor: Colors.red,
+          icon: Icons.login,
         ),
       ],
     );

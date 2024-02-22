@@ -1,4 +1,7 @@
 import 'package:expnz/screens/SignInScreen.dart';
+import 'package:expnz/widgets/SimpleWidgets/ExpnZButton.dart';
+import 'package:expnz/widgets/SimpleWidgets/ExpnZTextField.dart';
+import 'package:expnz/widgets/SimpleWidgets/ExpnzSnackBar.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -55,7 +58,7 @@ class _SignUpScreenState extends State<SignUpScreen> with SingleTickerProviderSt
 
   Future<void> signUpWithEmailAndPassword() async {
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty || _nameController.text.isEmpty) {
-      _showErrorDialog("Name, Email and password cannot be empty");
+      showModernSnackBar(context: context, message: 'Name, Email and Password Cannot be blank', backgroundColor: Colors.red);
       return;
     }
     else if (_passwordController.text == _confirmPasswordController.text) {
@@ -81,39 +84,20 @@ class _SignUpScreenState extends State<SignUpScreen> with SingleTickerProviderSt
           // Show a message that tells the user to verify their email
           _showVerifyEmailSentDialog();
         } else {
-          _showErrorDialog("An error occurred while registering.");
+          showModernSnackBar(context: context, message: 'An error occurred while registering', backgroundColor: Colors.red);
         }
       } on FirebaseAuthException catch (e) {
         // Handle Firebase Auth error
-        _showErrorDialog(e.message ?? "An error occurred");
+        showModernSnackBar(context: context, message: e.message ?? 'An error occurred', backgroundColor: Colors.red);
       } catch (e) {
         // Log the error
-        print(e.toString());
-        _showErrorDialog("An unexpected error occurred: ${e.toString()}");
+        showModernSnackBar(context: context, message: 'An unexpected error occurred: ${e.toString()}', backgroundColor: Colors.red);
       }
 
     } else {
       // Show error for password mismatch
-      _showErrorDialog("Passwords do not match");
+      showModernSnackBar(context: context, message: 'Passwords do not match', backgroundColor: Colors.red);
     }
-  }
-
-  void _showErrorDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('Error'),
-        content: Text(message),
-        actions: <Widget>[
-          TextButton(
-            child: Text('Okay'),
-            onPressed: () {
-              Navigator.of(ctx).pop();
-            },
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -150,18 +134,30 @@ class _SignUpScreenState extends State<SignUpScreen> with SingleTickerProviderSt
       children: <Widget>[
         _buildAnimatedTitle(),
         SizedBox(height: 40),
-        _buildNameField(),
-        SizedBox(height: 20),
-        _buildMobileNumberField(),
-        SizedBox(height: 20),
-        _buildEmailField(),
-        SizedBox(height: 20),
-        _buildPasswordField(),
-        SizedBox(height: 20),
-        _buildConfirmPasswordField(),
+        ExpnzTextField(label: 'Your Name', controller: _nameController),
+        //_buildNameField(),
+        //SizedBox(height: 20),
+        ExpnzTextField(label: 'Mobile Number', controller: _mobileNumberController, isNumber: true,),
+        //_buildMobileNumberField(),
+        //SizedBox(height: 20),
+        ExpnzTextField(label: 'Email', controller: _emailController,),
+        //_buildEmailField(),
+        //SizedBox(height: 20),
+        ExpnzTextField(label: 'Password', controller: _passwordController, isPassword: true,),
+        //_buildPasswordField(),
+        //SizedBox(height: 20),
+        ExpnzTextField(label: 'Confirm Password', controller: _confirmPasswordController, isPassword: true,),
+        //_buildConfirmPasswordField(),
         SizedBox(height: 30),
-        _buildSignUpButton(),
-        SizedBox(height: 20),
+        ExpnZButton(label: 'Sign Up',
+          onPressed: () {
+            if (_formKey.currentState!.validate()) {
+              signUpWithEmailAndPassword();
+            }
+          },
+        ),
+        //_buildSignUpButton(),
+        //SizedBox(height: 20),
         _buildSignInOption(),
       ],
     );
@@ -184,132 +180,12 @@ class _SignUpScreenState extends State<SignUpScreen> with SingleTickerProviderSt
     );
   }
 
-  // Mobile Number Field
-  Widget _buildMobileNumberField() {
-    return TextFormField(
-      controller: _mobileNumberController,
-      decoration: _inputDecoration('Mobile Number'),
-      keyboardType: TextInputType.phone,
-      style: TextStyle(color: Colors.white),
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Please enter your mobile number';
-        }
-        // Add more validation logic for phone number if needed
-        return null;
-      },
-    );
-  }
-
-// Email Field
-  Widget _buildEmailField() {
-    return TextFormField(
-      controller: _emailController,
-      decoration: _inputDecoration('Email'),
-      keyboardType: TextInputType.emailAddress,
-      style: TextStyle(color: Colors.white),
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Please enter your email';
-        }
-        // Use a regular expression to validate the email
-        if (!RegExp(r'\S+@\S+\.\S+').hasMatch(value)) {
-          return 'Please enter a valid email address';
-        }
-        return null;
-      },
-    );
-  }
-
-// Password Field
-  Widget _buildPasswordField() {
-    return TextFormField(
-      controller: _passwordController,
-      decoration: _inputDecoration('Password'),
-      obscureText: true,
-      style: TextStyle(color: Colors.white),
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Please enter your password';
-        }
-        if (value.length < 6) {
-          return 'Password must be at least 6 characters';
-        }
-        return null;
-      },
-    );
-  }
-
-// Confirm Password Field
-  Widget _buildConfirmPasswordField() {
-    return TextFormField(
-      controller: _confirmPasswordController,
-      decoration: _inputDecoration('Confirm Password'),
-      obscureText: true,
-      style: TextStyle(color: Colors.white),
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Please confirm your password';
-        }
-        if (value != _passwordController.text) {
-          return 'Passwords do not match';
-        }
-        return null;
-      },
-    );
-  }
-
-
-  // Example of a custom styled text field
-  Widget _buildNameField() {
-    return TextFormField(
-      controller: _nameController,
-      decoration: _inputDecoration('Your Name'),
-      style: TextStyle(color: Colors.white),
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Please enter your name';
-        }
-        return null;
-      },
-    );
-  }
-
-  // Other fields similar to _buildNameField, with appropriate validators
-
-  // Example of a custom styled button
-  Widget _buildSignUpButton() {
-    return ElevatedButton(
-      onPressed: () {
-        if (_formKey.currentState!.validate()) {
-          signUpWithEmailAndPassword();
-        }
-      },
-      child: Text('Sign Up'),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.blueAccent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      ),
-    );
-  }
-
-  // Example of sign-in option
   Widget _buildSignInOption() {
     return TextButton(
       onPressed: () {
         Navigator.of(context).push(MaterialPageRoute(builder: (context) => SignInScreen()));
       },
-      child: Text('Already have an account? Sign in', style: TextStyle(color: Colors.white70)),
-    );
-  }
-
-  // Utility method for consistent input decoration
-  InputDecoration _inputDecoration(String label) {
-    return InputDecoration(
-      labelText: label,
-      labelStyle: TextStyle(color: Colors.white),
-      enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.blueAccent)),
-      focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.green)),
+      child: const Text('Already have an account? Sign in', style: TextStyle(color: Colors.white70)),
     );
   }
 }

@@ -4,42 +4,62 @@ import 'package:android_intent_plus/android_intent.dart';
 import 'package:excel/excel.dart';
 import 'package:expnz/database/AccountsDB.dart';
 import 'package:expnz/database/CategoriesDB.dart';
+import 'package:expnz/database/RecurringTransactionsDB.dart';
 import 'package:expnz/database/TransactionsDB.dart';
 import 'package:expnz/utils/NotificationListener.dart';
 import 'package:expnz/widgets/AppWidgets/SelectAccountCard.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import 'package:package_info_plus/package_info_plus.dart';
-import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:notifications/notifications.dart';
 
 import '../utils/global.dart';
 import 'MainPage.dart';
 
 class SettingsScreen extends StatefulWidget {
+  const SettingsScreen({super.key});
+
   @override
-  _SettingsScreenState createState() => _SettingsScreenState();
+  SettingsScreenState createState() => SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class SettingsScreenState extends State<SettingsScreen> {
   bool _showImportOptions = false;
   bool _showExportOptions = false;
   bool _showDeleteOptions = false;
-  int selectedAccoutIndex = -1;
-  String selectedAccoutId = "";
+  int selectedAccountIndex = -1;
+  String selectedAccountId = "";
   bool _allowNotificationReading = false;
   final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
   final AppNotificationListener _notificationListener = AppNotificationListener();
 
-  
+  String _lastAccountSyncTime = '';
+  String _lastCategorySyncTime = '';
+  String _lastTransactionSyncTime = '';
+  String _lastRecurringTransactionSyncTime = '';
+
   @override
   void initState() {
     super.initState();
     _loadSavedSettings();
+    _loadLastSyncTimes();
+  }
+
+  Future<void> _loadLastSyncTimes() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _lastAccountSyncTime = _formatDateTime(prefs.getString('lastAccountSyncTime'));
+      _lastCategorySyncTime = _formatDateTime(prefs.getString('lastCategorySyncTime'));
+      _lastTransactionSyncTime = _formatDateTime(prefs.getString('lastTransactionSyncTime'));
+      _lastRecurringTransactionSyncTime = _formatDateTime(prefs.getString('lastRecurringTransactionSyncTime'));
+    });
+  }
+
+  String _formatDateTime(String? dateTimeStr) {
+    if (dateTimeStr == null || dateTimeStr.isEmpty) return 'Not synced yet';
+    DateTime dateTime = DateTime.parse(dateTimeStr);
+    return DateFormat('yyyy-MM-dd HH:mm:ss').format(dateTime);
   }
 
   Future<void> _loadSavedSettings() async {
@@ -50,8 +70,41 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
   }
 
+  Future<void> _resync(String type) async {
+    String? userUid = FirebaseAuth.instance.currentUser?.uid;
+    // Implement the resync logic here
+    switch (type) {
+      case 'Last Account Sync Time':
+        if (userUid != null) {
+          AccountsDB().fetchAccountsSince(DateTime.fromMillisecondsSinceEpoch(0), userUid);
+        }
+        break;
+      case 'Last Category Sync Time':
+        if (userUid != null) {
+          CategoriesDB().fetchCategoriesSince(DateTime.fromMillisecondsSinceEpoch(0), userUid);
+        }
+        break;
+      case 'Last Transaction Sync Time':
+        if (userUid != null) {
+          TransactionsDB().fetchTransactionsSince(DateTime.fromMillisecondsSinceEpoch(0), userUid);
+        }
+        break;
+      case 'Last Recurring Transaction Sync Time':
+        if (userUid != null) {
+          RecurringTransactionDB().fetchRecurringTransactionsSince(DateTime.fromMillisecondsSinceEpoch(0), userUid);
+        }
+        break;
+      default:
+      // Handle unknown type
+        break;
+    }
+
+    // After resync, update the last sync times
+    _loadLastSyncTimes();
+  }
+
   Future<bool> _checkNotificationPermission() async {
-    /*print('srartg');
+    /*print('starting');
     PackageInfo packageInfo = await PackageInfo.fromPlatform();
     print(packageInfo);
     final String packageName = packageInfo.packageName;
@@ -64,7 +117,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _requestBatteryOptimization() async {
     if (Platform.isAndroid) {
-      final AndroidIntent intent = AndroidIntent(
+      const AndroidIntent intent = AndroidIntent(
         action: 'android.settings.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS',
         data: 'package:com.techNova.ExpnZ.expnz',
       );
@@ -100,13 +153,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Add a section for Sync Information
+    Column syncInfoSection = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Sync Information',
+          style: TextStyle(fontSize: 22, color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        _buildSyncInfoTile('Last Account Sync Time', _lastAccountSyncTime),
+        _buildSyncInfoTile('Last Category Sync Time', _lastCategorySyncTime),
+        _buildSyncInfoTile('Last Transaction Sync Time', _lastTransactionSyncTime),
+        _buildSyncInfoTile('Last Recurring Transaction Sync Time', _lastRecurringTransactionSyncTime),
+      ],
+    );
     return ScaffoldMessenger(
       key: _scaffoldMessengerKey,
       child: Scaffold(
         backgroundColor: Colors.blueGrey[900],
         appBar: AppBar(
           leading: IconButton(
-            icon: Icon(Icons.arrow_back),
+            icon: const Icon(Icons.arrow_back),
             onPressed: () {
               Navigator.of(context).pushAndRemoveUntil(
                 MaterialPageRoute(builder: (context) => HomePage()),
@@ -115,53 +182,55 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
           ),
           automaticallyImplyLeading: false,
-          title: Text('Settings'),
+          title: const Text('Settings'),
           backgroundColor: Colors.blueGrey[900],
         ),
         body: SingleChildScrollView(
           child: Padding(
-            padding: EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(height: 20),
-                Text(
+                const SizedBox(height: 20),
+                const Text(
                   'Data Management',
                   style: TextStyle(fontSize: 22, color: Colors.white, fontWeight: FontWeight.bold),
                 ),
-                SizedBox(height: 10),
+                const SizedBox(height: 10),
                 ListTile(
-                  title: Text('Import Data', style: TextStyle(color: Colors.white)),
-                  trailing: Icon(Icons.import_export, color: Colors.white),
+                  title: const Text('Import Data', style: TextStyle(color: Colors.white)),
+                  trailing: const Icon(Icons.import_export, color: Colors.white),
                   onTap: () => setState(() {
                     _showImportOptions = !_showImportOptions;
                   }),
                 ),
                 if (_showImportOptions) _buildImportOptions(),
                 ListTile(
-                  title: Text('Export Data', style: TextStyle(color: Colors.white)),
-                  trailing: Icon(Icons.import_export, color: Colors.white),
+                  title: const Text('Export Data', style: TextStyle(color: Colors.white)),
+                  trailing: const Icon(Icons.import_export, color: Colors.white),
                   onTap: () => setState(() {
                     _showExportOptions = !_showExportOptions;
                   }),
                 ),
                 if (_showExportOptions) _buildExportOptions(),
                 ListTile(
-                  title: Text('Clear Data', style: TextStyle(color: Colors.white)),
-                  trailing: Icon(Icons.delete, color: Colors.white),
+                  title: const Text('Clear Data', style: TextStyle(color: Colors.white)),
+                  trailing: const Icon(Icons.delete, color: Colors.white),
                   onTap: () => setState(() {
                     _showDeleteOptions = !_showDeleteOptions;
                   }),
                 ),
                 if (_showDeleteOptions) _buildDeleteOptions(),
-                SizedBox(height: 20),
-                Text(
+                const SizedBox(height: 20),
+                syncInfoSection,
+                const SizedBox(height: 20),
+                const Text(
                   'Notification Management',
                   style: TextStyle(fontSize: 22, color: Colors.white, fontWeight: FontWeight.bold),
                 ),
                 // Toggle for reading notifications
                 SwitchListTile(
-                  title: Text('Allow Reading of Notifications',
+                  title: const Text('Allow Reading of Notifications',
                       style: TextStyle(color: Colors.white)),
                   value: _allowNotificationReading, // Boolean variable to track the toggle state
                   onChanged: (bool value) {
@@ -169,7 +238,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       _handleNotificationPermission(value);
                     });
                   },
-                  secondary: Icon(Icons.notifications_active, color: Colors.white),
+                  secondary: const Icon(Icons.notifications_active, color: Colors.white),
                 ),
               ],
             ),
@@ -183,8 +252,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Column(
       children: [
         ListTile(
-          title: Text('Import Transactions (Select an account)', style: TextStyle(color: Colors.white70)),
-          leading: Icon(Icons.arrow_right, color: Colors.white70),
+          title: const Text('Import Transactions (Select an account)', style: TextStyle(color: Colors.white70)),
+          leading: const Icon(Icons.arrow_right, color: Colors.white70),
           onTap: () {
             // Add your onTap logic here
           },
@@ -192,13 +261,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
+            SizedBox(
               height: 150, // set the height
               child: ValueListenableBuilder<Map<String, Map<String, dynamic>>>(
                 valueListenable: accountsNotifier,
                 builder: (context, accountsData, child) {
                   if (accountsData.isEmpty) {
-                    return Center(
+                    return const Center(
                       child: Text('No accounts available.'),
                     );
                   } else {
@@ -217,9 +286,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         return GestureDetector(
                           onTap: () {
                             setState(() {
-                              selectedAccoutIndex = index;
-                              selectedAccoutId = accountId; // Using the document ID as account ID
-                              _showImportTemplateDialog(account[AccountsDB.accountName], selectedAccoutId, account[AccountsDB.accountType]);
+                              selectedAccountIndex = index;
+                              selectedAccountId = accountId; // Using the document ID as account ID
+                              _showImportTemplateDialog(account[AccountsDB.accountName], selectedAccountId, account[AccountsDB.accountType]);
                             });
                           },
                           child: AccountCard(
@@ -231,7 +300,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                             currency: currencyCode,
                             accountName: account[AccountsDB.accountName],
-                            isSelected: index == selectedAccoutIndex,
+                            isSelected: index == selectedAccountIndex,
                           ),
                         );
                       },
@@ -249,8 +318,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Column(
       children: [
         ListTile(
-          title: Text('Export Transactions', style: TextStyle(color: Colors.white70)),
-          leading: Icon(Icons.arrow_right, color: Colors.white70),
+          title: const Text('Export Transactions', style: TextStyle(color: Colors.white70)),
+          leading: const Icon(Icons.arrow_right, color: Colors.white70),
           onTap: () {
 
           },
@@ -258,27 +327,41 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ],
     );
   }
+  Widget _buildSyncInfoTile(String title, String syncTime) {
+    return ListTile(
+      title: Text(title, style: const TextStyle(color: Colors.white)),
+      subtitle: Text(syncTime, style: const TextStyle(color: Colors.white70)),
+      trailing: IconButton(
+        icon: const Icon(Icons.sync, color: Colors.white),
+        onPressed: () {
+          _resync(title);
+          showSyncingDialog(context);
+        },
+      ),
+    );
+  }
+
   Widget _buildDeleteOptions() {
     return Column(
       children: [
         ListTile(
-          title: Text('Clear All Transactions, Accounts, and Categories', style: TextStyle(color: Colors.white70)),
-          leading: Icon(Icons.arrow_right, color: Colors.white70),
+          title: const Text('Clear All Transactions, Accounts, and Categories', style: TextStyle(color: Colors.white70)),
+          leading: const Icon(Icons.arrow_right, color: Colors.white70),
           onTap: () => _clearData(context, clearAll: true),
         ),
         ListTile(
-          title: Text('Clear All Transactions and Categories', style: TextStyle(color: Colors.white70)),
-          leading: Icon(Icons.arrow_right, color: Colors.white70),
+          title: const Text('Clear All Transactions and Categories', style: TextStyle(color: Colors.white70)),
+          leading: const Icon(Icons.arrow_right, color: Colors.white70),
           onTap: () => _clearData(context, clearTransactions: true, clearCategories: true),
         ),
         ListTile(
-          title: Text('Clear All Transactions and Accounts', style: TextStyle(color: Colors.white70)),
-          leading: Icon(Icons.arrow_right, color: Colors.white70),
+          title: const Text('Clear All Transactions and Accounts', style: TextStyle(color: Colors.white70)),
+          leading: const Icon(Icons.arrow_right, color: Colors.white70),
           onTap: () => _clearData(context, clearTransactions: true, clearAccounts: true),
         ),
         ListTile(
-          title: Text('Clear Only All Transactions', style: TextStyle(color: Colors.white70)),
-          leading: Icon(Icons.arrow_right, color: Colors.white70),
+          title: const Text('Clear Only All Transactions', style: TextStyle(color: Colors.white70)),
+          leading: const Icon(Icons.arrow_right, color: Colors.white70),
           onTap: () => _clearData(context, clearTransactions: true),
         ),
       ],
@@ -345,7 +428,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           actions: <Widget>[
             TextButton(
-              child: Text('Close'),
+              child: const Text('Close'),
               onPressed: () {
                 Navigator.of(context).pop();
               },
@@ -411,7 +494,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     List<String> categoriesToCreate = [];
     List<Map<String, dynamic>> transactionsToCreate = [];
 
-    var categoriesData = categoriesNotifier.value ?? {};
+    var categoriesData = categoriesNotifier.value;
 
     for (int i = 1; i < rows.length; i++) { // Start from 1 to skip the header row
       var row = rows[i];
@@ -516,7 +599,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           TransactionsDB.transactionBalance: (double.tryParse(expenseAmountCell) ?? 0.0) - (double.tryParse(actualAmountCell) ?? 0.0),
           TransactionsDB.transactionDate: DateFormat('yyyy-MM-dd').format(parsedDate),
           TransactionsDB.transactionTime: parsedTime.format(context),
-          TransactionsDB.transactionAccountId: selectedAccoutId,
+          TransactionsDB.transactionAccountId: selectedAccountId,
           TransactionsDB.transactionCategoryIDs: categoriesCell,
         };
         transactionsToCreate.add(row);
@@ -528,9 +611,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } else {
       //if there are uncreated categories
       _showCreateCategoriesDialog(context, categoriesToCreate, () async {
-        // Refresh categories model to include newly created categories
-        //await categoriesModel.fetchCategories();
-        // Update category IDs in transactions
         _updateCategoryIdsInTransactions(transactionsToCreate);
         // Create transactions
         _createTransactions(transactionsToCreate, context);
@@ -539,8 +619,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
   bool _isValidAmount(String amount) {
-    // Implement your logic to validate amount
-    // For example, checking if it's a valid number
     return double.tryParse(amount) != null;
   }
   bool _isValidDateTime(String date) {
@@ -548,7 +626,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _updateCategoryIdsInTransactions(List<Map<String, dynamic>> transactions) {
-    final categoriesData = categoriesNotifier.value ?? {};
+    final categoriesData = categoriesNotifier.value;
 
     for (var transaction in transactions) {
       var categoryNames = (transaction[TransactionsDB.transactionCategoryIDs] as String).split(',');
@@ -563,7 +641,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     for (var name in categoryNames) {
       var foundEntry = categoriesData.entries.firstWhere(
               (entry) => entry.value['name'].toString().toLowerCase() == name.toLowerCase(),
-          orElse: () => MapEntry<String, Map<String, dynamic>>("_noKeyFound", {}) // Return a placeholder MapEntry if not found
+          orElse: () => const MapEntry<String, Map<String, dynamic>>("_noKeyFound", {}) // Return a placeholder MapEntry if not found
       );
 
       if (foundEntry.key != "_noKeyFound") {
@@ -586,8 +664,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text("Processing transactions..."),
-              SizedBox(height: 15),
+              const Text("Processing transactions..."),
+              const SizedBox(height: 15),
               LinearProgressIndicator(value: processedCount / total),
               Text("$processedCount of $total processed"),
             ],
@@ -606,39 +684,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
     Navigator.of(context).pop();
   }
 
-  Future<void> _showLoadingDialog(BuildContext context, String message) async {
-    return showDialog<void>(
+  void showSyncingDialog(BuildContext context) {
+    showDialog(
       context: context,
-      barrierDismissible: false, // User must not close the dialog.
+      barrierDismissible: false, // User must not close the dialog
       builder: (BuildContext context) {
         return AlertDialog(
           content: Row(
             children: [
-              CircularProgressIndicator(),
+              Icon(Icons.sync, color: Colors.blue),
               SizedBox(width: 20),
-              Expanded(child: Text(message)),
+              Text("Syncing in background"),
             ],
           ),
         );
       },
     );
+
+    // Close the dialog after a short delay
+    Future.delayed(Duration(seconds: 2), () {
+      Navigator.of(context).pop();
+    });
   }
   void _showSuccessPrompt(int transactionsCount) {
     _scaffoldMessengerKey.currentState?.showSnackBar(
       SnackBar(content: Text('$transactionsCount transactions added successfully')),
     );
   }
-
   void _showErrorDialog(BuildContext context, String errorMessage) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text("Error"),
+          title: const Text("Error"),
           content: Text(errorMessage),
           actions: <Widget>[
             TextButton(
-              child: Text('Close'),
+              child: const Text('Close'),
               onPressed: () {
                 Navigator.of(context).pop();
               },
@@ -653,7 +735,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text("Errors in Imported Data"),
+          title: const Text("Errors in Imported Data"),
           content: SingleChildScrollView(
             child: ListBody(
               children: errorMessages.map((message) => Text(message)).toList(),
@@ -661,7 +743,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           actions: <Widget>[
             TextButton(
-              child: Text('Close'),
+              child: const Text('Close'),
               onPressed: () => Navigator.of(context).pop(),
             ),
           ],
@@ -710,26 +792,5 @@ class _SettingsScreenState extends State<SettingsScreen> {
         );
       },
     );
-  }
-  Future<bool> _showConfirmationDialog(BuildContext context) async {
-    return await showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Confirm Deletion'),
-          content: Text('Are you sure you want to clear this data? This action cannot be undone.'),
-          actions: <Widget>[
-            TextButton(
-              child: Text('Cancel'),
-              onPressed: () => Navigator.of(context).pop(false),
-            ),
-            TextButton(
-              child: Text('Confirm'),
-              onPressed: () => Navigator.of(context).pop(true),
-            ),
-          ],
-        );
-      },
-    ) ?? false;
   }
 }

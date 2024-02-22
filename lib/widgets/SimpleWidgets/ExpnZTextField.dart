@@ -5,20 +5,22 @@ class ExpnzTextField extends StatelessWidget {
   final TextEditingController controller;
   final bool isNumber;
   final int? maxLength;
-  final int? maxLines;
+  final int maxLines;
   final bool isError;
   final bool? enabled;
   final bool alwaysFloatingLabel;
+  final bool isPassword;
 
   ExpnzTextField({
     required this.label,
     required this.controller,
     this.isNumber = false,
     this.maxLength,
-    this.maxLines,
+    this.maxLines = 1,
     this.isError = false,
     this.enabled,
     this.alwaysFloatingLabel = false,
+    this.isPassword = false,
   });
 
   @override
@@ -39,6 +41,7 @@ class ExpnzTextField extends StatelessWidget {
           ],
         ),
         child: TextField(
+          obscureText: isPassword,
           controller: controller,
           maxLength: maxLength,
           maxLines: maxLines,

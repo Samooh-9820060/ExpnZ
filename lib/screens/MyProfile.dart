@@ -267,7 +267,6 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
 
               // Name TextField
               ExpnzTextField(label: 'Your Name', controller: _nameController),
-              SizedBox(height: 20),
 
               // Phone TextField
               ExpnzTextField(
@@ -303,7 +302,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                 },
               ),
               SizedBox(
-                height: 30,
+                height: 10,
               ),
               // Change Password Button
               ExpnZButton(
