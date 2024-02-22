@@ -2,7 +2,7 @@ import 'package:expnz/utils/notification_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../database/RecurringTransactionsDB.dart';
-import '../widgets/SimpleWidgets/ModernSnackBar.dart';
+import '../widgets/SimpleWidgets/ExpnzSnackBar.dart';
 import 'AddRecurringTransaction.dart';
 import 'package:expnz/utils/global.dart';
 
@@ -26,6 +26,7 @@ class _RecurringTransactionsPageState extends State<RecurringTransactionsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.blueGrey[900],
       appBar: AppBar(
         title: Text('Recurring Transactions'),
         backgroundColor: Colors.blueGrey[900],

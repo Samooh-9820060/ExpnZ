@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:expnz/widgets/SimpleWidgets/ExpnZButton.dart';
+import 'package:expnz/widgets/SimpleWidgets/ExpnZTextField.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 import 'package:flutter/material.dart';
@@ -122,6 +124,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
       backgroundColor: Colors.blueGrey[900],
       appBar: AppBar(
         title: Text('My Profile'),
+        backgroundColor: Colors.blueGrey[900],
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -146,41 +149,15 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
               const SizedBox(height: 20),
 
               // Name TextField
-              TextField(
-                controller: _nameController,
-                decoration: InputDecoration(
-                  labelText: 'Your Name',
-                  labelStyle: TextStyle(color: Colors.white),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.grey),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.green),
-                  ),
-                ),
-                style: TextStyle(color: Colors.white),
-              ),
+              ExpnzTextField(label: 'Your Name', controller: _nameController),
               SizedBox(height: 20),
 
               // Phone TextField
-              TextField(
-                controller: _mobileNumberController,
-                decoration: InputDecoration(
-                  labelText: 'Phone Number',
-                  labelStyle: TextStyle(color: Colors.white),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.grey),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.green),
-                  ),
-                ),
-                style: TextStyle(color: Colors.white),
-                keyboardType: TextInputType.number,
-              ),
+              ExpnzTextField(label: 'Phone Number', controller: _mobileNumberController, isNumber: true,),
               SizedBox(height: 20),
               // Save Changes Button
-              ElevatedButton(
+              ExpnZButton(
+                label: 'Save Changes',
                 onPressed: () async {
                   try {
                     String imageUrl = _profileImageUrl ?? '';
@@ -207,29 +184,16 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                     );
                   }
                 },
-                child: Text('Save Changes'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
               ),
               SizedBox(height: 30,),
               // Change Password Button
-              ElevatedButton(
+              ExpnZButton(
+                label: 'Change Password',
                 onPressed: () {
                   Navigator.of(context).push(MaterialPageRoute(
                     builder: (context) => ChangePasswordScreen(),
                   ));
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
-                child: const Text('Change Password'),
               ),
             ],
           ),

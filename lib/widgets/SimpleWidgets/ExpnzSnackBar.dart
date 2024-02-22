@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 
-class ModernSnackBar extends StatelessWidget {
+class ExpnzSnackBar extends StatelessWidget {
   final String message;
   final Color backgroundColor;
   final VoidCallback? onClose;
 
-  ModernSnackBar({
+  ExpnzSnackBar({
     required this.message,
     this.onClose,
     this.backgroundColor = Colors.green,
@@ -71,7 +71,7 @@ Future<void> showModernSnackBar({
   final Completer<void> completer = Completer<void>();
   late OverlayEntry overlayEntry;
   overlayEntry = OverlayEntry(
-    builder: (context) => ModernSnackBar(
+    builder: (context) => ExpnzSnackBar(
       message: message,
       backgroundColor: backgroundColor,
       onClose: () {

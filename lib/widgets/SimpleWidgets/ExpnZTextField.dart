@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
 
-class CustomTextField extends StatelessWidget {
+class ExpnzTextField extends StatelessWidget {
   final String label;
   final TextEditingController controller;
   final bool isNumber;
   final int? maxLength;
+  final int? maxLines;
   final bool isError;
   final bool? enabled;
   final bool alwaysFloatingLabel;
 
-  CustomTextField({
+  ExpnzTextField({
     required this.label,
     required this.controller,
     this.isNumber = false,
     this.maxLength,
+    this.maxLines,
     this.isError = false,
     this.enabled,
     this.alwaysFloatingLabel = false,
@@ -39,6 +41,7 @@ class CustomTextField extends StatelessWidget {
         child: TextField(
           controller: controller,
           maxLength: maxLength,
+          maxLines: maxLines,
           style: const TextStyle(
             color: Colors.white,
             fontSize: 18,

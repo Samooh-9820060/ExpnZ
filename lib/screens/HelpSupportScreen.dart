@@ -1,4 +1,7 @@
-import 'package:expnz/widgets/SimpleWidgets/ModernSnackBar.dart';
+import 'package:expnz/widgets/SimpleWidgets/ExpnZButton.dart';
+import 'package:expnz/widgets/SimpleWidgets/ExpnZDropdown.dart';
+import 'package:expnz/widgets/SimpleWidgets/ExpnZTextField.dart';
+import 'package:expnz/widgets/SimpleWidgets/ExpnzSnackBar.dart';
 import 'package:flutter/material.dart';
 import 'package:feedback/feedback.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -44,6 +47,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
     }
 
     return Scaffold(
+      backgroundColor: Colors.blueGrey[900],
       appBar: AppBar(
         title: Text('Help & Support'),
         backgroundColor: Colors.blueGrey[900],
@@ -54,47 +58,27 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            DropdownButtonFormField<String>(
-              decoration: InputDecoration(
-                border: OutlineInputBorder(),
-                labelText: 'Select Identifier',
-              ),
-              value: selectedIdentifier,
-              onChanged: (String? newValue) {
-                setState(() {
-                  selectedIdentifier = newValue!;
-                });
-              },
-              items: identifierOptions
-                  .map<DropdownMenuItem<String>>((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(value),
-                );
-              }).toList(),
+            ExpnzDropdownButton(
+                label: 'Select Identifier',
+                value: selectedIdentifier,
+                items: identifierOptions,
+                onChanged: (String? newValue) {
+                  setState(() {
+                    selectedIdentifier = newValue!;
+                  });
+                },
             ),
             SizedBox(height: 20),
-            Text(
-              'Your Feedback',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 10),
-            TextField(
+            ExpnzTextField(
+              label: 'Your Feedback',
               controller: feedbackController,
-              decoration: InputDecoration(
-                hintText: 'Enter your feedback here',
-                border: OutlineInputBorder(),
-              ),
               maxLines: 5,
+              alwaysFloatingLabel: true,
             ),
             SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () => _submitFeedback(),
-              child: Text('Submit Feedback'),
-              style: ElevatedButton.styleFrom(
-                foregroundColor: Colors.white, backgroundColor: Colors.blue,
-                padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-              ),
+            ExpnZButton(
+                label: 'Submit Feedback',
+                onPressed: () => _submitFeedback(),
             ),
           ],
         ),

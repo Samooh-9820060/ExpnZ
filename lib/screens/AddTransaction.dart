@@ -11,7 +11,7 @@ import '../widgets/AppWidgets/BuildCategoriesDropdown.dart';
 import '../widgets/AppWidgets/CategoryChip.dart';
 import '../widgets/AppWidgets/SelectAccountCard.dart';
 import '../widgets/SimpleWidgets/ExpnZButton.dart';
-import '../widgets/SimpleWidgets/ModernSnackBar.dart';
+import '../widgets/SimpleWidgets/ExpnzSnackBar.dart';
 
 enum TransactionType { income, expense, transfer }
 
@@ -641,10 +641,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                       ...[
                         const SizedBox(height: 16),
                         // Name
-                        CustomTextField(label: "Name", controller: _nameController),
+                        ExpnzTextField(label: "Name", controller: _nameController),
                         const SizedBox(height: 16),
                         // Description
-                        CustomTextField(label: "Description", controller: _descriptionController),
+                        ExpnzTextField(label: "Description", controller: _descriptionController),
                         const SizedBox(height: 16),
                         // Amount
                         if (selectedAccountType == 'Cash/Wallet')
@@ -652,22 +652,22 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                             children: [
                               Expanded(
                                 flex: 5, // Giving more space to Amount
-                                child: CustomTextField(label: "Amount Spent", controller: _amountController, isNumber: true, alwaysFloatingLabel: true,),
+                                child: ExpnzTextField(label: "Amount Spent", controller: _amountController, isNumber: true, alwaysFloatingLabel: true,),
                               ),
                               const SizedBox(width: 8), // Space between fields
                               Expanded(
                                 flex: 5, // Giving more space to Actual Price
-                                child: CustomTextField(label: "Actual Price", controller: _actualPriceController, isNumber: true, alwaysFloatingLabel: true,),
+                                child: ExpnzTextField(label: "Actual Price", controller: _actualPriceController, isNumber: true, alwaysFloatingLabel: true,),
                               ),
                               const SizedBox(width: 8), // Space between fields
                               Expanded(
                                 flex: 4, // Less space for Balance Given as it's automatic
-                                child: CustomTextField(label: "Balance", controller: _balanceGivenController, isNumber: true, alwaysFloatingLabel: true,),
+                                child: ExpnzTextField(label: "Balance", controller: _balanceGivenController, isNumber: true, alwaysFloatingLabel: true,),
                               ),
                             ],
                           )
                         else
-                          CustomTextField(label: "Amount", controller: _amountController, isNumber: true),
+                          ExpnzTextField(label: "Amount", controller: _amountController, isNumber: true),
                         const SizedBox(height: 16),
                         const SizedBox(height: 16),
                         Row(
@@ -932,13 +932,13 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                       ...[
                         const SizedBox(height: 16),
                         // Name
-                        CustomTextField(label: "Name", controller: _nameController),
+                        ExpnzTextField(label: "Name", controller: _nameController),
                         const SizedBox(height: 16),
                         // Description
-                        CustomTextField(label: "Description", controller: _descriptionController),
+                        ExpnzTextField(label: "Description", controller: _descriptionController),
                         const SizedBox(height: 16),
                         // Amount
-                        CustomTextField(label: "Amount", controller: _amountController, isNumber: true,),
+                        ExpnzTextField(label: "Amount", controller: _amountController, isNumber: true,),
                         const SizedBox(height: 16),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,

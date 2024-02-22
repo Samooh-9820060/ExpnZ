@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:expnz/widgets/SimpleWidgets/ExpnZButton.dart';
-import 'package:expnz/widgets/SimpleWidgets/ModernSnackBar.dart';
+import 'package:expnz/widgets/SimpleWidgets/ExpnzSnackBar.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';

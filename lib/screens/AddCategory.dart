@@ -8,7 +8,7 @@ import 'package:image_cropper/image_cropper.dart';
 import '../database/CategoriesDB.dart';
 import '../utils/image_utils.dart';
 import '../widgets/SimpleWidgets/ExpnZTextField.dart';
-import '../widgets/SimpleWidgets/ModernSnackBar.dart';
+import '../widgets/SimpleWidgets/ExpnzSnackBar.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 
@@ -363,10 +363,10 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Redesigned Text Field for Category
-            CustomTextField(label: "Enter Category", controller: _categoryController),
+            ExpnzTextField(label: "Enter Category", controller: _categoryController),
             SizedBox(height: 16),
             // Redesigned Text Field for Description
-            CustomTextField(label: "Enter Description", controller: _descriptionController),
+            ExpnzTextField(label: "Enter Description", controller: _descriptionController),
             SizedBox(height: 16),
             // Redesigned Button for Icon Picker
             // Container for the entire row

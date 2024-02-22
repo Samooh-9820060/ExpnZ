@@ -7,7 +7,7 @@ import '../database/AccountsDB.dart';
 import '../widgets/SimpleWidgets/ExpnZButton.dart';
 import '../widgets/SimpleWidgets/ExpnZDropdown.dart';
 import '../widgets/SimpleWidgets/ExpnZTextField.dart';
-import '../widgets/SimpleWidgets/ModernSnackBar.dart';
+import '../widgets/SimpleWidgets/ExpnzSnackBar.dart';
 
 class AddAccountScreen extends StatefulWidget {
   final String? documentId;
@@ -275,7 +275,7 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
               ),
             ),
             SizedBox(height: 16),
-            CustomDropdownButton(
+            ExpnzDropdownButton(
               label: "Select Account Type",
               value: selectedAccountType,
               items: ["Card", "Cash/Wallet"],
@@ -286,7 +286,7 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
               },
             ),
             // Redesigned Text Field for Account Name
-            CustomTextField(label: "Enter Account Name", controller: _accountNameController),
+            ExpnzTextField(label: "Enter Account Name", controller: _accountNameController),
             SizedBox(height: 16),
             // Button for Currency Selection
             ElevatedButton(
@@ -320,7 +320,7 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
               ),
             ),
             SizedBox(height: 16),
-            CustomTextField(label: "Enter Card Number (Last 4 Digits, Optional)", controller: _cardNumberController, isNumber: true, maxLength: 4),
+            ExpnzTextField(label: "Enter Card Number (Last 4 Digits, Optional)", controller: _cardNumberController, isNumber: true, maxLength: 4),
             SizedBox(height: 32),
             // Redesigned Add Button
             ExpnZButton(

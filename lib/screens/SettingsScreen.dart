@@ -116,7 +116,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           automaticallyImplyLeading: false,
           title: Text('Settings'),
-          backgroundColor: Colors.blueGrey[700],
+          backgroundColor: Colors.blueGrey[900],
         ),
         body: SingleChildScrollView(
           child: Padding(
