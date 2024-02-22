@@ -291,7 +291,7 @@ class CategoryCardState extends State<CategoryCard>
               Text(
                 accountName,
                 style: const TextStyle(
-                  fontSize: 12,
+                  fontSize: 11,
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
@@ -305,7 +305,7 @@ class CategoryCardState extends State<CategoryCard>
                     child: Text(
                       animatedIncome,
                       style: const TextStyle(
-                        fontSize: 12,
+                        fontSize: 9,
                         color: Colors.green,
                         fontWeight: FontWeight.bold,
                       ),
@@ -319,7 +319,7 @@ class CategoryCardState extends State<CategoryCard>
                     child: Text(
                       animatedExpense,
                       style: const TextStyle(
-                        fontSize: 12,
+                        fontSize: 9,
                         color: Colors.red,
                         fontWeight: FontWeight.bold,
                       ),
