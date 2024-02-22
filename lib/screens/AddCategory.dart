@@ -17,15 +17,15 @@ import 'package:image_picker/image_picker.dart';
 class AddCategoryScreen extends StatefulWidget {
   final String? documentId;
 
-  AddCategoryScreen({
+  const AddCategoryScreen({super.key,
     this.documentId,
   });
 
   @override
-  _AddCategoryScreenState createState() => _AddCategoryScreenState();
+  AddCategoryScreenState createState() => AddCategoryScreenState();
 }
 
-class _AddCategoryScreenState extends State<AddCategoryScreen> {
+class AddCategoryScreenState extends State<AddCategoryScreen> {
   late TextEditingController _categoryController;
   late TextEditingController _descriptionController;
   late IconData selectedIcon = Icons.search;  // Default icon
@@ -109,8 +109,8 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
 
 
   Future<void> _pickImage() async {
-    final ImagePicker _picker = ImagePicker();
-    final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+    final ImagePicker picker = ImagePicker();
+    final XFile? pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
     setState(() {
       if (pickedFile != null) {
@@ -121,7 +121,6 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
         });
         selectedIcon = Icons.search;
       } else {
-        print("No image selected.");
       }
     });
   }
@@ -163,7 +162,6 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
         final compressedFile = await _compressFile(file);
         setState(() {
           selectedImage = compressedFile ?? file;
-          print(compressedFile ?? 'ok');
           imageHasChanged = true;
         });
       }
@@ -186,7 +184,6 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
         format: CompressFormat.jpeg, // Specify JPEG format
       );
 
-      print('compressed');
       if (compressedImage != null) {
         return File(compressedImage.path); // Convert to File type
       }
@@ -218,7 +215,9 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Pick a color!'),
+          title: const Text(
+              'Pick a color!',
+          ),
           content: SingleChildScrollView(
             child: ColorPicker(
               pickerColor: selectedColor,
@@ -230,7 +229,6 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
           ),
           actions: <Widget>[
             ElevatedButton(
-              child: Text('Got it', style: TextStyle(color: Colors.white)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: selectedColor,
                 shape: RoundedRectangleBorder(
@@ -240,6 +238,7 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
               onPressed: () {
                 Navigator.of(context).pop();
               },
+              child: const Text('Got it', style: TextStyle(color: Colors.white)),
             ),
           ],
         );
@@ -314,7 +313,7 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
       }
 
       // Update UI and pop the screen
-      // Show success snackbar
+      // Show success prompt
       await showModernSnackBar(
         context: context,
         message: isModifyMode ? "Category updated successfully!" : "Category added successfully!",
@@ -325,7 +324,7 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
       });
       Navigator.pop(context, true);
     } catch (e) {
-      // Handle errors, show error snackbar
+      // Handle errors, show error prompt
       await showModernSnackBar(
         context: context,
         message: isModifyMode ? "Category was not updated" : "Category was not added",
@@ -353,7 +352,7 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
             Navigator.pop(context);
           },
         ),
-        title: Text(isModifyMode ? "Modify Category" : "Add Category", style: TextStyle(color: Colors.white)),
+        title: Text(isModifyMode ? "Modify Category" : "Add Category", style: const TextStyle(color: Colors.white)),
         backgroundColor: Colors.blueGrey[900],
       ),
       body: SingleChildScrollView(
@@ -364,15 +363,15 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
           children: [
             // Redesigned Text Field for Category
             ExpnzTextField(label: "Enter Category", controller: _categoryController),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             // Redesigned Text Field for Description
             ExpnzTextField(label: "Enter Description", controller: _descriptionController),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             // Redesigned Button for Icon Picker
             // Container for the entire row
             // Container for the entire row
             Container(
-              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
               decoration: BoxDecoration(
                 color: Colors.blueGrey[700],
                 borderRadius: BorderRadius.circular(16),
@@ -381,14 +380,14 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
                     color: Colors.black.withOpacity(0.2),
                     spreadRadius: 1,
                     blurRadius: 7,
-                    offset: Offset(0, 3),
+                    offset: const Offset(0, 3),
                   ),
                 ],
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
+                  const Text(
                     'Choose Icon or Image',
                     style: TextStyle(color: Colors.white, fontSize: 16),
                   ),
@@ -399,7 +398,7 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
                         child: Container(
                           width: 50,
                           height: 50,
-                          decoration: BoxDecoration(
+                          decoration: const BoxDecoration(
                             shape: BoxShape.circle,
                             color: Colors.white,
                           ),
@@ -409,13 +408,13 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
                           ),
                         ),
                       ),
-                      SizedBox(width: 16),
+                      const SizedBox(width: 16),
                       GestureDetector(
                         onTap: _pickImage,
                         child: Container(
                           width: 50,
                           height: 50,
-                          decoration: BoxDecoration(
+                          decoration: const BoxDecoration(
                             shape: BoxShape.circle,
                             color: Colors.white,
                           ),
@@ -437,13 +436,25 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
                 ],
               ),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _pickColor,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blueGrey[700],
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                textStyle: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+                elevation: 5,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(50.0),
+                ),
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
+                  const Row(
                     children: [
                       Icon(
                         Icons.color_lens, // You can change this to any icon you like
@@ -453,12 +464,17 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text("Pick a Color"),
+                          Text("Pick a Color",
+                            style: TextStyle(
+                              color: Colors.white,
+                            ),
+                          ),
                           Text(
                             "Tap to choose color",
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w300,
+                              color: Colors.white,
                             ),
                           ),
                         ],
@@ -476,21 +492,9 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
                   ),
                 ],
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blueGrey[700],
-                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                textStyle: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-                elevation: 5,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(50.0),
-                ),
-              ),
             ),
 
-            SizedBox(height: 32),
+            const SizedBox(height: 32),
             // Redesigned Add Button
             ExpnZButton(
               label: isProcessing ? "Processing..." : (isModifyMode ? "Modify" : "Add"),

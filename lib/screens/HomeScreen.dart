@@ -1,11 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:expnz/database/AccountsDB.dart';
 import 'package:expnz/screens/AddAccount.dart';
 import 'package:expnz/widgets/AppWidgets/MonthlySummaryCards.dart';
 import 'package:expnz/widgets/SimpleWidgets/ExpnZButton.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -19,10 +17,10 @@ class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  _HomeScreenState createState() => _HomeScreenState();
+  HomeScreenState createState() => HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
+class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late AnimationController _nameController;
   late AnimationController _cardController;
   late AnimationController _incomeCardController;

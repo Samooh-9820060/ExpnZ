@@ -249,12 +249,18 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("Select Icon"),
+                      Text(
+                          "Select Icon",
+                        style: TextStyle(
+                          color: Colors.white,
+                        ),
+                      ),
                       Text(
                         "Tap to choose icon",
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w300,
+                          color: Colors.white,
                         ),
                       ),
                     ],

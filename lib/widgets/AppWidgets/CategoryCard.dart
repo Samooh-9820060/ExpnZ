@@ -11,7 +11,6 @@ import '../../utils/image_utils.dart';
 
 
 class CategoryCard extends StatefulWidget {
-  final Key? key;
   final String documentId;
   final String categoryName;
   final String? imagePath;
@@ -22,8 +21,7 @@ class CategoryCard extends StatefulWidget {
 
 
 
-  CategoryCard({
-    this.key,
+  const CategoryCard({super.key,
     required this.documentId,
     required this.categoryName,
     this.imagePath,
@@ -31,13 +29,13 @@ class CategoryCard extends StatefulWidget {
     this.primaryColor,
     required this.animation,
     required this.index,
-  }) : super(key: key);
+  });
 
   @override
-  _CategoryCardState createState() => _CategoryCardState();
+  CategoryCardState createState() => CategoryCardState();
 }
 
-class _CategoryCardState extends State<CategoryCard>
+class CategoryCardState extends State<CategoryCard>
     with TickerProviderStateMixin {
   late AnimationController _numberController;
   late Animation<double> _numberAnimation;
@@ -79,7 +77,7 @@ class _CategoryCardState extends State<CategoryCard>
   }
 
   Future<List<Widget>> _fetchAccountWidgets(String categoryId) async {
-    final accountsData = accountsNotifier.value ?? {};
+    final accountsData = accountsNotifier.value;
     Map<String, Map<String, double>> accountIncomeExpenses = await TransactionsDB().getIncomeExpenseForAccountsInCategory(categoryId);
 
     List<Widget> accountWidgets = [];
@@ -139,8 +137,8 @@ class _CategoryCardState extends State<CategoryCard>
             },
             child: Column(children: [
               Container(
-                margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
@@ -151,7 +149,7 @@ class _CategoryCardState extends State<CategoryCard>
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.2),
-                      offset: Offset(0, 4),
+                      offset: const Offset(0, 4),
                       blurRadius: 6.0,
                     ),
                   ],
@@ -237,7 +235,7 @@ class _CategoryCardState extends State<CategoryCard>
                               return Center(
                                 child: Text(
                                   "Error loading data: ${snapshot.error}",
-                                  style: TextStyle(color: Colors.red, fontSize: 18),
+                                  style: const TextStyle(color: Colors.red, fontSize: 18),
                                 ),
                               );
                             }
@@ -279,11 +277,11 @@ class _CategoryCardState extends State<CategoryCard>
         String animatedExpense = animatedNumberString(_numberAnimation.value, expense, currencyMap);
 
         // Define a fixed width for the amount containers
-        final double amountWidth = 70.0; // You can adjust this value as needed
+        const double amountWidth = 70.0; // You can adjust this value as needed
 
         return Container(
-          margin: EdgeInsets.symmetric(vertical: 4),
-          padding: EdgeInsets.symmetric(horizontal: 8),
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 8),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
           ),
@@ -292,7 +290,7 @@ class _CategoryCardState extends State<CategoryCard>
             children: [
               Text(
                 accountName,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 12,
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -300,27 +298,27 @@ class _CategoryCardState extends State<CategoryCard>
               ),
               Row(
                 children: [
-                  Icon(Icons.arrow_upward, color: Colors.green, size: 16),
-                  SizedBox(width: 4),
-                  Container(
+                  const Icon(Icons.arrow_upward, color: Colors.green, size: 16),
+                  const SizedBox(width: 4),
+                  SizedBox(
                     width: amountWidth,
                     child: Text(
                       animatedIncome,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 12,
                         color: Colors.green,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
-                  SizedBox(width: 16),
-                  Icon(Icons.arrow_downward, color: Colors.red, size: 16),
-                  SizedBox(width: 4),
-                  Container(
+                  const SizedBox(width: 16),
+                  const Icon(Icons.arrow_downward, color: Colors.red, size: 16),
+                  const SizedBox(width: 4),
+                  SizedBox(
                     width: amountWidth,
                     child: Text(
                       animatedExpense,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 12,
                         color: Colors.red,
                         fontWeight: FontWeight.bold,

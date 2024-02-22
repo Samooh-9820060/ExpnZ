@@ -4,11 +4,13 @@ import '../database/CategoriesDB.dart';
 import '../widgets/AppWidgets/CategoryCard.dart';
 
 class CategoriesScreen extends StatefulWidget {
+  const CategoriesScreen({super.key});
+
   @override
-  _CategoriesScreenState createState() => _CategoriesScreenState();
+  CategoriesScreenState createState() => CategoriesScreenState();
 }
 
-class _CategoriesScreenState extends State<CategoriesScreen>
+class CategoriesScreenState extends State<CategoriesScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _animation;
@@ -49,7 +51,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                 labelText: 'Search Categories',
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
-                  icon: Icon(Icons.clear),
+                  icon: const Icon(Icons.clear),
                   onPressed: () {
                     _searchController.clear();
                     setState(() {
@@ -132,10 +134,9 @@ class _CategoriesScreenState extends State<CategoriesScreen>
     required String documentId,
     required int index,
   }) {
-    bool isExpanded = false;
 
     // Extracting category data
-    final categoryData = categoriesNotifier.value![documentId];
+    final categoryData = categoriesNotifier.value[documentId];
     final String categoryName = categoryData?['name'] ?? 'Unknown Category';
     final String? imagePath = categoryData?[
         'imageUrl']; // Replace 'imageUrl' with your field name if different
@@ -156,7 +157,6 @@ class _CategoriesScreenState extends State<CategoriesScreen>
             child: Transform.scale(
               scale: _animation.value,
               child: CategoryCard(
-                key: key,
                 documentId: documentId,
                 categoryName: categoryName,
                 imagePath: imagePath,
