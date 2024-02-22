@@ -749,26 +749,30 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
 
   Widget _buildNoTransactionsPlaceholder() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            isFilterOn ? Icons.sentiment_dissatisfied :
-            _searchController.text.isNotEmpty
-                ? Icons.sentiment_dissatisfied
-                : Icons.sentiment_very_satisfied,
-            size: 50,
-            color: Colors.white,
-          ),
-          const SizedBox(height: 10),
-          Text(
-            isFilterOn ? 'No Transactions available for the given filters' :
-            _searchController.text.length > 3
-                ? 'No transactions available'
-                : 'Enter more than 3 letters to search or use the filter button',
-            style: const TextStyle(color: Colors.white),
-          ),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              isFilterOn ? Icons.sentiment_dissatisfied :
+              _searchController.text.isNotEmpty
+                  ? Icons.sentiment_dissatisfied
+                  : Icons.sentiment_very_satisfied,
+              size: 50,
+              color: Colors.white,
+            ),
+            const SizedBox(height: 10),
+            Text(
+              textAlign: TextAlign.center,
+              isFilterOn ? 'No Transactions available for the given filters' :
+              _searchController.text.length > 3
+                  ? 'No transactions available'
+                  : 'Enter more than 3 letters to search or use the filter button',
+              style: const TextStyle(color: Colors.white),
+            ),
+          ],
+        ),
       ),
     );
   }

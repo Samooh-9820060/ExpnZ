@@ -5,6 +5,7 @@ import 'package:expnz/widgets/SimpleWidgets/ExpnZTextField.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'SignUpScreen.dart';
 
 class SignInScreen extends StatefulWidget {
@@ -107,6 +108,12 @@ class _SignInScreenState extends State<SignInScreen>
           });*/
         }
       }
+
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.remove('lastAccountSyncTime');
+      await prefs.remove('lastCategorySyncTime');
+      await prefs.remove('lastTransactionSyncTime');
+      await prefs.remove('lastRecurringTransactionSyncTime');
       Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => HomePage()));
     } on FirebaseAuthException catch (e) {
       _showErrorDialog(e.message ?? "Firebase Auth error occurred.");
@@ -134,6 +141,11 @@ class _SignInScreenState extends State<SignInScreen>
           return;
         }
 
+        final SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.remove('lastAccountSyncTime');
+        await prefs.remove('lastCategorySyncTime');
+        await prefs.remove('lastTransactionSyncTime');
+        await prefs.remove('lastRecurringTransactionSyncTime');
         // Navigate to the next screen if successful
         Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => HomePage()));
       } on FirebaseAuthException catch (e) {
