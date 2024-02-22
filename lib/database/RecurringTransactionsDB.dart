@@ -126,7 +126,6 @@ class RecurringTransactionDB {
       if (payload != null) {
         DateTime notificationTime = DateTime.parse(payload['notificationTime']);
         if (notificationTime.isBefore(DateTime.now())) {
-          // The times do not match, delete the old notification and schedule a new one
           int? existingNotificationId = await NotificationManager().findNotificationId(transaction['docKey']);
           if (existingNotificationId != null) {
             await flutterLocalNotificationsPlugin.cancel(existingNotificationId);
@@ -137,6 +136,15 @@ class RecurringTransactionDB {
       if (transaction['scheduleReminder']) {
         DateTime dueDate = DateTime.parse(transaction['dueDate']);
         TimeOfDay dueTime = parseTimeOfDay(transaction['dueTime']);
+
+        // Merge due date and due time
+        DateTime fullDueDateTime = DateTime(
+          dueDate.year,
+          dueDate.month,
+          dueDate.day,
+          dueTime.hour,
+          dueTime.minute,
+        );
 
         DateTime notificationTime = NotificationManager().calculateNotificationTime(
             dueDate,
@@ -149,13 +157,13 @@ class RecurringTransactionDB {
         // Await the result of notificationExists
         bool doesExist = await NotificationManager().notificationExists(transaction['docKey']);
 
-        if (dueDate.isBefore(DateTime.now())) {
+        if (fullDueDateTime.isBefore(DateTime.now())) {
           if (transaction['paidThisMonth'] == true) {
             // Calculate the next due date
-            dueDate = NotificationManager().calculateNextDueDate(dueDate, transaction['frequency']);
+            fullDueDateTime = NotificationManager().calculateNextDueDate(fullDueDateTime, transaction['frequency']);
 
             // Update the due date in Firestore
-            await updateRecurringTransactionDate(transaction['docKey'], dueDate);
+            await updateRecurringTransactionDate(transaction['docKey'], fullDueDateTime);
           } else {
             //Schedule Notification saying its overdue
             var payload = await NotificationManager().getNotificationPayload(transaction['docKey']);

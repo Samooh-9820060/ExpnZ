@@ -30,9 +30,6 @@ class AddRecurringTransactionPage extends StatefulWidget {
 class _AddRecurringTransactionPageState
     extends State<AddRecurringTransactionPage> {
   final _formKey = GlobalKey<FormState>();
-  String name = '';
-  String description = '';
-  double? amount;
   bool scheduleReminder = false;
   String frequency = 'Daily'; // Default value for transaction frequency
   String dayOfWeek = 'Monday'; // Default value for weekly frequency
@@ -112,6 +109,31 @@ class _AddRecurringTransactionPageState
       _nameController.text = transaction['name'];
       _descriptionController.text = transaction['description'] ?? '';
       _amountController.text = transaction['amount']?.toString() ?? '';
+      final String accountID = transaction['transactionAccountId'] ?? '';
+      // Fetch account index using accountData
+      final accountData = accountsNotifier.value;
+      selectedAccountIndex = accountData.entries
+          .toList()
+          .indexWhere((entry) => entry.key == accountID.toString());
+      if (selectedAccountIndex != -1) {
+        selectedAccountId = accountID;
+      }
+      // Processing categories...
+      final String? categoriesString = transaction['transactionCategoryIDs'] ?? '';
+      if (categoriesString != null && categoriesString.isNotEmpty) {
+        final List<String> categoryIds = categoriesString
+            .split(',')
+            .map((e) => e.trim())
+            .where((id) => id.isNotEmpty) // Filter out any empty strings
+            .toList();
+
+        selectedCategoriesList.clear();
+        for (String categoryId in categoryIds) {
+          selectedCategoriesList.add({
+            'id': categoryId,
+          });
+        }
+      }
 
       // Update other fields
       scheduleReminder = transaction['scheduleReminder'] ?? false;
@@ -119,7 +141,9 @@ class _AddRecurringTransactionPageState
       dayOfWeek = transaction['dayOfWeek'] ?? 'Monday';
 
       if (transaction.containsKey('dueDate')) {
-        selectedDate = DateTime.parse(transaction['dueDate']);
+        try {
+          selectedDate = DateTime.parse(transaction['dueDate']);
+        } catch (e) {}
       }
 
       if (transaction.containsKey('dueTime')) {
@@ -587,10 +611,16 @@ class _AddRecurringTransactionPageState
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
       // Prepare data for the new recurring transaction
+      String categoryIds = selectedCategoriesList.map((category) {
+        return category['id'].toString();
+      }).join(', ');
+
       Map<String, dynamic> recurringTransactionData = {
-        'name': name,
-        'description': description,
-        'amount': amount,
+        'name': _nameController.text,
+        'description': _descriptionController.text,
+        'amount': _amountController.text,
+        'transactionAccountId': selectedAccountId,
+        'transactionCategoryIDs': categoryIds,
         'scheduleReminder': scheduleReminder,
         'frequency': frequency,
         'dayOfWeek': frequency == 'Weekly' ? dayOfWeek : null,

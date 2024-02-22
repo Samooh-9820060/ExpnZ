@@ -9,11 +9,13 @@ import 'package:expnz/utils/global.dart';
 import 'AddTransaction.dart'; // Import global utilities
 
 class RecurringTransactionsPage extends StatefulWidget {
+  const RecurringTransactionsPage({super.key});
+
   @override
-  _RecurringTransactionsPageState createState() => _RecurringTransactionsPageState();
+  RecurringTransactionsPageState createState() => RecurringTransactionsPageState();
 }
 
-class _RecurringTransactionsPageState extends State<RecurringTransactionsPage> {
+class RecurringTransactionsPageState extends State<RecurringTransactionsPage> {
 
 
   @override
@@ -28,7 +30,7 @@ class _RecurringTransactionsPageState extends State<RecurringTransactionsPage> {
     return Scaffold(
       backgroundColor: Colors.blueGrey[900],
       appBar: AppBar(
-        title: Text('Recurring Transactions'),
+        title: const Text('Recurring Transactions'),
         backgroundColor: Colors.blueGrey[900],
       ),
       body: ValueListenableBuilder<Map<String, Map<String, dynamic>>>(
@@ -37,13 +39,20 @@ class _RecurringTransactionsPageState extends State<RecurringTransactionsPage> {
           var transactionsList = transactionsData.values.toList();
 
           if (transactionsList.isEmpty) {
-            return Center(
+            return const Center(
               child: Text('No recurring transactions found.'),
             );
           }
 
-          // Create a list of transaction keys
-          List<String> transactionKeys = transactionsData.keys.toList();
+          // Sort the list based on due date
+          transactionsList.sort((a, b) {
+            var dateA = DateTime.tryParse(a['dueDate'] ?? '');
+            var dateB = DateTime.tryParse(b['dueDate'] ?? '');
+            return dateA?.compareTo(dateB ?? DateTime.now()) ?? -1;
+          });
+
+          // Create a list of transaction keys based on the sorted list
+          List transactionKeys = transactionsList.map((e) => e['docKey']).toList();
 
           return ListView.builder(
             itemCount: transactionKeys.length,
@@ -78,14 +87,18 @@ class _RecurringTransactionsPageState extends State<RecurringTransactionsPage> {
 
                   // Inside ListView.builder itemBuilder:
                   return Card(
-                    margin: EdgeInsets.all(8.0),
+                    margin: const EdgeInsets.all(8.0),
                     child: ListTile(
                       title: Text(transaction?['name'] ?? 'Unknown'),
                       subtitle: Text(subtitle),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min, // This is needed to keep the row size to a minimum
                         children: <Widget>[
-                          Text('${transaction?['amount']?.toStringAsFixed(2) ?? 'Undefined'}'),
+                          Text(
+                            transaction?['amount'] != null
+                                ? double.tryParse(transaction?['amount'])?.toStringAsFixed(2) ?? ''
+                                : 'Undefined',
+                          ),
                           PopupMenuButton<String>(
                             onSelected: (String result) async {
                               switch (result) {
@@ -172,8 +185,8 @@ class _RecurringTransactionsPageState extends State<RecurringTransactionsPage> {
             setState(() {});
           });
         },
-        child: Icon(Icons.add),
         backgroundColor: Colors.blue,
+        child: const Icon(Icons.add),
       ),
     );
   }

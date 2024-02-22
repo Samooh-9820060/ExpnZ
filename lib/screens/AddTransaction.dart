@@ -103,6 +103,44 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
       _nameController.text = transactionData['name'] ?? '';
       _descriptionController.text = transactionData['description'] ?? '';
       _amountController.text = transactionData['amount'].toString();
+      String accountId = transactionData['transactionAccountId'];
+
+
+      // Fetch account index using accountData
+      final accountData = accountsNotifier.value;
+      selectedAccountIndex = accountData.entries
+          .toList()
+          .indexWhere((entry) => entry.key == accountId.toString());
+
+      if (selectedAccountIndex != -1) {
+        selectedAccountId = accountId;
+
+        // Retrieve the account details map for the selected account
+        Map<String, dynamic>? selectedAccountData = accountData[accountId];
+
+        // Now retrieve the account type from the selected account details
+        if (selectedAccountData != null && selectedAccountData.containsKey(AccountsDB.accountType)) {
+          selectedAccountType = selectedAccountData[AccountsDB.accountType] as String;
+        }
+      }
+
+      // Processing categories...
+      final String? categoriesString = transactionData['transactionCategoryIDs'] ?? '';
+      if (categoriesString != null && categoriesString.isNotEmpty) {
+        final List<String> categoryIds = categoriesString
+            .split(',')
+            .map((e) => e.trim())
+            .where((id) => id.isNotEmpty) // Filter out any empty strings
+            .toList();
+
+        selectedCategoriesList.clear();
+        for (String categoryId in categoryIds) {
+          selectedCategoriesList.add({
+            'id': categoryId,
+          });
+        }
+      }
+
     }
   }
 

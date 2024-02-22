@@ -1,8 +1,14 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:expnz/screens/RecurringTransactionsPage.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
+
+import '../database/RecurringTransactionsDB.dart';
+import '../screens/AddTransaction.dart';
 
 class ReceivedNotification {
   ReceivedNotification({
@@ -50,18 +56,45 @@ class NotificationManager {
         android: initializationSettingsAndroid,
         iOS: initializationSettingsDarwin);
 
-    await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+    await flutterLocalNotificationsPlugin.initialize(initializationSettings,);
   }
 
   // Schedule a zoned notification
   // Add an additional parameter `notificationType`
   Future<void> scheduleNotification(Map<String, dynamic> transaction, DateTime notificationTime, String notificationType) async {
+    String notificationTitle = "Reminder: ${transaction['name']}";
+    String notificationBody = "It's time for your ${transaction['frequency']} transaction '${transaction['name']}'.";
+
+    // Add the amount to the notification body only if it's not null, not empty, and can be converted to a double
+    String? amountString = transaction['amount'];
+    double? amount = amountString != null && amountString.isNotEmpty
+        ? double.tryParse(amountString)
+        : null;
+
+    if (amount != null) {
+      // Append amount to the notification body
+      notificationBody += "\nAmount: ${amount.toStringAsFixed(2)}";
+    }
+
+    // Modify the title and body based on the type of notification
+    if (notificationType == "overdue") {
+      notificationTitle = "Overdue: ${transaction['name']}";
+      notificationBody = "Your ${transaction['frequency']} transaction '${transaction['name']}' is overdue!";
+      if (amount != null) {
+        notificationBody += "\nAmount: ${amount.toStringAsFixed(2)}";
+      }
+    }
+
     var androidPlatformChannelSpecifics = AndroidNotificationDetails(
-      transaction.keys.first,
+      'recurring_transactions_channel',
       'Recurring Transactions',
       channelDescription: 'Notification channel for recurring transaction reminders',
       importance: Importance.max,
       priority: Priority.high,
+      styleInformation: BigTextStyleInformation(
+        notificationBody,
+        htmlFormatBigText: true,
+      ),
     );
     const DarwinNotificationDetails darwinNotificationDetails = DarwinNotificationDetails(
       sound: 'slow_spring_board.aiff',
@@ -78,18 +111,6 @@ class NotificationManager {
       'type': notificationType, // Include the type in the payload
     };
     String payload = json.encode(payloadMap);
-
-    String notificationTitle = "Reminder: ${transaction['name']}";
-    String notificationBody = "It's time for your ${transaction['frequency']} transaction '${transaction['name']}'.";
-
-    // Modify the title and body based on the type of notification
-    if (notificationType == "overdue") {
-      notificationTitle = "Overdue: ${transaction['name']}";
-      notificationBody = "Your ${transaction['frequency']} transaction '${transaction['name']}' is overdue!\n"
-          "Amount: ${transaction['amount']}";
-    } else {
-      notificationBody += "\nAmount: ${transaction['amount']}";
-    }
 
     await flutterLocalNotificationsPlugin.zonedSchedule(
       transaction.hashCode,
