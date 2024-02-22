@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 
 class AboutUsScreen extends StatelessWidget {
+  const AboutUsScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.blueGrey[900],
       appBar: AppBar(
-        title: Text('About Us'),
+        title: const Text('About Us'),
         backgroundColor: Colors.blueGrey[900],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: const Padding(
+        padding: EdgeInsets.all(16.0),
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
