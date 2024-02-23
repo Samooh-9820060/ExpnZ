@@ -120,20 +120,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin, Widg
     });
   }
 
-  Future<void> _fetchUserData() async {
-    User? user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      /*DocumentSnapshot userData = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-      setState(() {
-        // Other user data
-        if (userData['profileImageUrl'] is String) {
-          _profileImageUrl = userData['profileImageUrl'];
-        }
-      });*/
-    }
-  }
-
-
   @override
   Widget build(BuildContext context) {
     return Stack(

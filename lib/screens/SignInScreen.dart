@@ -153,7 +153,6 @@ class _SignInScreenState extends State<SignInScreen>
         _showErrorDialog(e.message ?? "An error occurred");
       } catch (e) {
         // Handle other errors
-        print(e.toString());
         _showErrorDialog("An unexpected error occurred: ${e.toString()}");
       }
     }

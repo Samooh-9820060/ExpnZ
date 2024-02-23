@@ -28,8 +28,10 @@ class SettingsScreenState extends State<SettingsScreen> {
   bool _showImportOptions = false;
   bool _showExportOptions = false;
   bool _showDeleteOptions = false;
-  int selectedAccountIndex = -1;
-  String selectedAccountId = "";
+  int selectedImportAccountIndex = -1;
+  int selectedExportAccountIndex = -1;
+  String selectedImportAccountId = "";
+  String selectedExportAccountId = "";
   bool _allowNotificationReading = false;
   final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
   final AppNotificationListener _notificationListener = AppNotificationListener();
@@ -287,9 +289,9 @@ class SettingsScreenState extends State<SettingsScreen> {
                         return GestureDetector(
                           onTap: () {
                             setState(() {
-                              selectedAccountIndex = index;
-                              selectedAccountId = accountId; // Using the document ID as account ID
-                              _showImportTemplateDialog(account[AccountsDB.accountName], selectedAccountId, account[AccountsDB.accountType]);
+                              selectedImportAccountIndex = index;
+                              selectedImportAccountId = accountId; // Using the document ID as account ID
+                              _showImportTemplateDialog(account[AccountsDB.accountName], selectedImportAccountId, account[AccountsDB.accountType]);
                             });
                           },
                           child: AccountCard(
@@ -301,7 +303,7 @@ class SettingsScreenState extends State<SettingsScreen> {
                             ),
                             currency: currencyCode,
                             accountName: account[AccountsDB.accountName],
-                            isSelected: index == selectedAccountIndex,
+                            isSelected: index == selectedImportAccountIndex,
                           ),
                         );
                       },
@@ -319,15 +321,105 @@ class SettingsScreenState extends State<SettingsScreen> {
     return Column(
       children: [
         ListTile(
-          title: const Text('Export Transactions', style: TextStyle(color: Colors.white70)),
+          title: const Text('Export Transactions (Select Account)', style: TextStyle(color: Colors.white70)),
           leading: const Icon(Icons.arrow_right, color: Colors.white70),
           onTap: () {
 
           },
+        ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              height: 150, // set the height
+              child: ValueListenableBuilder<Map<String, Map<String, dynamic>>>(
+                valueListenable: accountsNotifier,
+                builder: (context, accountsData, child) {
+                  if (accountsData.isEmpty) {
+                    return const Center(
+                      child: Text('No accounts available.'),
+                    );
+                  } else {
+                    List<String> accountIds = accountsData.keys.toList();
+
+                    return ListView.builder(
+                      padding: EdgeInsets.zero,
+                      scrollDirection: Axis.horizontal,
+                      itemCount: accountIds.length,
+                      itemBuilder: (context, index) {
+                        final accountId = accountIds[index];
+                        final account = accountsData[accountId]!;
+                        Map<String, dynamic> currencyMap = jsonDecode(account[AccountsDB.accountCurrency]);
+                        String currencyCode = currencyMap['code'] as String;
+
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              selectedExportAccountIndex = index;
+                              selectedExportAccountId = accountId; // Using the document ID as account ID
+                              _exportToExcel();
+                            });
+                          },
+                          child: AccountCard(
+                            accountId: accountId,
+                            icon: IconData(
+                              account[AccountsDB.accountIconCodePoint],
+                              fontFamily: account[AccountsDB.accountIconFontFamily],
+                              fontPackage: account[AccountsDB.accountIconFontPackage],
+                            ),
+                            currency: currencyCode,
+                            accountName: account[AccountsDB.accountName],
+                            isSelected: index == selectedExportAccountIndex,
+                          ),
+                        );
+                      },
+                    );
+                  }
+                },
+              ),
+            ),
+          ],
         )
       ],
     );
   }
+  Future<void> _exportToExcel() async {
+    try {
+      // Prompt the user to select a location to save the file
+      String? outputFile = await _pickSaveLocation();
+      if (outputFile != null) {
+        // Generate the Excel file
+        var excel = Excel.createExcel();
+        Sheet sheetObject = excel['Sheet1'];
+
+        // TODO: Add your data to the sheet
+        // For example, sheetObject.appendRow(["Date", "Description", "Amount"]);
+
+        // Save the file
+        var fileBytes = excel.save();
+        File(outputFile)
+          ..createSync(recursive: true)
+          ..writeAsBytesSync(fileBytes!);
+
+        // Inform the user of success
+        print('Excel file saved successfully!');
+      }
+    } catch (e) {
+      print('Error exporting to Excel: $e');
+    }
+  }
+
+  Future<String?> _pickSaveLocation() async {
+    //save the file in temp location instead and share it
+    String? outputFile = await FilePicker.platform.saveFile(
+      dialogTitle: 'Please select an output file:',
+      fileName: 'Transactions.xlsx',
+    );
+
+    return outputFile;
+  }
+
+
   Widget _buildSyncInfoTile(String title, String syncTime) {
     return ListTile(
       title: Text(title, style: const TextStyle(color: Colors.white)),
@@ -600,7 +692,7 @@ class SettingsScreenState extends State<SettingsScreen> {
           TransactionsDB.transactionBalance: (double.tryParse(expenseAmountCell) ?? 0.0) - (double.tryParse(actualAmountCell) ?? 0.0),
           TransactionsDB.transactionDate: DateFormat('yyyy-MM-dd').format(parsedDate),
           TransactionsDB.transactionTime: parsedTime.format(context),
-          TransactionsDB.transactionAccountId: selectedAccountId,
+          TransactionsDB.transactionAccountId: selectedImportAccountId,
           TransactionsDB.transactionCategoryIDs: categoriesCell,
         };
         transactionsToCreate.add(row);

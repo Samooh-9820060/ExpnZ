@@ -49,7 +49,7 @@ class TransactionsDB {
       if (newTransactionsData.isNotEmpty) {
         await cacheTransactionsLocally(newTransactionsData);
         // Store the current time as the last sync time
-        await prefs.setString('lastSyncTime', DateTime.now().toIso8601String());
+        await prefs.setString('lastTransactionSyncTime', DateTime.now().toIso8601String());
       } else {
         await loadTransactionsFromLocal();
       }

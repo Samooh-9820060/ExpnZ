@@ -75,7 +75,7 @@ Future<File?> getImageFile(String imageUrl, String fileName) async {
       }
     } catch (e) {
       // Handle exceptions
-      print("Error downloading image: $e");
+      //Error downloading image: $e
       return null;
     }
   }

@@ -160,12 +160,10 @@ class NotificationManager {
   Future<bool> notificationExists(String transactionId) async {
     List<PendingNotificationRequest> pendingNotifications = await flutterLocalNotificationsPlugin.pendingNotificationRequests();
 
-    print(pendingNotifications.length);
     for (var notification in pendingNotifications) {
       try {
         Map<String, dynamic> payloadData = json.decode(notification.payload!);
         if (payloadData['docKey'] == transactionId) {
-          print(payloadData['notificationTime']);
           return true;
         }
       } catch (e) {

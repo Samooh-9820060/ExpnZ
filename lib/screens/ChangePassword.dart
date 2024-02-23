@@ -1,3 +1,5 @@
+import 'package:expnz/widgets/SimpleWidgets/ExpnZButton.dart';
+import 'package:expnz/widgets/SimpleWidgets/ExpnZTextField.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -85,75 +87,28 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.blueGrey[900],
       appBar: AppBar(
-        title: Text('Change Password'),
+        scrolledUnderElevation: 0.0,
+        backgroundColor: Colors.blueGrey[900],
+        title: const Text('Change Password'),
       ),
-      body: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            // Old Password TextField
-            TextField(
-              controller: _oldPasswordController,
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: 'Old Password',
-                labelStyle: TextStyle(color: Colors.grey),
-                enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.grey),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.blue),
-                ),
-              ),
-              style: TextStyle(color: Colors.grey),
-            ),
-            const SizedBox(height: 20),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              ExpnzTextField(label: 'Old Password', controller: _oldPasswordController, isPassword: true),
+              ExpnzTextField(label: 'New Password', controller: _newPasswordController, isPassword: true),
+              ExpnzTextField(label: 'Confirm New Password', controller: _confirmNewPasswordController, isPassword: true),
 
-            // New Password TextField
-            TextField(
-              controller: _newPasswordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'New Password',
-                labelStyle: TextStyle(color: Colors.grey),
-                enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.grey),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.blue),
-                ),
-              ),
-              style: TextStyle(color: Colors.grey),
-            ),
-            SizedBox(height: 20),
-
-            // Confirm New Password TextField
-            TextField(
-              controller: _confirmNewPasswordController,
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: 'Confirm New Password',
-                labelStyle: TextStyle(color: Colors.grey),
-                enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.grey),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.blue),
-                ),
-              ),
-              style: TextStyle(color: Colors.grey),
-            ),
-            SizedBox(height: 20),
-
-            // Change Password Button
-            ElevatedButton(
-              onPressed: changePassword,
-              child: Text('Change Password'),
-            ),
-          ],
-        )
-        ,
+              // Change Password Button
+              const SizedBox(height: 10,),
+              ExpnZButton(label: 'Change Password', onPressed: changePassword),
+            ],
+          )
+          ,
+        ),
       ),
     );
   }

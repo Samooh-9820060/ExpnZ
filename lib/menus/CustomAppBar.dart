@@ -32,7 +32,6 @@ class _CustomAppBarState extends State<CustomAppBar> {
     _listenerSubscription = widget.notificationListener.statusStream.listen(
           (isActive) {
         setState(() {
-          print('changing to $isActive');
           isListenerActive = isActive;
         });
       },

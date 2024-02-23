@@ -105,7 +105,7 @@ class FinancialDataNotifier extends ChangeNotifier {
       // After loading data, remove the listener
       //accountsNotifier.removeListener(loadData);
     }  else {
-      print("Accounts data is empty. Waiting for data...");
+      //Accounts data is empty. Waiting for data
     }
   }
 

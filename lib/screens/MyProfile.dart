@@ -87,7 +87,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
         });
         //selectedIcon = Icons.search;
       } else {
-        print("No image selected.");
+        //No image selected
       }
     });
   }
@@ -224,6 +224,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
     return Scaffold(
       backgroundColor: Colors.blueGrey[900],
       appBar: AppBar(
+        scrolledUnderElevation: 0.0,
         title: Text('My Profile'),
         backgroundColor: Colors.blueGrey[900],
       ),

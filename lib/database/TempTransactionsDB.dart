@@ -13,7 +13,7 @@ class TempTransactionsDB {
   static const columnTime = 'time';
   static const columnAccountId = 'account_id';
   static const columnCategories = 'categories';
-  static const columnCardDigits = 'card_digts';
+  static const columnCardDigits = 'card_digits';
 
   Future<void> addTempData() async {
     List<Map<String, dynamic>> tempData = [
