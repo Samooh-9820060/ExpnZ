@@ -95,6 +95,13 @@ class AddTransactionScreenState extends State<AddTransactionScreen> with Widgets
     if (widget.transaction != null) { updateMode = true; loadTransactionData(); }
     if (widget.tempTransactionId != null) { tempAdding = true; loadTempTransactionData(); }
     if (widget.recurringTransactionId != null) { recurringAdding = true; loadRecurringTransactionData(); }
+    for (var entry in splitTransactions) {
+      entry.amountController.addListener(() {
+        setState(() {
+          // This will rebuild the widget when the amount changes
+        });
+      });
+    }
   }
 
   void _showCategorySelection(SplitTransactionEntry entry, VoidCallback onCategoryChanged) {
@@ -272,6 +279,21 @@ class AddTransactionScreenState extends State<AddTransactionScreen> with Widgets
     String fileName = generateFileNameFromUrl(imageUrl);
     return getImageFile(imageUrl, fileName); // Replace with your logic to get the local file
   }
+  double calculateSplitTransactionsSum() {
+    return splitTransactions.fold(0, (sum, entry) {
+      double entryAmount = double.tryParse(entry.amountController.text) ?? 0;
+      return sum + entryAmount;
+    });
+  }
+  void addSplitTransactionEntry() {
+    var newEntry = SplitTransactionEntry(amount: '0');
+    newEntry.amountController.addListener(() {
+      setState(() {
+        // This will rebuild the widget when the amount changes
+      });
+    });
+    splitTransactions.add(newEntry);
+  }
 
 
   void _updateBalance() {
@@ -288,6 +310,11 @@ class AddTransactionScreenState extends State<AddTransactionScreen> with Widgets
           _balanceGivenController.text = balance.toStringAsFixed(2);
         });
       } catch (ex) {}
+    }
+    if (splitTransaction) {
+      setState(() {
+
+      });
     }
   }
 
@@ -443,27 +470,29 @@ class AddTransactionScreenState extends State<AddTransactionScreen> with Widgets
       if (transaction.containsKey(TransactionsDB.transactionSplitEntries)) {
         List<dynamic> splitTransactionsData = transaction[TransactionsDB.transactionSplitEntries] as List<dynamic>;
 
-        splitTransactions.clear();
-        selectedCategoriesList.clear();
-        for (var entryData in splitTransactionsData) {
-          if (splitTransactionsData.isNotEmpty) {
-            splitTransaction = true;
-          }
-          // Check if 'amount' is a string and convert it to double
-          double entryAmount = 0;
-          if (entryData['amount'] != null) {
-            entryAmount = double.tryParse(entryData['amount'].toString()) ?? 0;
-          }
+        if (splitTransactionsData.isNotEmpty) {
+          splitTransactions.clear();
+          selectedCategoriesList.clear();
+          for (var entryData in splitTransactionsData) {
+            if (splitTransactionsData.isNotEmpty) {
+              splitTransaction = true;
+            }
+            // Check if 'amount' is a string and convert it to double
+            double entryAmount = 0;
+            if (entryData['amount'] != null) {
+              entryAmount = double.tryParse(entryData['amount'].toString()) ?? 0;
+            }
 
-          List<Map<String, dynamic>> entryCategories = (entryData['categories'] as List<dynamic>).map((categoryId) {
-            return {'id': categoryId};
-          }).toList();
+            List<Map<String, dynamic>> entryCategories = (entryData['categories'] as List<dynamic>).map((categoryId) {
+              return {'id': categoryId};
+            }).toList();
 
-          SplitTransactionEntry entry = SplitTransactionEntry(
-            amount: entryAmount.toString(),
-            categories: entryCategories,
-          );
-          splitTransactions.add(entry);
+            SplitTransactionEntry entry = SplitTransactionEntry(
+              amount: entryAmount.toString(),
+              categories: entryCategories,
+            );
+            splitTransactions.add(entry);
+          }
         }
       }
 
@@ -906,6 +935,11 @@ class AddTransactionScreenState extends State<AddTransactionScreen> with Widgets
 
   @override
   Widget build(BuildContext context) {
+    double remainingAmount = 0;
+    try {
+      remainingAmount = double.parse(_amountController.text) - calculateSplitTransactionsSum();
+    } catch(e) {}
+
     return PopScope(
       canPop: false,
       onPopInvoked: (bool didPop) async {
@@ -1031,6 +1065,13 @@ class AddTransactionScreenState extends State<AddTransactionScreen> with Widgets
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
+                              Text(
+                                'Amount Left: ${remainingAmount.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                               ListView.builder(
                                 shrinkWrap: true,
                                 itemCount: splitTransactions.length,
@@ -1075,7 +1116,7 @@ class AddTransactionScreenState extends State<AddTransactionScreen> with Widgets
                                                   return Icon(snapshot.data!.iconData);
                                                 }
                                               }
-                                              return const Icon(Icons.category);
+                                              return const Icon(Icons.question_mark);
                                             },
                                           ),
                                           onPressed: () {
@@ -1102,7 +1143,7 @@ class AddTransactionScreenState extends State<AddTransactionScreen> with Widgets
                                 child: const Text("+ Add Split"),
                                 onPressed: () {
                                   setState(() {
-                                    splitTransactions.add(SplitTransactionEntry(amount: '0'));
+                                    addSplitTransactionEntry();
                                   });
                                 },
                               ),
