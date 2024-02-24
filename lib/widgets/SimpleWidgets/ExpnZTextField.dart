@@ -10,8 +10,10 @@ class ExpnzTextField extends StatelessWidget {
   final bool? enabled;
   final bool alwaysFloatingLabel;
   final bool isPassword;
+  final ValueChanged<String>? onChanged;
+  final Widget? suffixIcon;
 
-  ExpnzTextField({
+  const ExpnzTextField({super.key,
     required this.label,
     required this.controller,
     this.isNumber = false,
@@ -21,6 +23,8 @@ class ExpnzTextField extends StatelessWidget {
     this.enabled,
     this.alwaysFloatingLabel = false,
     this.isPassword = false,
+    this.onChanged,
+    this.suffixIcon,
   });
 
   @override
@@ -57,6 +61,7 @@ class ExpnzTextField extends StatelessWidget {
               color: Colors.white,
               fontSize: 16,
             ),
+            suffixIcon: suffixIcon,
             border: InputBorder.none,
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(25),
@@ -76,6 +81,7 @@ class ExpnzTextField extends StatelessWidget {
                 : FloatingLabelBehavior.auto,
           ),
           enabled: enabled,
+          onChanged: onChanged,
         ),
       ),
     );

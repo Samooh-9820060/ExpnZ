@@ -941,9 +941,10 @@ class AddTransactionScreenState extends State<AddTransactionScreen> with Widgets
     } catch(e) {}
 
     return PopScope(
-      canPop: false,
       onPopInvoked: (bool didPop) async {
-        Navigator.pop(context, false);
+        if (didPop) {
+          return;
+        }
       },
       child: Scaffold(
         backgroundColor: Colors.blueGrey[900],
@@ -1074,6 +1075,7 @@ class AddTransactionScreenState extends State<AddTransactionScreen> with Widgets
                               ),
                               ListView.builder(
                                 shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
                                 itemCount: splitTransactions.length,
                                 itemBuilder: (context, index) {
                                   return Padding(
@@ -1105,7 +1107,7 @@ class AddTransactionScreenState extends State<AddTransactionScreen> with Widgets
                                                         return const Icon(Icons.error); // Error or file not found
                                                       } else {
                                                         return CircleAvatar(
-                                                          radius: 12, // Adjust the radius to match your icon size
+                                                          radius: 16,
                                                           backgroundImage: FileImage(fileSnapshot.data!),
                                                           backgroundColor: Colors.transparent,
                                                         );

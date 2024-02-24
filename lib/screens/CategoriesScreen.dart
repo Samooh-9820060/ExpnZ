@@ -1,4 +1,5 @@
 import 'package:expnz/utils/global.dart';
+import 'package:expnz/widgets/SimpleWidgets/ExpnZTextField.dart';
 import 'package:flutter/material.dart';
 import '../database/CategoriesDB.dart';
 import '../widgets/AppWidgets/CategoryCard.dart';
@@ -45,7 +46,27 @@ class CategoriesScreenState extends State<CategoriesScreen>
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-            child: TextField(
+            child: ExpnzTextField(
+              controller: _searchController,
+              label: 'Search Categories',
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                });
+              },
+              suffixIcon: _searchQuery.isNotEmpty
+                  ? IconButton(
+                icon: const Icon(Icons.clear),
+                onPressed: () {
+                  _searchController.clear();
+                  setState(() {
+                    _searchQuery = '';
+                  });
+                },
+              )
+                  : null,
+            ),
+            /*child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
                 labelText: 'Search Categories',
@@ -66,7 +87,7 @@ class CategoriesScreenState extends State<CategoriesScreen>
                   _searchQuery = value;
                 });
               },
-            ),
+            ),*/
           ),
           Expanded(
             child: ValueListenableBuilder<Map<String, Map<String, dynamic>>>(
