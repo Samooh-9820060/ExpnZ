@@ -435,6 +435,33 @@ class AddTransactionScreenState extends State<AddTransactionScreen> with Widgets
         }
       }
 
+      if (transaction.containsKey(TransactionsDB.transactionSplitEntries)) {
+        List<dynamic> splitTransactionsData = transaction[TransactionsDB.transactionSplitEntries] as List<dynamic>;
+
+        splitTransactions.clear();
+        selectedCategoriesList.clear();
+        for (var entryData in splitTransactionsData) {
+          if (splitTransactionsData.isNotEmpty) {
+            splitTransaction = true;
+          }
+          // Check if 'amount' is a string and convert it to double
+          double entryAmount = 0;
+          if (entryData['amount'] != null) {
+            entryAmount = double.tryParse(entryData['amount'].toString()) ?? 0;
+          }
+
+          List<Map<String, dynamic>> entryCategories = (entryData['categories'] as List<dynamic>).map((categoryId) {
+            return {'id': categoryId};
+          }).toList();
+
+          SplitTransactionEntry entry = SplitTransactionEntry(
+            amount: entryAmount.toString(),
+            categories: entryCategories,
+          );
+          splitTransactions.add(entry);
+        }
+      }
+
     }
   }
 
@@ -476,10 +503,20 @@ class AddTransactionScreenState extends State<AddTransactionScreen> with Widgets
       existingTransaction = widget.transaction;
     }
 
-    // Check if the selected categories list contains "Unassigned"
-    bool hasUnassignedCategory = selectedCategoriesList.isEmpty;
+    bool hasUnassignedCategory() {
+      if (splitTransaction) {
+        for (var entry in splitTransactions) {
+          if (entry.categories.isEmpty) {
+            return true;
+          }
+        }
+      } else {
+        return selectedCategoriesList.isEmpty;
+      }
+      return false;
+    }
 
-    if (hasUnassignedCategory) {
+    if (hasUnassignedCategory()) {
       await showModernSnackBar(
         context: context,
         message: "Please assign a category to the transaction before saving",
@@ -540,10 +577,32 @@ class AddTransactionScreenState extends State<AddTransactionScreen> with Widgets
     }
 
     //validate category selection
-    if (selectedCategoriesList.isEmpty) {
+    if (selectedCategoriesList.isEmpty && splitTransactions.isEmpty) {
       await showModernSnackBar(
         context: context,
         message: "Please select at least one category",
+        backgroundColor: Colors.red,
+      );
+      setState(() {
+        isProcessing = false;
+      });
+      return;
+    }
+
+    // Calculate the total amount of all split transactions
+    double splitTransactionsTotal = splitTransactions.fold(0, (total, entry) {
+      double entryAmount = double.tryParse(entry.amountController.text) ?? 0;
+      return total + entryAmount;
+    });
+
+    // Get the main transaction amount
+    double mainTransactionAmount = double.tryParse(_amountController.text) ?? 0;
+
+    // Check if the totals match
+    if (splitTransactions.isNotEmpty && splitTransactionsTotal != mainTransactionAmount) {
+      await showModernSnackBar(
+        context: context,
+        message: "The sum of split transactions must equal the total transaction amount",
         backgroundColor: Colors.red,
       );
       setState(() {
@@ -581,6 +640,13 @@ class AddTransactionScreenState extends State<AddTransactionScreen> with Widgets
         return;
       }
 
+      List<Map<String, dynamic>> splitTransactionsData = splitTransactions.map((entry) {
+        return {
+          'amount': entry.amountController.text,
+          'categories': entry.categories.map((category) => category['id']).toList(),
+        };
+      }).toList();
+
       String categoryIds = selectedCategoriesList.map((category) {
         return category['id'].toString();
       }).join(', ');
@@ -595,7 +661,9 @@ class AddTransactionScreenState extends State<AddTransactionScreen> with Widgets
         TransactionsDB.transactionTime: selectedTime.format(context),
         TransactionsDB.transactionAccountId: selectedFromAccountId,
         TransactionsDB.transactionCategoryIDs: categoryIds,
+        TransactionsDB.transactionSplitEntries: splitTransactionsData,
         TransactionsDB.lastEditedTime: formattedTime,
+
       };
 
       // Prepare data for "deposit" into the destination account
@@ -608,6 +676,7 @@ class AddTransactionScreenState extends State<AddTransactionScreen> with Widgets
         TransactionsDB.transactionTime: selectedTime.format(context),
         TransactionsDB.transactionAccountId: selectedToAccountId,
         TransactionsDB.transactionCategoryIDs: categoryIds,
+        TransactionsDB.transactionSplitEntries: splitTransactionsData,
         TransactionsDB.lastEditedTime: formattedTime,
       };
 
@@ -679,6 +748,13 @@ class AddTransactionScreenState extends State<AddTransactionScreen> with Widgets
         return;
       }
 
+      List<Map<String, dynamic>> splitTransactionsData = splitTransactions.map((entry) {
+        return {
+          'amount': entry.amountController.text,
+          'categories': entry.categories.map((category) => category['id']).toList(),
+        };
+      }).toList();
+
       String categoryIds = selectedCategoriesList.map((category) {
         return category['id'].toString();
       }).join(', ');
@@ -695,6 +771,7 @@ class AddTransactionScreenState extends State<AddTransactionScreen> with Widgets
         TransactionsDB.transactionTime: selectedTime.format(context),  // You might want to store this differently
         TransactionsDB.transactionAccountId: selectedAccountId,
         TransactionsDB.transactionCategoryIDs: categoryIds,
+        TransactionsDB.transactionSplitEntries: splitTransactionsData,
         TransactionsDB.lastEditedTime: formattedTime,
       };
 

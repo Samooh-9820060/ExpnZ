@@ -20,6 +20,7 @@ class TransactionsDB {
   static const String transactionAccountId = 'account_id';
   static const String transactionCategoryIDs = 'categories';
   static const String lastEditedTime = 'lastEditedTime';
+  static const String transactionSplitEntries = 'splitTransactions';
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
