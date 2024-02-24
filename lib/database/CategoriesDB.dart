@@ -331,4 +331,15 @@ class CategoriesDB {
     // Refresh the categories list in the UI
     categoriesNotifier.value = (await CategoriesDB().getLocalCategories())!;
   }
+
+  IconData getIconData(Map<String, dynamic>? categoryData) {
+    if (categoryData != null && categoryData.containsKey('iconCodePoint')) {
+      return IconData(
+        int.parse(categoryData['iconCodePoint'].toString()),
+        fontFamily: categoryData['iconFontFamily'],
+        fontPackage: categoryData['iconFontPackage'],
+      );
+    }
+    return Icons.category; // Default icon
+  }
 }

@@ -125,9 +125,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin, Widg
     return Stack(
       children: [
         AnimatedDrawer(
-          openIcon: Icon(Icons.menu, color: Colors.white),
+          openIcon: const Icon(Icons.menu, color: Colors.white),
           // Add your custom icon here
-          closeIcon: Icon(Icons.arrow_back, color: Colors.white),
+          closeIcon: const Icon(Icons.arrow_back, color: Colors.white),
           backgroundGradient: LinearGradient(
             colors: [Colors.blueGrey[900]!, Colors.blueGrey[800]!],
           ),

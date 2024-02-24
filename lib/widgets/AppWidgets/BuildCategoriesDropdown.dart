@@ -1,5 +1,15 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:expnz/utils/global.dart';
+
+import '../../database/CategoriesDB.dart';
+import '../../utils/image_utils.dart';
+
+Future<File?> _fetchImageFile(String imageUrl) async {
+  String fileName = generateFileNameFromUrl(imageUrl);
+  return await getImageFile(imageUrl, fileName);
+}
 
 Widget buildCategoriesDropdown(
     List<Map<String, dynamic>> selectedCategoriesList,
@@ -7,6 +17,7 @@ Widget buildCategoriesDropdown(
     Function setStateCallback,
     Function closeDropdownCallback,
     ) {
+
   return ValueListenableBuilder<Map<String, Map<String, dynamic>>?>(
     valueListenable: categoriesNotifier,
     builder: (context, categoriesData, child) {
@@ -50,13 +61,28 @@ Widget buildCategoriesDropdown(
               const double iconSize = 32.0; // Define a standard size for icons and images
 
               if (imageUrl != null && imageUrl.isNotEmpty) {
-                leadingWidget = SizedBox(
-                  width: iconSize,
-                  height: iconSize,
-                  child: CircleAvatar(
-                    backgroundColor: Colors.transparent,
-                    backgroundImage: NetworkImage(imageUrl),
-                  ),
+                leadingWidget = FutureBuilder<File?>(
+                  future: _fetchImageFile(imageUrl), // Use a separate function to fetch the image file
+                  builder: (context, imageSnapshot) {
+                    if (imageSnapshot.connectionState == ConnectionState.waiting) {
+                      return const SizedBox(
+                        width: iconSize,
+                        height: iconSize,
+                        child: CircularProgressIndicator(),
+                      );
+                    } else if (imageSnapshot.hasError || imageSnapshot.data == null) {
+                      return const Icon(Icons.error, size: iconSize); // Display an error icon
+                    } else {
+                      return SizedBox(
+                        width: iconSize,
+                        height: iconSize,
+                        child: CircleAvatar(
+                          backgroundColor: Colors.transparent,
+                          backgroundImage: FileImage(imageSnapshot.data!),
+                        ),
+                      );
+                    }
+                  },
                 );
               } else {
                 IconData categoryIcon = IconData(

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:expnz/database/CategoriesDB.dart';
 import 'package:expnz/utils/currency_utils.dart';
 import 'package:expnz/widgets/SimpleWidgets/ExpnZTextField.dart';
@@ -8,6 +9,7 @@ import '../database/AccountsDB.dart';
 import '../database/TempTransactionsDB.dart';
 import '../database/TransactionsDB.dart';
 import '../utils/global.dart';
+import '../utils/image_utils.dart';
 import '../widgets/AppWidgets/BuildCategoriesDropdown.dart';
 import '../widgets/AppWidgets/CategoryChip.dart';
 import '../widgets/AppWidgets/SelectAccountCard.dart';
@@ -266,7 +268,10 @@ class AddTransactionScreenState extends State<AddTransactionScreen> with Widgets
     }
     return null;
   }
-
+  Future<File?> _fetchLocalImageFile(String imageUrl) async {
+    String fileName = generateFileNameFromUrl(imageUrl);
+    return getImageFile(imageUrl, fileName); // Replace with your logic to get the local file
+  }
 
 
   void _updateBalance() {
@@ -1049,11 +1054,22 @@ class AddTransactionScreenState extends State<AddTransactionScreen> with Widgets
                                                 return const CircularProgressIndicator();
                                               } else if (snapshot.hasData) {
                                                 if (snapshot.data!.imageUrl != null) {
-                                                  // Use CircleAvatar for the image
-                                                  return CircleAvatar(
-                                                    radius: 12, // Adjust the radius to match your icon size
-                                                    backgroundImage: NetworkImage(snapshot.data!.imageUrl!),
-                                                    backgroundColor: Colors.transparent,
+                                                  // Use FutureBuilder to load the local image file
+                                                  return FutureBuilder<File?>(
+                                                    future: _fetchLocalImageFile(snapshot.data!.imageUrl!),
+                                                    builder: (context, fileSnapshot) {
+                                                      if (fileSnapshot.connectionState == ConnectionState.waiting) {
+                                                        return const CircularProgressIndicator();
+                                                      } else if (fileSnapshot.hasError || fileSnapshot.data == null) {
+                                                        return const Icon(Icons.error); // Error or file not found
+                                                      } else {
+                                                        return CircleAvatar(
+                                                          radius: 12, // Adjust the radius to match your icon size
+                                                          backgroundImage: FileImage(fileSnapshot.data!),
+                                                          backgroundColor: Colors.transparent,
+                                                        );
+                                                      }
+                                                    },
                                                   );
                                                 } else if (snapshot.data!.iconData != null) {
                                                   return Icon(snapshot.data!.iconData);

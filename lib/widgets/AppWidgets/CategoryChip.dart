@@ -1,26 +1,31 @@
+import 'dart:io';
+
 import 'package:expnz/database/CategoriesDB.dart';
 import 'package:flutter/material.dart';
+
+import '../../utils/image_utils.dart';
 
 class CategoryChip extends StatefulWidget {
   final bool isSelected;
   final Function onTap;
   final String categoryId;
 
-  CategoryChip({
+  const CategoryChip({super.key,
     this.isSelected = true,
     required this.onTap,
     required this.categoryId,
   });
 
   @override
-  _CategoryChipState createState() => _CategoryChipState();
+  CategoryChipState createState() => CategoryChipState();
 }
 
-class _CategoryChipState extends State<CategoryChip>
+class CategoryChipState extends State<CategoryChip>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
   Future<Map<String, dynamic>?>? _categoryDetailsFuture;
+  Future<File?>? _imageFileFuture;
 
   @override
   void initState() {
@@ -44,9 +49,21 @@ class _CategoryChipState extends State<CategoryChip>
     super.dispose();
   }
 
-  void _fetchCategoryDetails() {
+  Future<void> _fetchCategoryDetails() async {
+    var categoryDetails = await CategoriesDB().getSelectedCategory(widget.categoryId);
     _categoryDetailsFuture = CategoriesDB().getSelectedCategory(widget.categoryId);
+    if (mounted) { // Check if the widget is still in the tree
+      setState(() {
+        _categoryDetailsFuture = Future.value(categoryDetails); // Update the future with the fetched data
+        if (categoryDetails != null && categoryDetails['imageUrl'] != null) {
+          String imageUrl = categoryDetails['imageUrl'];
+          String fileName = generateFileNameFromUrl(imageUrl);
+          _imageFileFuture = getImageFile(imageUrl, fileName);
+        }
+      });
+    }
   }
+
 
   @override
   void didUpdateWidget(CategoryChip oldWidget) {
@@ -86,10 +103,37 @@ class _CategoryChipState extends State<CategoryChip>
           // Check if imageUrl is not null and load the image
           Widget leadingWidget;
           if (imageUrl != null && imageUrl.isNotEmpty) {
-            leadingWidget = CircleAvatar(
-              backgroundColor: Colors.transparent,
-              radius: 12,
-              backgroundImage: NetworkImage(imageUrl),
+            leadingWidget = FutureBuilder<File?>(
+              future: _imageFileFuture,
+              builder: (context, imageSnapshot) {
+                if (imageSnapshot.connectionState == ConnectionState.waiting) {
+                  return const CircularProgressIndicator(); // Show loading indicator
+                } else if (imageSnapshot.hasError || imageSnapshot.data == null) {
+                  IconData iconData = CategoriesDB().getIconData(categoryDetails);
+                  Color? backgroundColor;
+                  if (categoryDetails['color'] != null) {
+                    backgroundColor = Color(categoryDetails['color']);
+                  }
+                  return CircleAvatar(
+                    backgroundColor: backgroundColor ?? Colors.transparent,
+                    child: Icon(
+                      iconData,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  );
+                } else {
+                  Color? backgroundColor;
+                  if (categoryDetails['color'] != null) {
+                    backgroundColor = Color(categoryDetails['color']);
+                  }
+                  return CircleAvatar(
+                    backgroundColor: backgroundColor ?? Colors.transparent,
+                    backgroundImage: FileImage(imageSnapshot.data!),
+                    maxRadius: 12,
+                  );
+                }
+              },
             );
           } else {
             // Load the icon if imageUrl is null

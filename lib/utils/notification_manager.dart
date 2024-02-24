@@ -111,7 +111,7 @@ class NotificationManager {
       'type': notificationType, // Include the type in the payload
     };
     String payload = json.encode(payloadMap);
-
+    
     await flutterLocalNotificationsPlugin.zonedSchedule(
       transaction.hashCode,
       notificationTitle,
@@ -120,7 +120,7 @@ class NotificationManager {
       platformChannelSpecifics,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents: DateTimeComponents.time,
+      matchDateTimeComponents: DateTimeComponents.dayOfMonthAndTime,
       payload: payload,
     );
   }
