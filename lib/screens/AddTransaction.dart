@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:expnz/database/CategoriesDB.dart';
 import 'package:expnz/utils/currency_utils.dart';
 import 'package:expnz/widgets/SimpleWidgets/ExpnZTextField.dart';
 import 'package:flutter/material.dart';
@@ -21,6 +22,12 @@ class SplitTransactionEntry {
   SplitTransactionEntry({String amount = '', List<Map<String, dynamic>>? categories})
       : amountController = TextEditingController(text: amount),
         categories = categories ?? [];
+}
+class CategoryIconOrImage {
+  final String? imageUrl;
+  final IconData? iconData;
+
+  CategoryIconOrImage({this.imageUrl, this.iconData});
 }
 
 
@@ -88,7 +95,7 @@ class AddTransactionScreenState extends State<AddTransactionScreen> with Widgets
     if (widget.recurringTransactionId != null) { recurringAdding = true; loadRecurringTransactionData(); }
   }
 
-  void _showCategorySelection(SplitTransactionEntry entry) {
+  void _showCategorySelection(SplitTransactionEntry entry, VoidCallback onCategoryChanged) {
     TextEditingController localCategorySearchController = TextEditingController();
     bool localShowDropdown = false;
     List<Map<String, dynamic>> localSelectedCategoriesList = List.from(entry.categories);
@@ -230,8 +237,36 @@ class AddTransactionScreenState extends State<AddTransactionScreen> with Widgets
       },
     ).whenComplete(() {
       entry.categories = localSelectedCategoriesList;
+      onCategoryChanged();
     });
   }
+  Future<CategoryIconOrImage?> _getFirstCategoryIconOrImage(List<Map<String, dynamic>> categories) async {
+    if (categories.isNotEmpty) {
+      String categoryId = categories.first['id'];
+      var categoryDetails = await CategoriesDB().getSelectedCategory(categoryId);
+
+      // Check for imageUrl first
+      String? imageUrl = categoryDetails?['imageUrl'];
+      if (imageUrl != null && imageUrl.isNotEmpty) {
+        return CategoryIconOrImage(imageUrl: imageUrl);
+      }
+
+      // If no imageUrl, construct icon data
+      if (categoryDetails != null) {
+        int? codePoint = categoryDetails['iconCodePoint'];
+        String? fontFamily = categoryDetails['iconFontFamily'];
+        String? fontPackage = categoryDetails['iconFontPackage'];
+
+        if (codePoint != null) {
+          return CategoryIconOrImage(
+              iconData: IconData(codePoint, fontFamily: fontFamily, fontPackage: fontPackage)
+          );
+        }
+      }
+    }
+    return null;
+  }
+
 
 
   void _updateBalance() {
@@ -930,11 +965,33 @@ class AddTransactionScreenState extends State<AddTransactionScreen> with Widgets
                                           ),
                                         ),
                                         IconButton(
-                                          icon: const Icon(Icons.category),
+                                          icon: FutureBuilder<CategoryIconOrImage?>(
+                                            future: _getFirstCategoryIconOrImage(splitTransactions[index].categories),
+                                            builder: (context, snapshot) {
+                                              if (snapshot.connectionState == ConnectionState.waiting) {
+                                                return const CircularProgressIndicator();
+                                              } else if (snapshot.hasData) {
+                                                if (snapshot.data!.imageUrl != null) {
+                                                  // Use CircleAvatar for the image
+                                                  return CircleAvatar(
+                                                    radius: 12, // Adjust the radius to match your icon size
+                                                    backgroundImage: NetworkImage(snapshot.data!.imageUrl!),
+                                                    backgroundColor: Colors.transparent,
+                                                  );
+                                                } else if (snapshot.data!.iconData != null) {
+                                                  return Icon(snapshot.data!.iconData);
+                                                }
+                                              }
+                                              return const Icon(Icons.category);
+                                            },
+                                          ),
                                           onPressed: () {
-                                            _showCategorySelection(splitTransactions[index]);
+                                            _showCategorySelection(splitTransactions[index], () {
+                                              setState(() {});
+                                            });
                                           },
                                         ),
+
                                         IconButton(
                                           icon: const Icon(Icons.highlight_remove),
                                           onPressed: () {
