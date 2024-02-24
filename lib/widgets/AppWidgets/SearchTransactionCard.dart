@@ -1,19 +1,14 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
-import '../../database/AccountsDB.dart';
 import '../../utils/currency_utils.dart';
 import '../../utils/global.dart';
-import '../../utils/image_utils.dart';
 
 class TransactionCard extends StatelessWidget {
   final Map<String, dynamic> transaction;
   final Function onDelete;
   final Function onUpdate;
 
-  TransactionCard({required this.transaction,
+  const TransactionCard({super.key, required this.transaction,
     required this.onDelete,
     required this.onUpdate,
   });
@@ -22,19 +17,25 @@ class TransactionCard extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Delete Transaction'),
-        content: Text('Are you sure you want to delete this transaction?'),
+        title: const Text('Delete Transaction'),
+        content: const Text('Are you sure you want to delete this transaction?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
+            child: const Text('Cancel'),
           ),
           ElevatedButton(
             onPressed: () {
               onDelete(); // Call the delete function
               Navigator.pop(context);
             },
-            child: Text('Delete'),
+            child: const Text(
+              'Delete',
+              style: TextStyle(
+                color: Colors.white, // Set the text color to white
+              ),
+            ),
+
           ),
         ],
       ),
@@ -108,14 +109,14 @@ class TransactionCard extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         ...categoryWidgets,
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 name,
-                                style: TextStyle(
+                                style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
@@ -123,7 +124,7 @@ class TransactionCard extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                                 maxLines: 1,
                               ),
-                              SizedBox(height: 2),
+                              const SizedBox(height: 2),
                               Text(
                                 "$accountName • $date",
                                 style: TextStyle(
@@ -145,7 +146,7 @@ class TransactionCard extends StatelessWidget {
                                 fontSize: 10,
                               ),
                             ),
-                            SizedBox(height: 6),
+                            const SizedBox(height: 6),
                             Text(
                               currencyMap['symbolOnLeft']
                                   ? '$formattedSymbol$formattedAmount'
@@ -172,13 +173,13 @@ class TransactionCard extends StatelessWidget {
 
   Future<Map<String, dynamic>> _fetchAccountDetails(String accountId) async {
     // Implementation to fetch account details either from the notifier or database
-    final accountsData = accountsNotifier.value ?? {};
+    final accountsData = accountsNotifier.value;
     return accountsData[accountId] ?? {};
   }
 
   Widget _buildCategoryWidget(String categoryId) {
     // Retrieve the category's details
-    final categoryDetails = categoriesNotifier.value?[categoryId] ?? {};
+    final categoryDetails = categoriesNotifier.value[categoryId] ?? {};
 
     // Check if the categoryDetails is not empty
     if (categoryDetails.isNotEmpty) {

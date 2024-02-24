@@ -355,12 +355,29 @@ class TransactionsDB {
     final transactionsData = transactionsNotifier.value;
     Map<String, Map<String, double>> accountTotals = {};
 
-    if (transactionsData != null && transactionsData.isNotEmpty) {
+    if (transactionsData.isNotEmpty) {
       for (var transaction in transactionsData.values) {
         var transactionCategories = transaction[transactionCategoryIDs];
-        if (transactionCategories != null && transactionCategories.contains(categoryId)) {
+        var splitTransactions = transaction[TransactionsDB.transactionSplitEntries] as List<dynamic>?;
+
+        bool isCategoryPresent = false;
+        double amount = double.tryParse(transaction[transactionAmount].toString()) ?? 0.0;
+
+        if (splitTransactions != null && splitTransactions.isNotEmpty) {
+          for (var splitEntry in splitTransactions) {
+            var splitCategories = splitEntry['categories'] as List<dynamic>;
+            if (splitCategories.contains(categoryId)) {
+              isCategoryPresent = true;
+              amount = double.tryParse(splitEntry['amount'].toString()) ?? 0.0;
+              break;
+            }
+          }
+        } else if (transactionCategories != null && transactionCategories.contains(categoryId)) {
+          isCategoryPresent = true;
+        }
+
+        if (isCategoryPresent) {
           String accountId = transaction[transactionAccountId];
-          double amount = double.tryParse(transaction[transactionAmount].toString()) ?? 0.0;
 
           accountTotals.putIfAbsent(accountId, () => {'totalIncome': 0.0, 'totalExpense': 0.0});
 
