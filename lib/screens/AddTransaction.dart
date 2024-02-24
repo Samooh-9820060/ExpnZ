@@ -14,6 +14,15 @@ import '../widgets/SimpleWidgets/ExpnZButton.dart';
 import '../widgets/SimpleWidgets/ExpnzSnackBar.dart';
 
 enum TransactionType { income, expense, transfer }
+class SplitTransactionEntry {
+  TextEditingController amountController;
+  List<Map<String, dynamic>> categories;
+
+  SplitTransactionEntry({String amount = '', List<Map<String, dynamic>>? categories})
+      : amountController = TextEditingController(text: amount),
+        categories = categories ?? [];
+}
+
 
 class AddTransactionScreen extends StatefulWidget {
   final Map<String, dynamic>? transaction;
@@ -24,10 +33,10 @@ class AddTransactionScreen extends StatefulWidget {
   const AddTransactionScreen({super.key, this.transaction, this.tempTransactionId, this.recurringTransactionId});
 
   @override
-  _AddTransactionScreenState createState() => _AddTransactionScreenState();
+  AddTransactionScreenState createState() => AddTransactionScreenState();
 }
 
-class _AddTransactionScreenState extends State<AddTransactionScreen> with WidgetsBindingObserver{
+class AddTransactionScreenState extends State<AddTransactionScreen> with WidgetsBindingObserver{
 
   int selectedFromAccountIndex = -1;
   int selectedToAccountIndex = -1;
@@ -48,10 +57,12 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
   bool updateMode = false;
   bool tempAdding = false;
   bool recurringAdding = false;
+  bool splitTransaction = false;
 
   List<Map<String, dynamic>> filteredCategories = [];
   List<Map<String, dynamic>> selectedCategoriesList = [];
   OverlayEntry? overlayEntry;
+  List<SplitTransactionEntry> splitTransactions = [];
 
   TransactionType _selectedType = TransactionType.income; // Default to income
 
@@ -77,6 +88,152 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
     if (widget.recurringTransactionId != null) { recurringAdding = true; loadRecurringTransactionData(); }
   }
 
+  void _showCategorySelection(SplitTransactionEntry entry) {
+    TextEditingController localCategorySearchController = TextEditingController();
+    bool localShowDropdown = false;
+    List<Map<String, dynamic>> localSelectedCategoriesList = List.from(entry.categories);
+
+    void localCloseDropdown() {
+      setState(() {
+        localShowDropdown = false;
+      });
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (BuildContext context) {
+       return StatefulBuilder(
+           builder: (BuildContext context, StateSetter setModalState) {
+           return SingleChildScrollView(
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      left: 16.0,
+                      right: 16.0,
+                      top: 16.0,
+                      bottom: MediaQuery.of(context).viewInsets.bottom + 100, // Add padding for the keyboard
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(height: 10),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Padding(
+                              padding: EdgeInsets.fromLTRB(8.0, 0, 0, 0),
+                              child: Text(
+                                'Select Category',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            TextField(
+                              focusNode: _categorySearchFocusNode,
+                              controller: localCategorySearchController,
+                              decoration: InputDecoration(
+                                hintText: 'Search Category',
+                                fillColor: Colors.blueGrey[700],
+                                filled: true,
+                                prefixIcon: const Icon(Icons.search),
+                                border: OutlineInputBorder(
+                                  borderSide: BorderSide.none,  // Removes the underline border
+                                  borderRadius: BorderRadius.circular(50.0),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderSide: const BorderSide(color: Colors.blue, width: 1),
+                                  borderRadius: BorderRadius.circular(50.0),
+                                ),
+                              ),
+                              onChanged: (value) {
+                                setModalState(() {
+                                  localShowDropdown = value.isNotEmpty;
+                                });
+                              },
+                            ),
+                            const SizedBox(height: 10),
+                            if (localShowDropdown)
+                              GestureDetector(
+                                onTap: () {
+                                  // Do nothing to stop event propagation
+                                  return;
+                                },
+                                child: Material(
+                                  elevation: 4.0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(25),
+                                  ),
+                                  color: Colors.blueGrey[700],
+                                  child: SizedBox(
+                                    width: MediaQuery.of(context).size.width, // Adjust as needed
+                                    child: ValueListenableBuilder<Map<String, dynamic>?>(
+                                      valueListenable: categoriesNotifier,
+                                      builder: (context, categoriesData, child) {
+                                        if (categoriesData != null && categoriesData.isNotEmpty) {
+                                          return buildCategoriesDropdown(
+                                            localSelectedCategoriesList,
+                                            localCategorySearchController,
+                                            setModalState,
+                                            localCloseDropdown,
+                                          );
+                                        } else {
+                                          return const Center(child: Text('No categories available.'));
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            const SizedBox(height: 10),
+                            Wrap(
+                              spacing: 8.0,
+                              runSpacing: 8.0,
+                              children: List<Widget>.generate(
+                                localSelectedCategoriesList.length,
+                                    (int index) {
+                                  final category = localSelectedCategoriesList[index];
+                                  dynamic categoryIdRaw = category['id']; // assuming category['id'] could be int or String
+                                  String categoryId = "";
+
+                                  if (categoryIdRaw is String) {
+                                    categoryId = categoryIdRaw;
+                                  } else {
+                                    // Handle error: unknown type
+                                    //print('Unknown type for category ID');
+                                  }
+
+                                  return CategoryChip(
+                                    categoryId: categoryId,
+                                    onTap: () {
+                                      setModalState(() {
+                                        localSelectedCategoriesList.removeAt(index);
+                                        entry.categories = localSelectedCategoriesList;
+                                      });
+                                    },
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+         }
+       );
+
+      },
+    ).whenComplete(() {
+      entry.categories = localSelectedCategoriesList;
+    });
+  }
+
+
   void _updateBalance() {
     if (selectedAccountType == 'Cash/Wallet') {
       try {
@@ -87,7 +244,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
         double balance = amount - actualPrice;
 
         // Update the balance controller
-        _balanceGivenController.text = balance.toStringAsFixed(2); // Format to 2 decimal places
+        setState(() {
+          _balanceGivenController.text = balance.toStringAsFixed(2);
+        });
       } catch (ex) {}
     }
   }
@@ -251,6 +410,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
     _amountController.dispose();
     _balanceGivenController.dispose();
     _actualPriceController.dispose();
+    for (var entry in splitTransactions) {
+      entry.amountController.dispose();
+    }
     super.dispose();
   }
 
@@ -627,10 +789,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (bool didPop) async {
         Navigator.pop(context, false);
-        return false;
       },
       child: Scaffold(
         backgroundColor: Colors.blueGrey[900],
@@ -686,27 +848,117 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                         const SizedBox(height: 16),
                         // Amount
                         if (selectedAccountType == 'Cash/Wallet')
-                          Row(
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Expanded(
-                                flex: 5, // Giving more space to Amount
-                                child: ExpnzTextField(label: "Amount Spent", controller: _amountController, isNumber: true, alwaysFloatingLabel: true,),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    flex: 5,
+                                    child: ExpnzTextField(label: "Amount Spent", controller: _amountController, isNumber: true, alwaysFloatingLabel: true,),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    flex: 5,
+                                    child: ExpnzTextField(label: "Actual Price", controller: _actualPriceController, isNumber: true, alwaysFloatingLabel: true,),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.call_split),
+                                    onPressed: () {
+                                      setState(() {
+                                        splitTransaction = !splitTransaction;
+                                      });
+                                    },
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: 8), // Space between fields
-                              Expanded(
-                                flex: 5, // Giving more space to Actual Price
-                                child: ExpnzTextField(label: "Actual Price", controller: _actualPriceController, isNumber: true, alwaysFloatingLabel: true,),
-                              ),
-                              const SizedBox(width: 8), // Space between fields
-                              Expanded(
-                                flex: 4, // Less space for Balance Given as it's automatic
-                                child: ExpnzTextField(label: "Balance", controller: _balanceGivenController, isNumber: true, alwaysFloatingLabel: true,),
+                              Padding(
+                                padding: const EdgeInsets.only(left: 8), // Adjust padding as needed
+                                child: Text(
+                                  'Balance: ${_balanceGivenController.text}',
+                                  style: const TextStyle(
+                                    // Add your styling for the balance text here
+                                  ),
+                                ),
                               ),
                             ],
                           )
                         else
-                          ExpnzTextField(label: "Amount", controller: _amountController, isNumber: true),
+                          Row(
+                            children: [
+                              Expanded(
+                                flex: 8,
+                                child: ExpnzTextField(label: "Amount", controller: _amountController, isNumber: true,),
+                              ),
+                              Expanded(
+                                flex: 1,
+                                child: IconButton(
+                                  icon: const Icon(Icons.call_split),
+                                  onPressed: () {
+                                    setState(() {
+                                      splitTransaction = !splitTransaction;
+                                    });
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
                         const SizedBox(height: 16),
+                        if (splitTransaction)
+                          Column(
+                            children: [
+                              const Text(
+                                'Define Split Transactions',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              ListView.builder(
+                                shrinkWrap: true,
+                                itemCount: splitTransactions.length,
+                                itemBuilder: (context, index) {
+                                  return Padding(
+                                    padding: const EdgeInsets.all(0),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: ExpnzTextField(
+                                            label: 'Amount',
+                                            controller: splitTransactions[index].amountController,
+                                            isNumber: true,
+                                          ),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.category),
+                                          onPressed: () {
+                                            _showCategorySelection(splitTransactions[index]);
+                                          },
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.highlight_remove),
+                                          onPressed: () {
+                                            setState(() {
+                                              splitTransactions.removeAt(index);
+                                            });
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
+                              TextButton(
+                                child: const Text("+ Add Split"),
+                                onPressed: () {
+                                  setState(() {
+                                    splitTransactions.add(SplitTransactionEntry(amount: '0'));
+                                  });
+                                },
+                              ),
+                            ],
+                          ),
+
                         const SizedBox(height: 16),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -845,117 +1097,111 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                         ),
                         const SizedBox(height: 16),
                         // Category Selector
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: 10),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Select Category',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 10),
-                                TextField(
-                                  focusNode: _categorySearchFocusNode,
-                                  controller: _categorySearchController,
-                                  decoration: InputDecoration(
-                                    hintText: 'Search Category',
-                                    fillColor: Colors.blueGrey[700],
-                                    filled: true,
-                                    prefixIcon: const Icon(Icons.search),
-                                    border: OutlineInputBorder(
-                                      borderSide: BorderSide.none,  // Removes the underline border
-                                      borderRadius: BorderRadius.circular(50.0),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderSide: const BorderSide(color: Colors.blue, width: 1),
-                                      borderRadius: BorderRadius.circular(50.0),
+                        if (!splitTransaction)
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: 10),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Select Category',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                  onChanged: (value) {
-                                    setState(() {
-                                      _showDropdown = value.isNotEmpty;
-                                    });
-                                  },
-                                ),
-                                const SizedBox(height: 10),
-                                if (_showDropdown)
-                                  GestureDetector(
-                                    onTap: () {
-                                      // Do nothing to stop event propagation
-                                      return;
-                                    },
-                                    child: Material(
-                                      elevation: 4.0,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(25),
+                                  const SizedBox(height: 10),
+                                  TextField(
+                                    focusNode: _categorySearchFocusNode,
+                                    controller: _categorySearchController,
+                                    decoration: InputDecoration(
+                                      hintText: 'Search Category',
+                                      fillColor: Colors.blueGrey[700],
+                                      filled: true,
+                                      prefixIcon: const Icon(Icons.search),
+                                      border: OutlineInputBorder(
+                                        borderSide: BorderSide.none,  // Removes the underline border
+                                        borderRadius: BorderRadius.circular(50.0),
                                       ),
-                                      color: Colors.blueGrey[700],
-                                      child: SizedBox(
-                                        width: MediaQuery.of(context).size.width, // Adjust as needed
-                                        child: ValueListenableBuilder<Map<String, Map<String, dynamic>>?>(
-                                          valueListenable: categoriesNotifier,
-                                          builder: (context, categoriesData, child) {
-                                            if (categoriesData != null && categoriesData.isNotEmpty) {
-                                              List<Map<String, dynamic>> categoriesList = categoriesData.entries.map((entry) {
-                                                return {
-                                                  'id': entry.key,
-                                                  ...entry.value,
-                                                };
-                                              }).toList();
-
-                                              return buildCategoriesDropdown(
-                                                  selectedCategoriesList,
-                                                  _categorySearchController,
-                                                  setState, // Pass setState directly without invoking it
-                                                closeDropdown,
-                                              );
-                                            } else {
-                                              return const Center(child: Text('No categories available.'));
-                                            }
-                                          },
+                                      focusedBorder: OutlineInputBorder(
+                                        borderSide: const BorderSide(color: Colors.blue, width: 1),
+                                        borderRadius: BorderRadius.circular(50.0),
+                                      ),
+                                    ),
+                                    onChanged: (value) {
+                                      setState(() {
+                                        _showDropdown = value.isNotEmpty;
+                                      });
+                                    },
+                                  ),
+                                  const SizedBox(height: 10),
+                                  if (_showDropdown)
+                                    GestureDetector(
+                                      onTap: () {
+                                        // Do nothing to stop event propagation
+                                        return;
+                                      },
+                                      child: Material(
+                                        elevation: 4.0,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(25),
+                                        ),
+                                        color: Colors.blueGrey[700],
+                                        child: SizedBox(
+                                          width: MediaQuery.of(context).size.width, // Adjust as needed
+                                          child: ValueListenableBuilder<Map<String, Map<String, dynamic>>?>(
+                                            valueListenable: categoriesNotifier,
+                                            builder: (context, categoriesData, child) {
+                                              if (categoriesData != null && categoriesData.isNotEmpty) {
+                                                return buildCategoriesDropdown(
+                                                    selectedCategoriesList,
+                                                    _categorySearchController,
+                                                    setState, // Pass setState directly without invoking it
+                                                  closeDropdown,
+                                                );
+                                              } else {
+                                                return const Center(child: Text('No categories available.'));
+                                              }
+                                            },
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                const SizedBox(height: 10),
-                                Wrap(
-                                  spacing: 8.0,
-                                  runSpacing: 8.0,
-                                  children: List<Widget>.generate(
-                                    selectedCategoriesList.length,
-                                        (int index) {
-                                      final category = selectedCategoriesList[index];
-                                      dynamic categoryIdRaw = category['id'];
-                                      String categoryId = "";
+                                  const SizedBox(height: 10),
+                                  Wrap(
+                                    spacing: 8.0,
+                                    runSpacing: 8.0,
+                                    children: List<Widget>.generate(
+                                      selectedCategoriesList.length,
+                                          (int index) {
+                                        final category = selectedCategoriesList[index];
+                                        dynamic categoryIdRaw = category['id'];
+                                        String categoryId = "";
 
-                                      if (categoryIdRaw is String) {
-                                        categoryId = categoryIdRaw;
-                                      } else {
-                                        // Handle error: unknown type
-                                        //print('Unknown type for category ID');
-                                      }
+                                        if (categoryIdRaw is String) {
+                                          categoryId = categoryIdRaw;
+                                        } else {
+                                          // Handle error: unknown type
+                                          //print('Unknown type for category ID');
+                                        }
 
-                                      return CategoryChip(
-                                        categoryId: categoryId,
-                                        onTap: () {
-                                          setState(() {
-                                            selectedCategoriesList.removeAt(index);
-                                          });
-                                        },
-                                      );
-                                    },
+                                        return CategoryChip(
+                                          categoryId: categoryId,
+                                          onTap: () {
+                                            setState(() {
+                                              selectedCategoriesList.removeAt(index);
+                                            });
+                                          },
+                                        );
+                                      },
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
+                                ],
+                              ),
+                            ],
+                          ),
                         const SizedBox(height: 20),
                         ExpnZButton(
                           label: updateMode ? "Update" : "Add",
@@ -1232,14 +1478,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Widget
                                           valueListenable: categoriesNotifier,
                                           builder: (context, categoriesData, child) {
                                             if (categoriesData != null && categoriesData.isNotEmpty) {
-                                              List<Map<String, dynamic>> categoriesList = categoriesData.entries.map((entry) {
-                                                // Cast the entry key to String and the value to Map<String, dynamic>
-                                                return {
-                                                  'id': entry.key, // Cast the key to a String
-                                                  ...entry.value as Map<String, dynamic>, // Cast the value to Map<String, dynamic>
-                                                };
-                                              }).toList();
-
                                               return buildCategoriesDropdown(
                                                   selectedCategoriesList,
                                                   _categorySearchController,

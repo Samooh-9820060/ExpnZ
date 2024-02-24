@@ -20,6 +20,7 @@ class _CategoryChipState extends State<CategoryChip>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
+  Future<Map<String, dynamic>?>? _categoryDetailsFuture;
 
   @override
   void initState() {
@@ -34,12 +35,25 @@ class _CategoryChipState extends State<CategoryChip>
       parent: _controller,
       curve: Curves.easeIn,
     );
+    _fetchCategoryDetails();
   }
 
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  void _fetchCategoryDetails() {
+    _categoryDetailsFuture = CategoriesDB().getSelectedCategory(widget.categoryId);
+  }
+
+  @override
+  void didUpdateWidget(CategoryChip oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.categoryId != oldWidget.categoryId) {
+      _fetchCategoryDetails();
+    }
   }
 
   Future<void> _animateAndRemove() async {
@@ -50,7 +64,7 @@ class _CategoryChipState extends State<CategoryChip>
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<Map<String, dynamic>?>(
-        future: CategoriesDB().getSelectedCategory(widget.categoryId),
+        future: _categoryDetailsFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             // Show a loading indicator while waiting for data
