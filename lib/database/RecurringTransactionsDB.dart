@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:expnz/utils/notification_manager.dart';
@@ -165,6 +166,16 @@ class RecurringTransactionDB {
       }
 
       if (transaction['scheduleReminder']) {
+
+        //check if access is given for notifications
+        bool permissionsGranted = await NotificationManager().requestPermissions();
+        if (Platform.isAndroid) {
+          await NotificationManager().requestBatteryOptimization();
+        }
+        if (!permissionsGranted) {
+          return;
+        }
+
         DateTime dueDate = DateTime.parse(transaction['dueDate']);
         TimeOfDay dueTime = parseTimeOfDay(transaction['dueTime']);
 

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:android_intent_plus/android_intent.dart';
+import 'package:expnz/utils/notification_manager.dart';
 import 'package:expnz/widgets/SimpleWidgets/ExpnZTextField.dart';
 import 'package:flutter/material.dart';
 import 'package:expnz/utils/global.dart';
@@ -155,47 +156,6 @@ class _AddRecurringTransactionPageState
       notificationHoursBefore = transaction['notificationHoursBefore'] ?? 0;
       notificationMinutesBefore = transaction['notificationMinutesBefore'] ?? 0;
       notificationFrequency = transaction['notificationFrequency'] ?? 'Hourly';
-    }
-  }
-
-  Future<void> _requestBatteryOptimization() async {
-    if (Platform.isAndroid) {
-      final AndroidIntent intent = AndroidIntent(
-        action: 'android.settings.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS',
-        data: 'package:com.techNova.ExpnZ.expnz', // Replace with your package name
-      );
-      await intent.launch();
-    }
-  }
-
-  Future<void> _requestPermissions() async {
-    if (Platform.isIOS || Platform.isMacOS) {
-      await flutterLocalNotificationsPlugin
-          .resolvePlatformSpecificImplementation<
-          IOSFlutterLocalNotificationsPlugin>()
-          ?.requestPermissions(
-        alert: true,
-        badge: true,
-        sound: true,
-      );
-      await flutterLocalNotificationsPlugin
-          .resolvePlatformSpecificImplementation<
-          MacOSFlutterLocalNotificationsPlugin>()
-          ?.requestPermissions(
-        alert: true,
-        badge: true,
-        sound: true,
-      );
-    } else if (Platform.isAndroid) {
-      final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
-      flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>();
-
-      final bool? grantedNotificationPermission =
-      await androidImplementation?.requestNotificationsPermission();
-      setState(() {
-        _notificationsEnabled = grantedNotificationPermission ?? false;
-      });
     }
   }
 
@@ -446,12 +406,14 @@ class _AddRecurringTransactionPageState
               }),
               buildSwitchListTile('Schedule Reminder Notifications', scheduleReminder, (bool value) async {
                 if (value) {
-                  await _requestPermissions();
+                  bool permissionsGranted = await NotificationManager().requestPermissions();
                   if (Platform.isAndroid) {
-                    await _requestBatteryOptimization();
+                    await NotificationManager().requestBatteryOptimization();
                   }
+                  setState(() => scheduleReminder = value && permissionsGranted);
+                } else {
+                  setState(() => scheduleReminder = value);
                 }
-                setState(() => scheduleReminder = value && _notificationsEnabled);
               }),
               ...notificationTimingWidgets,
               buildSubmitButton(updateMode ? 'Update' : 'Save', _submitForm),

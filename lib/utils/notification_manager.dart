@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
+import 'package:android_intent_plus/android_intent.dart';
 import 'package:expnz/screens/RecurringTransactionsPage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -57,6 +59,48 @@ class NotificationManager {
         iOS: initializationSettingsDarwin);
 
     await flutterLocalNotificationsPlugin.initialize(initializationSettings,);
+  }
+
+  Future<void> requestBatteryOptimization() async {
+    if (Platform.isAndroid) {
+      final AndroidIntent intent = AndroidIntent(
+        action: 'android.settings.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS',
+        data: 'package:com.techNova.ExpnZ.expnz', // Replace with your package name
+      );
+      await intent.launch();
+    }
+  }
+
+  Future<bool> requestPermissions() async {
+    if (Platform.isIOS || Platform.isMacOS) {
+      await flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin>()
+          ?.requestPermissions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      await flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<
+          MacOSFlutterLocalNotificationsPlugin>()
+          ?.requestPermissions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      return true;
+    } else if (Platform.isAndroid) {
+      final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
+      flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+
+      final bool? grantedNotificationPermission =
+      await androidImplementation?.requestNotificationsPermission();
+      return grantedNotificationPermission ?? false;
+    }
+
+    return false;
   }
 
   // Schedule a zoned notification
