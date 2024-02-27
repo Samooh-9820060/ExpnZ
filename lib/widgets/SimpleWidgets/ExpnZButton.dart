@@ -7,6 +7,7 @@ class ExpnZButton extends StatelessWidget {
   final Color textColor;
   final double fontSize;
   final IconData? icon;
+  final bool isLoading;
 
   const ExpnZButton({super.key,
     required this.label,
@@ -15,6 +16,7 @@ class ExpnZButton extends StatelessWidget {
     this.textColor = Colors.white,
     this.fontSize = 18.0,
     this.icon,
+    this.isLoading = false,
   });
 
   @override
@@ -22,7 +24,18 @@ class ExpnZButton extends StatelessWidget {
     if (icon != null) {
       return ElevatedButton.icon(
         onPressed: onPressed,
-        icon: Icon(icon, color: textColor,),
+        icon: isLoading
+            ? const SizedBox(
+          width: 20,
+          height: 20,
+          child: Center(
+            child: CircularProgressIndicator( // Loading indicator
+              strokeWidth: 2.0,
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            ),
+          ),
+        )
+            : Icon(icon, color: Colors.white),
         style: ButtonStyle(
           backgroundColor: MaterialStateProperty.all(primaryColor),
           padding: MaterialStateProperty.all(const EdgeInsets.symmetric(horizontal: 50, vertical: 20)),
@@ -34,7 +47,14 @@ class ExpnZButton extends StatelessWidget {
             ),
           ),
         ),
-        label: Text(
+        label: isLoading ? Text(
+          'Loading',
+          style: TextStyle(
+            color: textColor,
+            fontSize: fontSize,
+            fontWeight: FontWeight.bold,
+          ),
+        ) : Text(
           label,
           style: TextStyle(
             color: textColor,

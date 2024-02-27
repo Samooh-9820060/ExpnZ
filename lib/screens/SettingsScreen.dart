@@ -782,7 +782,7 @@ class SettingsScreenState extends State<SettingsScreen> {
       context: context,
       barrierDismissible: false, // User must not close the dialog
       builder: (BuildContext context) {
-        return AlertDialog(
+        return const AlertDialog(
           content: Row(
             children: [
               Icon(Icons.sync, color: Colors.blue),
@@ -795,7 +795,7 @@ class SettingsScreenState extends State<SettingsScreen> {
     );
 
     // Close the dialog after a short delay
-    Future.delayed(Duration(seconds: 2), () {
+    Future.delayed(const Duration(seconds: 2), () {
       Navigator.of(context).pop();
     });
   }

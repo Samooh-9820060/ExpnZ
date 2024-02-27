@@ -4,7 +4,6 @@ import 'package:expnz/widgets/SimpleWidgets/ExpnZButton.dart';
 import 'package:expnz/widgets/SimpleWidgets/ExpnzSnackBar.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 import '../database/AccountsDB.dart';
 import '../database/TransactionsDB.dart';
 import '../utils/global.dart';
@@ -15,11 +14,13 @@ import '../widgets/AppWidgets/SelectAccountCard.dart';
 import 'AddTransaction.dart';
 
 class SearchScreen extends StatefulWidget {
+  const SearchScreen({super.key});
+
   @override
-  _SearchScreenState createState() => _SearchScreenState();
+  SearchScreenState createState() => SearchScreenState();
 }
 
-class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMixin {
+class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
   final ValueNotifier<List<String>> selectedAccountsNotifier = ValueNotifier<List<String>>([]);
   List<String> selectedAccounts = [];
@@ -378,7 +379,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                Container(
+                                SizedBox(
                                   height: 150, // set the height
                                   child: ValueListenableBuilder<Map<String, Map<String, dynamic>>>(
                                     valueListenable: accountsNotifier,
@@ -443,10 +444,10 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            SizedBox(height: 20),
+                            const SizedBox(height: 20),
 
                             // Text headers for category selection
-                            Text(
+                            const Text(
                               'Select Categories To Include In Search',
                               style: TextStyle(
                                 color: Colors.white,
@@ -454,20 +455,20 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                               ),
                             ),
 
-                            SizedBox(height: 20),
+                            const SizedBox(height: 20),
                             TextField(
                               controller: _categoryIncludeSearchController,
                               decoration: InputDecoration(
                                 hintText: 'Search Category',
                                 fillColor: Colors.blueGrey[700],
                                 filled: true,
-                                prefixIcon: Icon(Icons.search),
+                                prefixIcon: const Icon(Icons.search),
                                 border: OutlineInputBorder(
                                   borderSide: BorderSide.none,  // Removes the underline border
                                   borderRadius: BorderRadius.circular(50.0),
                                 ),
                                 focusedBorder: OutlineInputBorder(
-                                  borderSide: BorderSide(color: Colors.blue, width: 1),
+                                  borderSide: const BorderSide(color: Colors.blue, width: 1),
                                   borderRadius: BorderRadius.circular(50.0),
                                 ),
                               ),
@@ -501,7 +502,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                                   ),
                                 ),
                               ),
-                            SizedBox(height: 10),
+                            const SizedBox(height: 10),
                             Wrap(
                               spacing: 8.0,
                               runSpacing: 8.0,
@@ -524,16 +525,16 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                             ),
                           ],
                         ),
-                        SizedBox(height: 20),
+                        const SizedBox(height: 20),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             // Your existing code for date selectors goes here
 
-                            SizedBox(height: 20),
+                            const SizedBox(height: 20),
 
                             // Text headers for category selection
-                            Text(
+                            const Text(
                               'Select Categories To Exclude From Search',
                               style: TextStyle(
                                 color: Colors.white,
@@ -541,20 +542,20 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                               ),
                             ),
 
-                            SizedBox(height: 20),
+                            const SizedBox(height: 20),
                             TextField(
                               controller: _categoryExcludeSearchController,
                               decoration: InputDecoration(
                                 hintText: 'Search Category',
                                 fillColor: Colors.blueGrey[700],
                                 filled: true,
-                                prefixIcon: Icon(Icons.search),
+                                prefixIcon: const Icon(Icons.search),
                                 border: OutlineInputBorder(
                                   borderSide: BorderSide.none,  // Removes the underline border
                                   borderRadius: BorderRadius.circular(50.0),
                                 ),
                                 focusedBorder: OutlineInputBorder(
-                                  borderSide: BorderSide(color: Colors.blue, width: 1),
+                                  borderSide: const BorderSide(color: Colors.blue, width: 1),
                                   borderRadius: BorderRadius.circular(50.0),
                                 ),
                               ),
@@ -564,7 +565,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                                 });
                               },
                             ),
-                            SizedBox(height: 10),
+                            const SizedBox(height: 10),
                             if (_showExcludeDropdown)
                               GestureDetector(
                                 onTap: () {
@@ -588,7 +589,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                                   ),
                                 ),
                               ),
-                            SizedBox(height: 10),
+                            const SizedBox(height: 10),
                             Wrap(
                               spacing: 8.0,
                               runSpacing: 8.0,
@@ -611,13 +612,13 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                             ),
                           ],
                         ),
-                        SizedBox(height: 20),
+                        const SizedBox(height: 20),
                         Row(
                           children: [
                             Expanded(
                                 child: ExpnZButton(label: 'Clear', onPressed: clearFilter, primaryColor: Colors.grey,)
                             ),
-                            SizedBox(width: 10),
+                            const SizedBox(width: 10),
                             Expanded(
                                 child: ExpnZButton(label: 'Filter', onPressed: _applyFilters)
                             ),
@@ -654,7 +655,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
           children: [
             Expanded(
               child: Container(
-                padding: EdgeInsets.symmetric(vertical: 2), // Reduced padding
+                padding: const EdgeInsets.symmetric(vertical: 2), // Reduced padding
                 decoration: BoxDecoration(
                   color: Colors.blueGrey[700],
                   borderRadius: BorderRadius.circular(20),
@@ -664,14 +665,14 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                     Expanded(
                       child: TextField(
                         controller: _searchController,
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           hintText: 'Search...',
                           contentPadding:
                               EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           // Reduced padding
                           border: InputBorder.none,
                         ),
-                        style: TextStyle(color: Colors.white),
+                        style: const TextStyle(color: Colors.white),
                       ),
                     ),
                     InkWell(
@@ -819,7 +820,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
 
 void main() {
   runApp(MaterialApp(
-    home: SearchScreen(),
+    home: const SearchScreen(),
     theme: ThemeData.dark(),
   ));
 }

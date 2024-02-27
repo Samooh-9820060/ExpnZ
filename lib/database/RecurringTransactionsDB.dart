@@ -49,7 +49,6 @@ class RecurringTransactionDB {
 
       await prefs.setString('lastRecurringTransactionSyncTime', DateTime.now().toIso8601String());
     }, onError: (error) {
-      print('Error listening to recurring transactions changes: $error');
     });
   }
   Future<void> fetchRecurringTransactionsSince(DateTime sinceTime, String userId) async {
@@ -199,14 +198,16 @@ class RecurringTransactionDB {
         // Await the result of notificationExists
         bool doesExist = await NotificationManager().notificationExists(transaction['docKey']);
 
-        if (fullDueDateTime.isBefore(DateTime.now())) {
-          if (transaction['paidThisMonth'] == true) {
-            // Calculate the next due date
-            fullDueDateTime = NotificationManager().calculateNextDueDate(fullDueDateTime, transaction['frequency']);
+        if (transaction['paidThisMonth'] == true) {
+          // Calculate the next due date
+          fullDueDateTime = NotificationManager().calculateNextDueDate(fullDueDateTime, transaction['frequency']);
 
-            // Update the due date in Firestore
-            await updateRecurringTransactionDate(transaction['docKey'], fullDueDateTime);
-          } else {
+          // Update the due date in Firestore
+          await updateRecurringTransactionDate(transaction['docKey'], fullDueDateTime);
+        }
+
+        if (fullDueDateTime.isBefore(DateTime.now())) {
+          if (transaction['paidThisMonth'] == false) {
             //Schedule Notification saying its overdue
             var payload = await NotificationManager().getNotificationPayload(transaction['docKey']);
             if (payload != null) {
@@ -217,12 +218,12 @@ class RecurringTransactionDB {
                 }
 
                 //schedule it
-                DateTime nextDayReminder = DateTime.now().add(Duration(days: 1));
+                DateTime nextDayReminder = DateTime.now().add(const Duration(days: 1));
                 NotificationManager().scheduleNotification(transaction, nextDayReminder, "overdue");
               }
             } else {
               //schedule it
-              DateTime nextDayReminder = DateTime.now().add(Duration(days: 1));
+              DateTime nextDayReminder = DateTime.now().add(const Duration(days: 1));
               NotificationManager().scheduleNotification(transaction, nextDayReminder, "overdue");
             }
           }

@@ -8,11 +8,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../database/ProfileDB.dart';
 
 class SignUpScreen extends StatefulWidget {
+  const SignUpScreen({super.key});
+
   @override
-  _SignUpScreenState createState() => _SignUpScreenState();
+  SignUpScreenState createState() => SignUpScreenState();
 }
 
-class _SignUpScreenState extends State<SignUpScreen> with SingleTickerProviderStateMixin {
+class SignUpScreenState extends State<SignUpScreen> with SingleTickerProviderStateMixin {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -41,14 +43,14 @@ class _SignUpScreenState extends State<SignUpScreen> with SingleTickerProviderSt
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Verify Your Email'),
-        content: Text('A verification email has been sent. Please check your email and verify your account. After verifying please sign in.'),
+        title: const Text('Verify Your Email'),
+        content: const Text('A verification email has been sent. Please check your email and verify your account. After verifying please sign in.'),
         actions: <Widget>[
           TextButton(
-            child: Text('Okay'),
+            child: const Text('Okay'),
             onPressed: () {
               // Optionally, navigate to the sign-in screen or a confirmation screen
-              Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => SignInScreen()));
+              Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const SignInScreen()));
               },
           ),
         ],
@@ -133,7 +135,7 @@ class _SignUpScreenState extends State<SignUpScreen> with SingleTickerProviderSt
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         _buildAnimatedTitle(),
-        SizedBox(height: 40),
+        const SizedBox(height: 40),
         ExpnzTextField(label: 'Your Name', controller: _nameController),
         //_buildNameField(),
         //SizedBox(height: 20),
@@ -148,7 +150,7 @@ class _SignUpScreenState extends State<SignUpScreen> with SingleTickerProviderSt
         //SizedBox(height: 20),
         ExpnzTextField(label: 'Confirm Password', controller: _confirmPasswordController, isPassword: true,),
         //_buildConfirmPasswordField(),
-        SizedBox(height: 30),
+        const SizedBox(height: 30),
         ExpnZButton(label: 'Sign Up',
           onPressed: () {
             if (_formKey.currentState!.validate()) {
@@ -170,7 +172,7 @@ class _SignUpScreenState extends State<SignUpScreen> with SingleTickerProviderSt
       builder: (context, child) {
         return Opacity(
           opacity: _animation.value,
-          child: Text(
+          child: const Text(
             'Sign Up',
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.white, fontSize: 30, fontWeight: FontWeight.bold),
@@ -183,7 +185,7 @@ class _SignUpScreenState extends State<SignUpScreen> with SingleTickerProviderSt
   Widget _buildSignInOption() {
     return TextButton(
       onPressed: () {
-        Navigator.of(context).push(MaterialPageRoute(builder: (context) => SignInScreen()));
+        Navigator.of(context).push(MaterialPageRoute(builder: (context) => const SignInScreen()));
       },
       child: const Text('Already have an account? Sign in', style: TextStyle(color: Colors.white70)),
     );

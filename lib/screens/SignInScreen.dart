@@ -9,16 +9,19 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'SignUpScreen.dart';
 
 class SignInScreen extends StatefulWidget {
+  const SignInScreen({super.key});
+
   @override
-  _SignInScreenState createState() => _SignInScreenState();
+  SignInScreenState createState() => SignInScreenState();
 }
 
-class _SignInScreenState extends State<SignInScreen>
+class SignInScreenState extends State<SignInScreen>
     with SingleTickerProviderStateMixin {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   late AnimationController _animationController;
   late Animation<double> _opacityAnimation, _transformAnimation;
+  bool signingIn = false;
 
   // Forgot password function
   Future<void> forgotPassword() async {
@@ -55,11 +58,11 @@ class _SignInScreenState extends State<SignInScreen>
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Message'),
+        title: const Text('Message'),
         content: Text(message),
         actions: <Widget>[
           TextButton(
-            child: Text('Okay'),
+            child: const Text('Okay'),
             onPressed: () {
               Navigator.of(ctx).pop();
             },
@@ -70,6 +73,12 @@ class _SignInScreenState extends State<SignInScreen>
   }
 
   Future<void> signInWithGoogle() async {
+    if (signingIn) {
+      return;
+    }
+    setState(() {
+      signingIn = true;
+    });
     try {
       // Trigger the Google Sign-In process
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
@@ -114,12 +123,18 @@ class _SignInScreenState extends State<SignInScreen>
       await prefs.remove('lastCategorySyncTime');
       await prefs.remove('lastTransactionSyncTime');
       await prefs.remove('lastRecurringTransactionSyncTime');
+      setState(() {
+        signingIn = false;
+      });
       Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => HomePage()));
     } on FirebaseAuthException catch (e) {
       _showErrorDialog(e.message ?? "Firebase Auth error occurred.");
     } catch (e) {
       _showErrorDialog("An error occurred: ${e.toString()}");
     }
+    setState(() {
+      signingIn = false;
+    });
   }
 
   Future<void> signInWithEmailAndPassword() async {
@@ -162,11 +177,11 @@ class _SignInScreenState extends State<SignInScreen>
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Error'),
+        title: const Text('Error'),
         content: Text(message),
         actions: <Widget>[
           TextButton(
-            child: Text('Okay'),
+            child: const Text('Okay'),
             onPressed: () {
               Navigator.of(ctx).pop();
             },
@@ -217,7 +232,7 @@ class _SignInScreenState extends State<SignInScreen>
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        Text(
+        const Text(
           'Sign In',
           textAlign: TextAlign.center,
           style: TextStyle(
@@ -226,26 +241,26 @@ class _SignInScreenState extends State<SignInScreen>
             fontWeight: FontWeight.bold,
           ),
         ),
-        SizedBox(height: 50),
+        const SizedBox(height: 50),
         ExpnzTextField(label: 'Email', controller: _emailController),
         ExpnzTextField(label: 'Password', controller: _passwordController, isPassword: true),
         TextButton(
           onPressed: () {
             forgotPassword();
           },
-          child: Text('Forgot Password?'),
           style: TextButton.styleFrom(
             foregroundColor: Colors.white70,
           ),
+          child: const Text('Forgot Password?'),
         ),
-        SizedBox(height: 20),
+        const SizedBox(height: 20),
         ExpnZButton(
           label: 'Sign In',
           onPressed: () {
             signInWithEmailAndPassword();
           },
         ),
-        SizedBox(height: 10),
+        const SizedBox(height: 10),
         ExpnZButton(
           label: 'Sign Up',
           onPressed: () {
@@ -255,7 +270,7 @@ class _SignInScreenState extends State<SignInScreen>
           },
           primaryColor: Colors.green,
         ),
-        SizedBox(height: 10),
+        const SizedBox(height: 10),
         ExpnZButton(
           label: 'Sign in with Google',
           onPressed: () {
@@ -263,6 +278,7 @@ class _SignInScreenState extends State<SignInScreen>
           },
           primaryColor: Colors.red,
           icon: Icons.login,
+          isLoading: signingIn,
         ),
       ],
     );
