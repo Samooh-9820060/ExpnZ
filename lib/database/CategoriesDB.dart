@@ -59,6 +59,28 @@ class CategoriesDB {
       print('Error fetching categories: $error');
     });
   }
+
+  Future<void> addLastEditedTimeToExistingCategories() async {
+    String userUid = FirebaseAuth.instance.currentUser!.uid;
+
+    // Get all categories for the user
+    QuerySnapshot snapshot = await _firestore.collection(collectionName)
+        .get();
+
+    // Iterate through each document
+    for (var doc in snapshot.docs) {
+      var data = doc.data() as Map<String, dynamic>;
+
+      // Check if 'lastEditedTime' field exists
+      if (!data.containsKey(lastEditedTime)) {
+        // Update the document to include 'lastEditedTime'
+        await doc.reference.update({
+          lastEditedTime: DateTime.now().toIso8601String()
+        });
+      }
+    }
+  }
+
   Future<void> fetchCategoriesSince(DateTime sinceTime, String userUid) async {
     final prefs = await SharedPreferences.getInstance();
     final String formattedSinceTime = sinceTime.toIso8601String();
@@ -200,18 +222,17 @@ class CategoriesDB {
   }
 
   Future<Map<String, dynamic>?> getSelectedCategory(String documentId) async {
-    final prefs = await SharedPreferences.getInstance();
-    String? encodedData = prefs.getString('userCategories');
+    final categoriesData = categoriesNotifier.value;
 
-    if (encodedData != null) {
-      Map<String, dynamic> categoriesData = json.decode(encodedData) as Map<String, dynamic>;
-
-      // Check if the category with the given documentId exists in the local data
-      if (categoriesData.containsKey(documentId)) {
-        return categoriesData[documentId] as Map<String, dynamic>;
-      }
+    // Check if the category with the given documentId exists in the local data
+    print(categoriesData);
+    if (categoriesData.containsKey(documentId)) {
+      print('reallyok');
+      return categoriesData[documentId] as Map<String, dynamic>;
     }
-    // Return null if no matching category is found
+
+    print('not ok');
+      // Return null if no matching category is found
     return null;
   }
 

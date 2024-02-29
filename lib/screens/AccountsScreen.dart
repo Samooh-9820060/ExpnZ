@@ -122,55 +122,21 @@ class _AccountsScreenState extends State<AccountsScreen>
     required double totalIncome,
     required double totalExpense,
   }) {
-    return GestureDetector(
-      onLongPress: () {
-        _showDeleteConfirmationDialog(context, documentId);
-      },
-      child: AnimatedBuilder(
-        animation: _animation,
-        builder: (context, child) {
-          return Opacity(
-            opacity: _animation.value,
-            child: Transform.scale(
-              scale: _animation.value,
-              child: ModernAccountCard(
-                documentId: documentId,
-                currencyMap: currencyMap,
-                index: index,
-                totalExpense: totalExpense,
-                totalIncome: totalIncome,
-              ),
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return Opacity(
+          opacity: _animation.value,
+          child: Transform.scale(
+            scale: _animation.value,
+            child: ModernAccountCard(
+              documentId: documentId,
+              currencyMap: currencyMap,
+              index: index,
+              totalExpense: totalExpense,
+              totalIncome: totalIncome,
             ),
-          );
-        },
-      ),
-    );
-  }
-
-  void _showDeleteConfirmationDialog(BuildContext context, String documentId) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text("Delete Account"),
-          content: const Text(
-              "Are you sure you want to delete this account? \n\nThis will delete all transactions associated with this account"),
-          actions: [
-            TextButton(
-              child: const Text("Cancel"),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            TextButton(
-              child: const Text("Delete"),
-              onPressed: () async {
-                AccountsDB().deleteAccount(documentId);
-
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
+          ),
         );
       },
     );

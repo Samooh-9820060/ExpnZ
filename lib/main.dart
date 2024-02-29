@@ -113,7 +113,7 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   await _configureLocalTimeZone();
-
+  //CategoriesDB().addLastEditedTimeToExistingCategories();
   //testRegexes();
 
   runApp(

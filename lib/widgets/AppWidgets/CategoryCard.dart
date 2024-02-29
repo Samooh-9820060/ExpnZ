@@ -4,6 +4,7 @@ import 'package:expnz/screens/AddCategory.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../database/AccountsDB.dart';
+import '../../database/CategoriesDB.dart';
 import '../../database/TransactionsDB.dart';
 import '../../utils/animation_utils.dart';
 import '../../utils/global.dart';
@@ -123,147 +124,168 @@ class CategoryCardState extends State<CategoryCard>
       child: AnimatedBuilder(
         animation: _numberController,
         builder: (context, child) {
-          return InkWell(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>
-                      AddCategoryScreen(documentId: widget.documentId),
+          return Column(children: [
+            Container(
+              margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Colors.black, Colors.grey[850]!],
                 ),
-              ).then((value) {
-                setState(() {});
-              });
-            },
-            child: Column(children: [
-              Container(
-                margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Colors.black, Colors.grey[850]!],
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    offset: const Offset(0, 4),
+                    blurRadius: 6.0,
                   ),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
-                      offset: const Offset(0, 4),
-                      blurRadius: 6.0,
-                    ),
-                  ],
-                ),
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          FutureBuilder<File?>(
-                            future: _imageFileFuture,
-                            builder: (context, snapshot) {
-                              if (snapshot.connectionState == ConnectionState.waiting) {
-                                return const CircularProgressIndicator(); // Show loading indicator
-                              } else if (snapshot.hasError || snapshot.data == null) {
-                                return CircleAvatar(
-                                  backgroundColor: widget.primaryColor,
-                                  child: Icon(
-                                    widget.iconDetails,
-                                    color: Colors.white,
-                                    size: 24,
-                                  ),
-                                );
-                              } else {
-                                return CircleAvatar(
-                                  backgroundColor: widget.primaryColor,
-                                  backgroundImage: snapshot.data != null ? FileImage(snapshot.data!) : null,
-                                );
-                              }
-                            },
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Text(
-                              widget.categoryName,
-                              maxLines: 3,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.poppins(
-                                fontSize: 14,
-                                color: Colors.white,
-                              ),
+                ],
+              ),
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        FutureBuilder<File?>(
+                          future: _imageFileFuture,
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState == ConnectionState.waiting) {
+                              return const CircularProgressIndicator(); // Show loading indicator
+                            } else if (snapshot.hasError || snapshot.data == null) {
+                              return CircleAvatar(
+                                backgroundColor: widget.primaryColor,
+                                child: Icon(
+                                  widget.iconDetails,
+                                  color: Colors.white,
+                                  size: 24,
+                                ),
+                              );
+                            } else {
+                              return CircleAvatar(
+                                backgroundColor: widget.primaryColor,
+                                backgroundImage: snapshot.data != null ? FileImage(snapshot.data!) : null,
+                              );
+                            }
+                          },
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Text(
+                            widget.categoryName,
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              color: Colors.white,
                             ),
                           ),
-                          if (showMoreInfo)
-                            IconButton(
-                              icon: const Icon(
-                                Icons.arrow_upward,
-                                size: 20.0,
-                              ),
-                              onPressed: () {
-                                setState(() {
-                                  showMoreInfo = false;
-                                  _numberController.reverse();
-                                });
-                              },
-                            ),
-                          if (!showMoreInfo)
-                            IconButton(
-                              icon: const Icon(
-                                Icons.arrow_downward,
-                                size: 20.0,
-                              ),
-                              onPressed: () {
-                                setState(() {
+                        ),
+                        PopupMenuButton<String>(
+                          onSelected: (String result) {
+                            if (result == 'edit') {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      AddCategoryScreen(documentId: widget.documentId),
+                                ),
+                              ).then((value) {
+                                setState(() {});
+                              });
+                            } else if (result == 'delete') {
+                              _showDeleteConfirmationDialog(context, documentId);
+                            } else if (result == 'showInfo') {
+                              setState(() {
+                                if (showMoreInfo == false) {
                                   showMoreInfo = true;
                                   _numberController.reset();
                                   _numberController.forward();
-                                });
-                              },
-                            ),
-                        ],
-                      ),
-                      if (showMoreInfo)
-                        const SizedBox(height: 10),
-                      if (showMoreInfo)
-                        FutureBuilder<List<Widget>>(
-                          future: _fetchAccountWidgets(widget.documentId),
-                          builder: (context, snapshot) {
-                            if (snapshot.connectionState == ConnectionState.waiting) {
-                              return const Center(child: CircularProgressIndicator());
+                                } else {
+                                  showMoreInfo = false;
+                                  _numberController.reverse();
+                                }
+                              });
                             }
-                            if (snapshot.hasError) {
-                              return Center(
-                                child: Text(
-                                  "Error loading data: ${snapshot.error}",
-                                  style: const TextStyle(color: Colors.red, fontSize: 18),
-                                ),
-                              );
-                            }
-                            if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                              return const Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.info_outline, color: Colors.red, size: 50.0),
-                                    SizedBox(height: 10),
-                                    Text(
-                                      "No more info available",
-                                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blueGrey),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: snapshot.data!,
-                            );
                           },
+                          itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                            const PopupMenuItem<String>(
+                              value: 'edit',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.edit, color: Colors.blue),
+                                  SizedBox(width: 8),
+                                  Text('Edit'),
+                                ],
+                              ),
+                            ),
+                            const PopupMenuItem<String>(
+                              value: 'delete',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.delete, color: Colors.red),
+                                  SizedBox(width: 8),
+                                  Text('Delete'),
+                                ],
+                              ),
+                            ),
+                            PopupMenuItem<String>(
+                              value: 'showInfo',
+                              child: Row(
+                                children: [
+                                  showMoreInfo ? const Icon(Icons.arrow_upward, color: Colors.green) : const Icon(Icons.arrow_downward, color: Colors.green),
+                                  const SizedBox(width: 8),
+                                  showMoreInfo ? const Text('Hide Info') : const Text('Show More Info'),
+                                ],
+                              ),
+                            ),
+                          ],
+                          icon: const Icon(Icons.more_vert, color: Colors.white),
                         ),
-                    ]),
-              ),
-            ]),
-          );
+                      ],
+                    ),
+                    if (showMoreInfo)
+                      const SizedBox(height: 10),
+                    if (showMoreInfo)
+                      FutureBuilder<List<Widget>>(
+                        future: _fetchAccountWidgets(widget.documentId),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return const Center(child: CircularProgressIndicator());
+                          }
+                          if (snapshot.hasError) {
+                            return Center(
+                              child: Text(
+                                "Error loading data: ${snapshot.error}",
+                                style: const TextStyle(color: Colors.red, fontSize: 18),
+                              ),
+                            );
+                          }
+                          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                            return const Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.info_outline, color: Colors.red, size: 50.0),
+                                  SizedBox(height: 10),
+                                  Text(
+                                    "No more info available",
+                                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blueGrey),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: snapshot.data!,
+                          );
+                        },
+                      ),
+                  ]),
+            ),
+          ]);
         },
       ),
     );
@@ -333,4 +355,34 @@ class CategoryCardState extends State<CategoryCard>
       },
     );
   }
+}
+
+void _showDeleteConfirmationDialog(BuildContext context, String documentId) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text("Delete Category"),
+        content: const Text(
+            "Are you sure you want to delete this category?\n\n"
+                "This will remove this category from all transactions with more than 1 category and remove categories from any transactions with this category only."),
+        actions: [
+          TextButton(
+            child: const Text("Cancel"),
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+          ),
+          TextButton(
+            child: const Text("Delete"),
+            onPressed: () async {
+              //await Provider.of<TransactionsModel>(context, listen: false).deleteTransactionsByCategoryId(categoryId, null, context);
+              CategoriesDB().deleteCategory(documentId);
+              Navigator.of(context).pop();
+            },
+          ),
+        ],
+      );
+    },
+  );
 }

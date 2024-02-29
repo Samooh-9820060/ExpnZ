@@ -30,7 +30,7 @@ class CategoryChipState extends State<CategoryChip>
   @override
   void initState() {
     super.initState();
-
+    _fetchCategoryDetails();
     _controller = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
@@ -40,7 +40,6 @@ class CategoryChipState extends State<CategoryChip>
       parent: _controller,
       curve: Curves.easeIn,
     );
-    _fetchCategoryDetails();
   }
 
   @override

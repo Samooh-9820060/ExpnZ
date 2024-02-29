@@ -35,7 +35,6 @@ class TransactionCard extends StatelessWidget {
                 color: Colors.white, // Set the text color to white
               ),
             ),
-
           ),
         ],
       ),
@@ -91,76 +90,104 @@ class TransactionCard extends StatelessWidget {
             return _buildCategoryWidget(categoryId);
           }).toList();
 
-          return GestureDetector(
-            onLongPress: () => showDeleteDialog(context),
-            onTap: () => onUpdate(),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 5),
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(18.0),
-                  color: Colors.blueGrey[700],
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: IntrinsicHeight(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        ...categoryWidgets,
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                name,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 1,
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                "$accountName • $date",
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.7),
-                                  fontSize: 10,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 5),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(18.0),
+                color: Colors.blueGrey[700],
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      ...categoryWidgets,
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              time,
+                              name,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              "$accountName • $date",
                               style: TextStyle(
                                 color: Colors.white.withOpacity(0.7),
                                 fontSize: 10,
                               ),
                             ),
-                            const SizedBox(height: 6),
-                            Text(
-                              currencyMap['symbolOnLeft']
-                                  ? '$formattedSymbol$formattedAmount'
-                                  : '$formattedAmount$formattedSymbol',
-                              style: TextStyle(
-                                color: amountColor,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
                           ],
                         ),
-                      ],
-                    ),
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            time,
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.7),
+                              fontSize: 10,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            currencyMap['symbolOnLeft']
+                                ? '$formattedSymbol$formattedAmount'
+                                : '$formattedAmount$formattedSymbol',
+                            style: TextStyle(
+                              color: amountColor,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      PopupMenuButton<String>(
+                        onSelected: (String result) {
+                          if (result == 'edit') {
+                            onUpdate();
+                          } else if (result == 'delete') {
+                            showDeleteDialog(context);
+                          }
+                        },
+                        itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                          const PopupMenuItem<String>(
+                            value: 'edit',
+                            child: Row(
+                              children: [
+                                Icon(Icons.edit, color: Colors.blue),
+                                SizedBox(width: 8),
+                                Text('Edit'),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'delete',
+                            child: Row(
+                              children: [
+                                Icon(Icons.delete, color: Colors.red),
+                                SizedBox(width: 8),
+                                Text('Delete'),
+                              ],
+                            ),
+                          ),
+                        ],
+                        icon: Icon(Icons.more_vert, color: Colors.white),
+                      ),
+                    ],
                   ),
                 ),
               ),
