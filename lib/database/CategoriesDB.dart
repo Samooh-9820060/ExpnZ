@@ -225,13 +225,9 @@ class CategoriesDB {
     final categoriesData = categoriesNotifier.value;
 
     // Check if the category with the given documentId exists in the local data
-    print(categoriesData);
     if (categoriesData.containsKey(documentId)) {
-      print('reallyok');
       return categoriesData[documentId] as Map<String, dynamic>;
     }
-
-    print('not ok');
       // Return null if no matching category is found
     return null;
   }

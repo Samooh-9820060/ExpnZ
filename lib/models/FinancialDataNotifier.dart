@@ -43,8 +43,7 @@ class FinancialDataNotifier extends ChangeNotifier {
     }
   }
 
-  Future<void> loadData(String? currencyCode) async {
-
+  Future<void> loadData(String? currencyCode, {DateTime? startDate, DateTime? endDate}) async {
     var accountsData = accountsNotifier.value;
     // Check if accountsData is now available and load financial data
     if (accountsData.isNotEmpty) {
@@ -73,9 +72,10 @@ class FinancialDataNotifier extends ChangeNotifier {
       currencyCodes = uniqueCurrencyCodesSet.toList();
 
       DateTime now = DateTime.now();
-      DateTime startDate = DateTime(now.year, now.month, 1);
-      DateTime firstDayNextMonth = DateTime(now.year, now.month + 1, 1);
-      DateTime endDate = firstDayNextMonth.subtract(const Duration(days: 1));
+      //startDate ??= DateTime(now.year, now.month, 1);
+      startDate ??= DateTime.now().subtract(const Duration(days: 30));
+      endDate ??= DateTime(now.year, now.month, now.day);
+      //endDate ??= DateTime(now.year, now.month + 1, 1).subtract(const Duration(days: 1));
 
       Map<String, dynamic> financialData = {};
       try {

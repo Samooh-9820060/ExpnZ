@@ -96,9 +96,9 @@ class _FinanceCardState extends State<FinanceCard> with SingleTickerProviderStat
                   animation: _numberController,
                   builder: (context, child) {
                     return SizedBox(
-                      height: 270,
+                      height: 250,
                       child: Padding(
-                        padding: const EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0.0),
                         child: Stack(
                           alignment: Alignment.center,
                           children: [

@@ -2,8 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:expnz/screens/AddAccount.dart';
-import 'package:expnz/widgets/AppWidgets/MonthlySummaryCards.dart';
+import 'package:expnz/widgets/AppWidgets/IncomeExpenseGraphs.dart';
 import 'package:expnz/widgets/SimpleWidgets/ExpnZButton.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -12,6 +13,7 @@ import '../models/TempTransactionsModel.dart';
 import '../utils/global.dart';
 import '../widgets/AppWidgets/FinanceCard.dart';
 import '../widgets/AppWidgets/NotificationsSection.dart';
+import '../widgets/SimpleWidgets/ExpnZDropdown.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -26,8 +28,9 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late AnimationController _incomeCardController;
   late AnimationController _expenseCardController;
   late AnimationController _notificationCardController;
-  late String selectedCurrencyCode;
+  String? selectedCurrencyCode;
   String userName = '';
+  String _selectedTimeFrame = 'Last 30 Days';
 
   @override
   void initState() {
@@ -265,9 +268,45 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   return Column(
                     children: [
                       buildFinanceCard(cardWidth, financialData, financialDataNotifier.currencyMap, financialDataNotifier.currencyCodes),
-                      const SizedBox(height: 10),
                       // Add some space below the card
-                      MonthlySummaryCards(
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: ExpnzDropdownButton(
+                          label: '',
+                          items: const ['This Month', 'Last 30 Days', 'Last Week'],
+                          onChanged: (String? newValue) {
+                            setState(() {
+
+                              _selectedTimeFrame = newValue!;
+                              DateTime now = DateTime.now();
+                              DateTime startDate;
+                              DateTime endDate = DateTime(now.year, now.month, now.day);
+
+                              switch (newValue) {
+                                case 'This Month':
+                                  startDate = DateTime(now.year, now.month, 1);
+                                  endDate = DateTime(now.year, now.month + 1, 1).subtract(const Duration(days: 1));
+                                  break;
+                                case 'Last 30 Days':
+                                  startDate = DateTime.now().subtract(Duration(days: 30));
+                                  break;
+                                case 'Last Week':
+                                  startDate = DateTime.now().subtract(Duration(days: 7));
+                                  break;
+                                default:
+                                  startDate = DateTime(now.year, now.month, 1); // Default to 'This Month'
+                              }
+
+                              financialDataNotifier.loadData(selectedCurrencyCode, startDate: startDate, endDate: endDate);
+                            });
+                          },
+                          isError: false,
+                          value: _selectedTimeFrame,
+                          animationController: _nameController,
+                        ),
+                      ),
+                      IncomeExpenseGraphs(
+                          timeFrame: _selectedTimeFrame,
                           incomeCardController: _incomeCardController,
                           expenseCardController: _expenseCardController,
                           cardWidth: cardWidth,
@@ -284,6 +323,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           );
                         },
                       ),
+                      const SizedBox(height: 100,),
                     ],
                   );
                 }
@@ -311,6 +351,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           onCurrencyChange: (selectedCurrency) {
             final financialDataNotifier = Provider.of<FinancialDataNotifier>(context, listen: false);
             financialDataNotifier.loadFinancialData(selectedCurrency);
+            selectedCurrencyCode = selectedCurrency;
           },
         ),
       );

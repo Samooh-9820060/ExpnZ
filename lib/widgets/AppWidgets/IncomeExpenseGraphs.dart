@@ -2,15 +2,17 @@ import 'package:flutter/material.dart';
 
 import 'SummaryMonthCardWidget.dart';
 
-class MonthlySummaryCards extends StatelessWidget {
+class IncomeExpenseGraphs extends StatelessWidget {
   final AnimationController incomeCardController;
   final AnimationController expenseCardController;
   final double cardWidth;
   final Map<String, dynamic> financialData;
   final Map<String, dynamic> currencyMap;
+  final String timeFrame;
 
-  const MonthlySummaryCards({
+  const IncomeExpenseGraphs({
     Key? key,
+    required this.timeFrame,
     required this.incomeCardController,
     required this.expenseCardController,
     required this.cardWidth,
@@ -23,34 +25,11 @@ class MonthlySummaryCards extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 10),
         // Add some space below the card
-        AnimatedBuilder(
-          animation: incomeCardController,
-          builder: (context, child) {
-            return Transform.translate(
-              offset: Offset(-300 * (1 - incomeCardController.value), 0),
-              child: Opacity(
-                opacity: incomeCardController.value,
-                child: const Padding(
-                  padding: EdgeInsets.fromLTRB(30.0, 0.0, 0.0, 5.0),
-                  child: Text(
-                    'This Month',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
         Padding(
-          padding: const EdgeInsets.all(8.0),
+          padding: const EdgeInsets.all(16.0),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               // Income Card
               AnimatedBuilder(

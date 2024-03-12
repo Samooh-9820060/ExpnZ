@@ -622,17 +622,18 @@ class AddTransactionScreenState extends State<AddTransactionScreen> with Widgets
       });
       return;
     }
-
     // Calculate the total amount of all split transactions
     double splitTransactionsTotal = splitTransactions.fold(0, (total, entry) {
       double entryAmount = double.tryParse(entry.amountController.text) ?? 0;
       return total + entryAmount;
     });
+    splitTransactionsTotal = double.parse(splitTransactionsTotal.toStringAsFixed(2));
 
     // Get the main transaction amount
     double mainTransactionAmount = double.tryParse(_amountController.text) ?? 0;
+    mainTransactionAmount = double.parse(mainTransactionAmount.toStringAsFixed(2));
 
-    // Check if the totals match
+
     if (splitTransactions.isNotEmpty && splitTransactionsTotal != mainTransactionAmount) {
       await showModernSnackBar(
         context: context,

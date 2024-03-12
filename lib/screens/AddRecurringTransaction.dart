@@ -460,10 +460,14 @@ class _AddRecurringTransactionPageState
         title: Text(title),
         subtitle: Text('${selectedDate.toLocal()}'.split(' ')[0]),
         onTap: () async {
+          DateTime now = DateTime.now();
+          DateTime firstDate = DateTime(now.year, now.month, now.day);
+          DateTime initialDate = selectedDate.isBefore(firstDate) ? firstDate : selectedDate;
+
           DateTime? pickedDate = await showDatePicker(
             context: context,
-            initialDate: selectedDate,
-            firstDate: DateTime.now(),
+            initialDate: initialDate,
+            firstDate: firstDate,
             lastDate: DateTime(2101),
           );
           if (pickedDate != null) {
@@ -473,6 +477,7 @@ class _AddRecurringTransactionPageState
       ),
     );
   }
+
 
   Widget buildTimeSelector(String title, TimeOfDay selectedTime, Function(TimeOfDay?) onSelectTime) {
     return Padding(

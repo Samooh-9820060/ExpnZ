@@ -86,10 +86,17 @@ class _AccountsScreenState extends State<AccountsScreen>
 
                 Map<String, Map<String, double>> incomeExpenseData = snapshot.data!;
 
+                // Create a list of category keys, sorted by category name
+                List<String> sortedAccountKeys =
+                accountsData.keys.toList();
+                sortedAccountKeys.sort((a, b) =>
+                    (accountsData[a]?['name'] as String).toLowerCase().trim()
+                        .compareTo((accountsData[b]?['name'] as String).toLowerCase().trim()));
+
                 return ListView.builder(
-                  itemCount: accountsData.length,
+                  itemCount: sortedAccountKeys.length,
                   itemBuilder: (context, index) {
-                    final documentId = accountsData.keys.elementAt(index);
+                    final documentId = sortedAccountKeys[index];
                     final accountData = accountsData[documentId]!;
                     final currencyMap = jsonDecode(accountData[AccountsDB.accountCurrency]);
 

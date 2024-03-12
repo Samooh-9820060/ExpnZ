@@ -7,6 +7,7 @@ class ExpnzDropdownButton extends StatelessWidget {
   final List<String> items;
   final Function(String?) onChanged;
   final bool isError;
+  final AnimationController? animationController;
 
   ExpnzDropdownButton({
     required this.label,
@@ -14,10 +15,33 @@ class ExpnzDropdownButton extends StatelessWidget {
     required this.items,
     required this.onChanged,
     this.isError = false,
+    this.animationController,
   });
 
   @override
   Widget build(BuildContext context) {
+    // If animationController is provided, use AnimatedBuilder
+    if (animationController != null) {
+      return AnimatedBuilder(
+        animation: animationController!,
+        builder: (context, child) {
+          return Opacity(
+            opacity: animationController!.value,
+            child: Transform.scale(
+              scale: animationController!.value,
+              child: child,
+            ),
+          );
+        },
+        child: buildDropdown(context), // Refactored dropdown building logic
+      );
+    } else {
+      // If no animationController, build dropdown normally
+      return buildDropdown(context);
+    }
+  }
+
+  Widget buildDropdown(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Column(

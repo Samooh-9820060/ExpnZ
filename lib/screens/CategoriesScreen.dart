@@ -123,8 +123,9 @@ class CategoriesScreenState extends State<CategoriesScreen>
                   List<String> sortedCategoryKeys =
                       categoriesData.keys.toList();
                   sortedCategoryKeys.sort((a, b) =>
-                      (categoriesData[a]?['name'] as String)
-                          .compareTo(categoriesData[b]?['name'] as String));
+                      (categoriesData[a]?['name'] as String).toLowerCase().trim()
+                          .compareTo((categoriesData[b]?['name'] as String).toLowerCase().trim()));
+
                   return ListView.builder(
                     itemCount: sortedCategoryKeys.length,
                     itemBuilder: (context, index) {

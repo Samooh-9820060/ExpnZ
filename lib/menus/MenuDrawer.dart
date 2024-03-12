@@ -10,6 +10,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:lottie/lottie.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class MenuDrawer extends StatefulWidget {
@@ -23,6 +24,20 @@ class MenuDrawer extends StatefulWidget {
 
 class _MenuDrawerState extends State<MenuDrawer> {
   bool isDarkMode = false;
+  String appVersion = 'v1.0.0';
+
+  @override
+  void initState() {
+    super.initState();
+    _initPackageInfo();
+  }
+
+  Future<void> _initPackageInfo() async {
+    final PackageInfo info = await PackageInfo.fromPlatform();
+    setState(() {
+      appVersion = 'v${info.version}';  // Sets the version number
+    });
+  }
 
   Future<void> _signOut() async {
     try {
@@ -98,6 +113,14 @@ class _MenuDrawerState extends State<MenuDrawer> {
                   onTap: _signOut,
                 ),
               ],
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 16),
+            child: Text(
+              'App Version: $appVersion',  // Display the version number here
+              style: TextStyle(fontSize: 16),
+              textAlign: TextAlign.left,
             ),
           ),
         ],
