@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:expnz/screens/AddCategory.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../database/AccountsDB.dart';
@@ -10,6 +11,12 @@ import '../../utils/animation_utils.dart';
 import '../../utils/global.dart';
 import '../../utils/image_utils.dart';
 
+class CurrencyTotal {
+  final String currency;
+  final double totalAmount;
+
+  CurrencyTotal({required this.currency, required this.totalAmount});
+}
 
 class CategoryCard extends StatefulWidget {
   final String documentId;
@@ -103,6 +110,46 @@ class CategoryCardState extends State<CategoryCard>
       }
     }
     return accountWidgets;
+  }
+  Future<List<CurrencyTotal>> _fetchCurrencyTotals(String categoryId) async {
+    final accountsData = accountsNotifier.value;
+    Map<String, Map<String, double>> accountIncomeExpenses = await TransactionsDB().getIncomeExpenseForAccountsInCategory(categoryId);
+
+    // Map to hold totals for each currency
+    Map<String, double> currencyTotals = {};
+    // Set to track which currencies have been used
+    Set<String> usedCurrencies = Set<String>();
+
+    for (var entry in accountsData.entries) {
+      String documentId = entry.key;
+      Map<String, dynamic> account = entry.value;
+      Map<String, dynamic> currencyMap = jsonDecode(account[AccountsDB.accountCurrency]);
+      String currencyCode = currencyMap['code'];
+
+      double totalIncome = accountIncomeExpenses[documentId]?['totalIncome'] ?? 0.0;
+      double totalExpense = accountIncomeExpenses[documentId]?['totalExpense'] ?? 0.0;
+
+      if(totalIncome != 0.0 || totalExpense != 0.0) {
+        usedCurrencies.add(currencyCode);
+      }
+
+      // Calculate net amount (income - expense)
+      double netAmount = totalIncome - totalExpense;
+
+      // Aggregate this net amount into the corresponding currency total
+      if (!currencyTotals.containsKey(currencyCode)) {
+        currencyTotals[currencyCode] = 0.0;
+      }
+      currencyTotals[currencyCode] = currencyTotals[currencyCode]! + netAmount;
+    }
+
+    // Convert the map into a list of CurrencyTotal objects, including only those currencies that have been used
+    List<CurrencyTotal> currencyTotalList = currencyTotals.entries
+        .where((entry) => usedCurrencies.contains(entry.key))
+        .map((entry) => CurrencyTotal(currency: entry.key, totalAmount: entry.value))
+        .toList();
+
+    return currencyTotalList;
   }
 
 
@@ -283,6 +330,67 @@ class CategoryCardState extends State<CategoryCard>
                           );
                         },
                       ),
+                    if (showMoreInfo)
+                      const SizedBox(height: 20),
+                    if (showMoreInfo)
+                      FutureBuilder<List<CurrencyTotal>>(
+                        future: _fetchCurrencyTotals(widget.documentId),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return Container();
+                          }
+                          if (snapshot.hasError) {
+                            return Container();
+                          }
+                          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                            return Container();
+                          }
+                          return Column(
+                            children: snapshot.data!.map((currencyTotal) =>
+                                Container(
+                                  margin: const EdgeInsets.fromLTRB(0,4,12,4),
+                                  padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [Colors.black, Colors.grey[850]!],
+                                    ),
+                                    borderRadius: BorderRadius.circular(20),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.2),
+                                        offset: const Offset(0, 4),
+                                        blurRadius: 6.0,
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        currencyTotal.currency,
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 14,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      Text(
+                                        currencyTotal.totalAmount.toStringAsFixed(2),
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                            ).toList(),
+                          );
+                        },
+                      ),
+
                   ]),
             ),
           ]);
