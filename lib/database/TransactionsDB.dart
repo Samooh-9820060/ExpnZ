@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:expnz/utils/global.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_launcher_icons/utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class TransactionsDB {
@@ -451,24 +452,40 @@ class TransactionsDB {
       List<String> transactionCategories = transaction.containsKey('categories') ? transaction['categories'].split(',') : [];
       bool matchesIncludeCategories = includeCategories == null || includeCategories.isEmpty ||
           transactionCategories.any((categoryId) => includeCategories.any((category) => category['id'] == categoryId));
-      bool matchesExcludeCategories = excludeCategories == null || excludeCategories.isEmpty ||
-          transactionCategories.every((categoryId) => !excludeCategories.any((category) => category['id'] == categoryId));
+
 
       // Check for category match in split transactions
-      bool splitTransactionsCategoryMatch = false;
+      bool splitTransactionsIncludeCategoryMatch = false;
       if (transaction.containsKey('splitTransactions')) {
         List<dynamic> splitTransactions = transaction['splitTransactions'];
         for (var splitTransaction in splitTransactions) {
           List<String> splitTransactionCategories = splitTransaction['categories'] != null ? List<String>.from(splitTransaction['categories']) : [];
           if (splitTransactionCategories.isNotEmpty && includeCategories != null && includeCategories.isNotEmpty) {
             if (splitTransactionCategories.any((categoryId) => includeCategories.any((category) => category['id'] == categoryId))) {
-              splitTransactionsCategoryMatch = true;
+              splitTransactionsIncludeCategoryMatch = true;
               break;
             }
           }
         }
       }
 
+      bool matchesExcludeCategories = excludeCategories != null && excludeCategories.isNotEmpty &&
+          transactionCategories.any((categoryId) => excludeCategories.any((category) => category['id'] == categoryId));
+
+
+      bool splitTransactionsExcludeCategoryMatch = false;
+      if (transaction.containsKey('splitTransactions')) {
+        List<dynamic> splitTransactions = transaction['splitTransactions'];
+        for (var splitTransaction in splitTransactions) {
+          List<String> splitTransactionCategories = splitTransaction['categories'] != null ? List<String>.from(splitTransaction['categories']) : [];
+          if (splitTransactionCategories.isNotEmpty && excludeCategories != null && excludeCategories.isNotEmpty) {
+            if (splitTransactionCategories.any((categoryId) => excludeCategories.any((category) => category['id'] == categoryId))) {
+              splitTransactionsExcludeCategoryMatch = true;
+              break;
+            }
+          }
+        }
+      }
 
 
       // Filter by date range
@@ -491,8 +508,8 @@ class TransactionsDB {
 
       if ((accountIds == null || accountIds.contains(transaction['account_id'])) &&
           (matchesSearchText || matchesCategory) &&
-          (matchesIncludeCategories || splitTransactionsCategoryMatch) &&
-          matchesExcludeCategories &&
+          (matchesIncludeCategories || splitTransactionsIncludeCategoryMatch) &&
+          (!matchesExcludeCategories && !splitTransactionsExcludeCategoryMatch) &&
           isWithinDateRange) {
         Map<String, dynamic> transactionWithId = Map.from(transaction);
         transactionWithId['documentId'] = docId; // Add the document ID

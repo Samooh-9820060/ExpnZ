@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../database/AccountsDB.dart';
 import '../../database/CategoriesDB.dart';
 import '../../database/TransactionsDB.dart';
+import '../../screens/SearchScreen.dart';
 import '../../utils/animation_utils.dart';
 import '../../utils/global.dart';
 import '../../utils/image_utils.dart';
@@ -254,6 +255,17 @@ class CategoryCardState extends State<CategoryCard>
                                   _numberController.reverse();
                                 }
                               });
+                            } else if (result == 'view_transactions') {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => SearchScreen(
+                                    startDate: DateTime.fromMillisecondsSinceEpoch(0), // Earliest possible date
+                                    endDate: DateTime.now(), // Today's date
+                                    includeCategories: [{ 'id': widget.documentId }], // Include category with documentId
+                                  ),
+                                ),
+                              );
                             }
                           },
                           itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
@@ -274,6 +286,16 @@ class CategoryCardState extends State<CategoryCard>
                                   Icon(Icons.delete, color: Colors.red),
                                   SizedBox(width: 8),
                                   Text('Delete'),
+                                ],
+                              ),
+                            ),
+                            const PopupMenuItem<String>(
+                              value: 'view_transactions',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.menu_book, color: Colors.greenAccent),
+                                  SizedBox(width: 8),
+                                  Text('View Transactions'),
                                 ],
                               ),
                             ),
