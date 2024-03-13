@@ -92,6 +92,7 @@ class AddTransactionScreenState extends State<AddTransactionScreen> with Widgets
     _amountController.addListener(_updateBalance);
     _actualPriceController.addListener(_updateBalance);
 
+    print(widget.transaction);
     if (widget.transaction != null) { updateMode = true; loadTransactionData(); }
     if (widget.tempTransactionId != null) { tempAdding = true; loadTempTransactionData(); }
     if (widget.recurringTransactionId != null) { recurringAdding = true; loadRecurringTransactionData(); }

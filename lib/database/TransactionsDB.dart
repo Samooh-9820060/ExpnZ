@@ -454,6 +454,23 @@ class TransactionsDB {
       bool matchesExcludeCategories = excludeCategories == null || excludeCategories.isEmpty ||
           transactionCategories.every((categoryId) => !excludeCategories.any((category) => category['id'] == categoryId));
 
+      // Check for category match in split transactions
+      bool splitTransactionsCategoryMatch = false;
+      if (transaction.containsKey('splitTransactions')) {
+        List<dynamic> splitTransactions = transaction['splitTransactions'];
+        for (var splitTransaction in splitTransactions) {
+          List<String> splitTransactionCategories = splitTransaction['categories'] != null ? List<String>.from(splitTransaction['categories']) : [];
+          if (splitTransactionCategories.isNotEmpty && includeCategories != null && includeCategories.isNotEmpty) {
+            if (splitTransactionCategories.any((categoryId) => includeCategories.any((category) => category['id'] == categoryId))) {
+              splitTransactionsCategoryMatch = true;
+              break;
+            }
+          }
+        }
+      }
+
+
+
       // Filter by date range
       DateTime transactionDate = DateTime.parse(transaction['date']);
       bool isWithinDateRange = (startDate == null || transactionDate.isAfter(startDate)) &&
@@ -474,7 +491,7 @@ class TransactionsDB {
 
       if ((accountIds == null || accountIds.contains(transaction['account_id'])) &&
           (matchesSearchText || matchesCategory) &&
-          matchesIncludeCategories &&
+          (matchesIncludeCategories || splitTransactionsCategoryMatch) &&
           matchesExcludeCategories &&
           isWithinDateRange) {
         Map<String, dynamic> transactionWithId = Map.from(transaction);
